@@ -1,0 +1,386 @@
+# 3권. GPT Pretraining과 SFT
+
+## 제65강. Checkpoint 관리
+
+### 1. 이번 강의에서 배울 것
+
+제62~64강에서 학습 루프·Optimizer·AMP·Accumulation까지 조립했다. 긴 Pretraining은 한 번에 끝나지 않는다. 이번 강의는 **Checkpoint(체크포인트)** — 학습 상태를 저장하고 재개하는 계약 — 을 설계한다.
+
+이 강의를 마치면 다음을 할 수 있어야 한다.
+
+- 저장해야 할 구성 요소(model, optimizer, scheduler, step 등)를 목록화한다.
+- Resume(재개) 시 순서를 설명한다.
+- `best`와 `last` 체크포인트의 역할을 구분한다.
+- `torch.save`와 **safetensors**를 형식 옵션으로 비교한다(설명 수준).
+- 손상·부분 저장·버전 불일치 같은 실패 모드를 예방한다.
+
+### 2. 왜 이것을 배우는가
+
+체크포인트가 없으면:
+
+- 인스턴스가 죽었을 때 **처음부터**다.
+- Validation이 좋아진 지점을 복원할 수 없다.
+- 실험을 분기(더 학습 / 평가만 / SFT로 이관)할 수 없다.
+
+```text
+학습 중 상태 = 가중치만이 아니다
+  가중치
+  + Optimizer 모멘트
+  + Scheduler 위치
+  + global_step / tokens_seen
+  + (선택) GradScaler, RNG, 데이터 이터레이터 위치
+```
+
+제66강 Validation은 “언제 best를 갱신할지”의 신호를 준다. 이번 강의는 **저장 형식과 재개 절차**다.
+
+### 3. 먼저 알아야 할 개념
+
+1. **`state_dict`** — 제21강 `nn.Module`
+2. **AdamW state / scheduler** — 제63강
+3. **GradScaler / AMP** — 제64강
+4. **global_step / token budget** — 제62강
+
+### 4. 핵심 개념 — Checkpoint란
+
+**Checkpoint**는 특정 시점의 학습 상태를 디스크에 직렬화한 스냅샷이다.
+
+두 가지 목적이 섞여 있다.
+
+| 목적 | 필요한 것 | 예 |
+|---|---|---|
+| **학습 재개 (resume)** | 가중치 + optim + sched + step + … | 장애 복구, 이어 학습 |
+| **추론·이관 (export)** | 대개 가중치(+설정) | 생성 테스트, SFT 초기화 |
+
+같은 폴더에 둘 다 둘 수 있지만, **파일 역할 이름**을 분리하는 편이 안전하다.
+
+### 5. 무엇을 저장할 것인가
+
+#### 5.1 최소 resume 세트
+
+```python
+checkpoint = {
+    "model": model.state_dict(),
+    "optimizer": optimizer.state_dict(),
+    "scheduler": scheduler.state_dict(),
+    "global_step": global_step,
+    "tokens_seen": tokens_seen,
+    "config": config_dict,          # 구조 재현용
+    "rng": {
+        "torch": torch.get_rng_state(),
+        "cuda": torch.cuda.get_rng_state_all() if torch.cuda.is_available() else None,
+    },
+}
+# FP16 scaler를 쓰면:
+# checkpoint["scaler"] = scaler.state_dict()
+```
+
+#### 5.2 항목별 이유
+
+| 키 | 없으면 |
+|---|---|
+| `model` | 재개 자체가 무의미 |
+| `optimizer` | Adam 모멘트 리셋 → 재개 직후 거동 변화 |
+| `scheduler` | lr이 warmup/cosine 위치를 잊음 |
+| `global_step` / `tokens_seen` | 로그·예산·스케줄 축 붕괴 |
+| `scaler` | FP16 scale이 리셋되어 초반 불안정 가능 |
+| `config` | 구조가 다르면 `load_state_dict` 실패 |
+| RNG | 완전 재현은 어려워도, 셔플 재개에 도움 |
+
+데이터 로더 위치(몇 번째 샤드)까지 저장하는 시스템은 더 복잡하다. 최소 교육 범위에서는 step/tokens와 가중치·optim 일관성을 우선한다.
+
+### 6. 저장 코드 패턴
+
+```python
+from pathlib import Path
+import torch
+
+
+def save_checkpoint(path, model, optimizer, scheduler, meta: dict, scaler=None):
+    """
+    meta 예: global_step, tokens_seen, best_val_loss, config
+    원자적 저장을 위해 임시 파일에 쓴 뒤 rename 하는 패턴을 권장.
+    """
+    path = Path(path)
+    path.parent.mkdir(parents=True, exist_ok=True)
+
+    payload = {
+        "model": model.state_dict(),
+        "optimizer": optimizer.state_dict(),
+        "scheduler": scheduler.state_dict(),
+        **meta,
+    }
+    if scaler is not None:
+        payload["scaler"] = scaler.state_dict()
+
+    tmp = path.with_suffix(path.suffix + ".tmp")
+    torch.save(payload, tmp)
+    tmp.replace(path)  # 같은 파일시스템에서 원자적에 가까운 교체
+```
+
+설명: 학습 도중 프로세스가 죽으면 **쓰던 파일이 반쯤 써진 채** 남을 수 있다. tmp+rename은 그 위험을 줄이려는 관행이다. 완벽한 원자성을 모든 OS/파일시스템에서 보장한다고 단정하지는 않는다.
+
+### 7. 재개(Resume) 절차
+
+```python
+def load_checkpoint(path, model, optimizer=None, scheduler=None, scaler=None, map_location="cpu"):
+    ckpt = torch.load(path, map_location=map_location)
+    model.load_state_dict(ckpt["model"])
+
+    if optimizer is not None and "optimizer" in ckpt:
+        optimizer.load_state_dict(ckpt["optimizer"])
+    if scheduler is not None and "scheduler" in ckpt:
+        scheduler.load_state_dict(ckpt["scheduler"])
+    if scaler is not None and "scaler" in ckpt:
+        scaler.load_state_dict(ckpt["scaler"])
+
+    global_step = ckpt.get("global_step", 0)
+    tokens_seen = ckpt.get("tokens_seen", 0)
+    return global_step, tokens_seen, ckpt
+```
+
+권장 순서:
+
+```text
+1. config로 모델·optim·sched 객체를 "빈 상태"로 생성
+2. checkpoint 로드
+3. state_dict들 주입
+4. global_step / tokens_seen으로 루프 시작점 설정
+5. device로 이동 (로드 시점 정책에 따라 전후가 바뀔 수 있음)
+6. model.train()으로 학습 재개
+```
+
+함정:
+
+- GPU에서 저장한 텐서를 CPU-only 환경에서 로드할 때 `map_location` 필요.
+- `strict=True`(기본)면 키 불일치 시 실패한다. 구조를 바꿨다면 의도적 `strict=False`와 누락 키 로그가 필요하다.
+- DataParallel/`module.` 접두어 불일치.
+
+### 8. Best vs Last
+
+#### 8.1 Last checkpoint
+
+**Last**는 가장 최근 step의 스냅샷이다. 장애 복구의 기본이다.
+
+```text
+checkpoints/
+  last.pt
+  step_0001000.pt
+  step_0002000.pt
+```
+
+주기 저장 + `last` 갱신:
+
+```python
+if global_step % ckpt_every == 0:
+    save_checkpoint(out_dir / f"step_{global_step:07d}.pt", ...)
+    save_checkpoint(out_dir / "last.pt", ...)
+```
+
+#### 8.2 Best checkpoint
+
+**Best**는 선택 기준(보통 held-out validation loss 최소)이 갱신될 때만 저장한다.
+
+```python
+if val_loss < best_val_loss:
+    best_val_loss = val_loss
+    save_checkpoint(
+        out_dir / "best.pt",
+        model, optimizer, scheduler,
+        meta={
+            "global_step": global_step,
+            "tokens_seen": tokens_seen,
+            "best_val_loss": best_val_loss,
+            "config": config_dict,
+        },
+        scaler=scaler,
+    )
+```
+
+| | Last | Best |
+|---|---|---|
+| 갱신 조건 | 주기 / 매 저장 시점 | 지표 개선 시 |
+| 주 용도 | 재개 | 최종 후보·조기 선택 |
+| 위험 | 말기 과적합·붕괴 상태일 수 있음 | 지표가 목표와 불일치하면 잘못된 “최고” |
+
+설명: Pretraining에서 val loss best가 곧 “생성 품질 best”는 아니다. 제66~67강에서 평가 축을 분리한다. 그래도 val loss는 **조기 발산·과적합의 운영 신호**로 유용하다.
+
+### 9. 저장 주기와 디스크
+
+너무 잦으면:
+
+- tok/s 하락
+- 디스크 가득 참
+
+너무 드물면:
+
+- 장애 시 손실 step이 큼
+- best 구간을 놓침
+
+실무 패턴(설명):
+
+- 고정 step 간격으로 `last` + 회전(rotation, 최근 K개만 유지)
+- eval 시점에 best 갱신
+- 학습 종료 시 final export
+
+숫자 간격은 예산·체크포인트 크기·SLA에 따라 정한다. 이 강의는 특정 “매 N step”을 표준처럼 제시하지 않는다.
+
+### 10. 형식 옵션 — `torch.save`와 safetensors
+
+#### 10.1 `torch.save` / `torch.load`
+
+PyTorch 기본 직렬화. 임의 Python 객체(딕셔너리)를 넣기 쉽다. resume용으로 optim state 등을 한 파일에 묶기 편하다.
+
+주의(설명): pickle 기반 로드는 **신뢰할 수 없는 파일**을 열 때 보안 위험이 있다고 알려져 있다. 출처가 불명확한 `.pt`를 함부로 `torch.load`하지 말 것.
+
+#### 10.2 safetensors
+
+**safetensors**는 텐서 가중치를 저장·로드하기 위한 형식 중 하나로, 많은 가중치 배포 파이프라인에서 선택지로 쓰인다.
+
+설명 수준에서 알아둘 점:
+
+- 주 용도는 **텐서 맵(가중치)** 저장에 가깝다.
+- 임의의 Python 객체·Optimizer state 전체를 한 파일에 넣는 용도로는 `torch.save` 번들보다 역할이 다르다.
+- “더 안전하다/더 빠르다”는 주장은 구현·환경·측정에 의존하므로, 이 책에서 벤치마크 수치를 붙여 단정하지 않는다.
+
+실무적 분리 제안:
+
+```text
+resume 번들:  last.pt / step_XXXX.pt   (model+optim+sched+meta)
+가중치 export: model.safetensors 또는 model.pt  (추론·공유용)
+```
+
+```python
+# 개념 예 — safetensors가 설치된 환경
+# from safetensors.torch import save_file, load_file
+# save_file(model.state_dict(), "model.safetensors")
+# state = load_file("model.safetensors")
+# model.load_state_dict(state)
+```
+
+제68강 Mini GPT Pretraining, 제76강 SFT 프로젝트에서 “재개용”과 “내보내기용”을 폴더 규약으로 나누면 혼란이 줄어든다.
+
+### 11. Export만 할 때
+
+추론·다음 단계(SFT) 초기화에는 종종 가중치만 필요하다.
+
+```python
+def export_weights(path, model):
+    torch.save({"model": model.state_dict(), "config": config_dict}, path)
+```
+
+또는 safetensors로 가중치만 저장.  
+Optimizer를 빼면 파일이 작아지고, 실수로 “resume 가능한 줄 앎” 사고도 줄어든다. 파일명에 `weights_only` / `export`를 명시하라.
+
+### 12. 분산·래퍼 관련 메모
+
+단일 GPU 교육 코드와 달리, 래퍼가 있으면 `state_dict` 키가 달라진다.
+
+```python
+# 개념: DDP라면
+state = model.module.state_dict()
+```
+
+이 책 3권 본문 루프는 단일 장치 중심이지만, 체크포인트 규약을 짤 때 **래퍼 유무를 한 줄로 기록**해 둔다. 나중에 분산으로 확할 때 가장 먼저 터지는 지점이다.
+
+### 13. 검증 — 저장이 진짜인지 확인
+
+저장 직후 권장 스모크 테스트:
+
+1. 새 프로세스에서 모델 생성 → `load_state_dict`
+2. 동일 배치로 train mode loss 또는 eval loss 비교(허용 오차 내)
+3. `global_step`이 메타와 일치하는지 출력
+4. (resume) 한 step 더 돌려 NaN이 아닌지 확인
+
+“파일이 생겼다” ≠ “로드 가능한 완전한 체크포인트”.
+
+### 14. 흔한 버그
+
+1. **가중치만 저장하고 lr·step을 잊음** — 재개 시 cosine이 처음부터.
+2. **best를 last 경로에 덮어씀** — 복구 포인트 소실.
+3. **저장 중 예외 후 빈 파일** — tmp+rename 미사용.
+4. **config 미저장** — 몇 주 뒤 hidden size를 기억 못함.
+5. **eval 모드 가중치를 저장한 뒤 train 버퍼를 오해** — Dropout 자체는 대개 가중치에 없으나, 버퍼(BatchNorm 등)가 있으면 모드 유의. LLM LayerNorm은 다른 이슈이나 “모드와 저장”을 한 묶음으로 점검.
+6. **신뢰 불가 경로의 `torch.load`** — 보안 이슈.
+
+### 15. 핵심 정리
+
+- Resume 체크포인트는 model + optimizer + scheduler + step(+ scaler)을 묶는다.
+- Last는 복구, Best는 지표 기준 선택이다. 역할을 파일명으로 분리한다.
+- 원자적 저장(tmp+rename)과 로드 스모크 테스트가 운영 품질을 가른다.
+- safetensors는 가중치 배포·로드의 **형식 옵션**으로 이해한다. resume 번들과 용도를 섞지 말 것.
+- 제66강 val 지표가 best 갱신 트리거가 된다.
+
+### 16. 핵심 용어
+
+| 용어 | 의미 |
+|---|---|
+| Checkpoint | 학습 상태 스냅샷 |
+| `state_dict` | 파라미터/버퍼 이름→텐서 맵 |
+| Resume | 스냅샷에서 학습 재개 |
+| Last / Best | 최근본 / 지표 최고본 |
+| Export | 추론·이관용 가중치 내보내기 |
+| Atomic save | 임시 기록 후 교체하는 저장 관행 |
+| safetensors | 텐서 가중치 저장 형식 옵션 |
+| `map_location` | 로드 시 장치 배치 |
+
+### 17. 복습 문제
+
+#### 문제 1 (목록)
+
+학습을 동일 lr 스케줄에서 이어가려면 최소 어떤 상태들이 필요한가?
+
+#### 문제 2 (개념)
+
+Best와 Last를 모두 남기는 이유를 장애 복구와 모델 선택 관점에서 쓰시오.
+
+#### 문제 3 (절차)
+
+다음 재개 코드의 문제를 지적하시오.
+
+```python
+model = GPT(config)
+ckpt = torch.load("last.pt")
+model.load_state_dict(ckpt["model"])
+# optimizer/scheduler 새로 만든 채 학습 계속
+```
+
+#### 문제 4 (형식)
+
+Resume 번들과 safetensors export를 한 파일로 섞지 말라고 한 이유를 쓰시오.
+
+#### 문제 5 (연결)
+
+제64강 `GradScaler`를 쓰는 FP16 학습에서 체크포인트에 scaler를 빼면 어떤 현상이 생길 수 있는가?
+
+---
+
+### 정답 및 해설
+
+#### 문제 1
+
+모델 가중치, Optimizer state, Scheduler state, global_step(또는 동등한 스케줄 축). 토큰 예산·scaler 등 사용 중이면 함께.
+
+#### 문제 2
+
+Last는 언제 죽어도 가까운 지점에서 재개하기 위함. Best는 validation 등 기준으로 “지금까지 가장 나은” 가중치를 남겨 최종 선택·조기 사용에 쓰기 위함.
+
+#### 문제 3
+
+Optimizer/Scheduler state와 step을 복원하지 않아 모멘트·lr 위치가 리셋된다. 가중치만 같은 “새 학습”에 가깝다.
+
+#### 문제 4
+
+역할이 다르다. safetensors는 주로 가중치 맵용이고, resume는 optim 등 비텐서/부가 상태가 필요하다. 섞으면 로더·보안·크기·의도가 모호해진다.
+
+#### 문제 5
+
+loss scale이 초기값으로 돌아가 재개 직후 overflow·step skip·불안정이 날 수 있다.
+
+### 18. 다음 강의와 연결
+
+Best를 고르려면 **기준 지표**가 필요하다.
+
+다음 **제66강. Validation과 Evaluation**에서는 held-out validation loss, 평가 시점, `train`/`eval` 모드, 발산의 조기 신호를 다룬다. 그 지표가 이 강의의 `best.pt` 갱신 조건이 된다.
+
+이전 강의: **제64강. Mixed Precision과 Gradient Accumulation**  
+다음 강의: **제66강. Validation과 Evaluation**
