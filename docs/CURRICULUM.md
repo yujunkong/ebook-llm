@@ -131,14 +131,18 @@
 | 105 | PagedAttention |
 | 106 | vLLM Scheduler |
 | 107 | LLM Serving 성능 지표 — TTFT, TPOT, Throughput |
-| 108 | GLM 계열 모델 구조 |
+| 108 | 모델 알고리즘 계열별 모델 구조 |
 | 109 | MoE |
 | 110 | MTP와 Speculative Decoding |
 | 111 | GPU 아키텍처 — CUDA, SM, Memory Bandwidth |
-| 112 | GB10과 DGX Spark 구조 |
+| 112 | Inference Engine 비교 — vLLM · TensorRT-LLM · SGLang |
 | 113 | Tensor Parallel |
 | 114 | NCCL과 RoCE |
 | 115 | 2× DGX Spark 환경 구성 |
+
+> **커리큘럼 조정 메모 (강의 번호 유지)**  
+> - **108강**: 특정 제품(GLM) 단독 설명이 아니라, Dense Decoder-only / MoE / Hybrid·SSM 등 **알고리즘 계열별 구조**를 비교한다. GLM·LLaMA·Qwen 등은 계열 사례로 연결한다.  
+> - **112강**: 기존 `GB10과 DGX Spark 구조`는 **115강**의 실환경 구성에서 하드웨어·플랫폼을 다루도록 옮기고, 112는 Serving Engine 선택·비교로 교체한다.
 | 116 | 프로젝트 — 실제 LLM Serving |
 | 117 | 프로젝트 — GPU 최적화 실험 |
 | 118 | 성능 측정 리포트 작성법 |
