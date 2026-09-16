@@ -303,6 +303,5 @@ Reward hacking（또는 Goodhart / proxy 과적합）.
 
 예: judge 편향/길이 bias, 벤치 과적합（또는 인간 불일치 미검증）.
 
-### 14. 다음 강의
-
+### 14. 다음 강의와 연결
 **제97강. 논문·실무 흐름 정리**에서 InstructGPT류 → DPO → reasoning RL로 이어지는 **개념적 지도**를, 사실과 해석을 구분해 정리한다.

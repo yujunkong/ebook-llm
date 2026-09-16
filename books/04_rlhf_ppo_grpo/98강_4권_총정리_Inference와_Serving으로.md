@@ -235,8 +235,7 @@ Goodhart / 평가 과적합 / proxy 숭배（택1 이상）.
 
 제목: Training과 Inference의 차이. 목표: 전자는 $\theta$ 갱신, 후자는 고정 $\theta$로 생성·서비스.
 
-### 13. 다음 권으로
-
+### 13. 다음 강의와 연결
 4권의 문을 닫는다.
 
 다음 책은 **5권. vLLM · GLM · DGX Spark**다.  

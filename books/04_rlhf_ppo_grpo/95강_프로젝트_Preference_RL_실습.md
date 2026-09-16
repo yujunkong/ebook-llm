@@ -1002,6 +1002,5 @@ sum logprob.
 
 보상/선호 신호 자체가 오염되면 최적화는 “틀린 목표”를 잘 푸는 쪽으로 간다（reward misspecification·해킹의 입구）.
 
-### 21. 다음 강의
-
+### 21. 다음 강의와 연결
 **제96강. Alignment의 한계와 부작용**에서 reward hacking, sycophancy, over-refusal, 분포 이동, 평가 한계를 정리한다. 제95강 report의 실패 로그가 있으면 사례로 삼아라.
