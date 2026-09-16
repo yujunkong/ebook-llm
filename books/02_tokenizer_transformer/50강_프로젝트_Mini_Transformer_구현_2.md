@@ -471,3 +471,14 @@ overfit 테스트에서 loss가 0.01까지 내려갔는데, 전체 데이터 학
 ### 18. 다음 강의와 연결
 
 동작하는 Mini Transformer를 손에 넣었다. **제51강. Attention 시각화**에서는 학습된(또는 작은 예제) Attention 가중치를 그림으로 읽어, 모델이 “어디에 주목하는지”를 관찰한다.
+
+<!-- LECTURE_NAV -->
+
+---
+
+### 강의 이동
+
+- **이전 강:** [제49강. 프로젝트 — Mini Transformer 구현 (1)](49강_프로젝트_Mini_Transformer_구현_1.md)
+- **다음 강:** [제51강. Attention 시각화](51강_Attention_시각화.md)
+
+<!-- /LECTURE_NAV -->

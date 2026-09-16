@@ -501,3 +501,14 @@ Instruction overfitting을 見逃하고 일반화를 과대평가할 위험（�
 
 미니 SFT를 한 바퀴 돌렸다.  
 **제77강. Pretraining과 SFT의 역할 정리**에서는 두 단계가 각각 **할 수 있는 일 / 할 수 없는 일**을 표로 고정하고, 4권 Post-Training이 왜 필요한지 위치를 잡는다.
+
+<!-- LECTURE_NAV -->
+
+---
+
+### 강의 이동
+
+- **이전 강:** [제75강. SFT 평가와 실패 사례](75강_SFT_평가와_실패_사례.md)
+- **다음 강:** [제77강. Pretraining과 SFT의 역할 정리](77강_Pretraining과_SFT의_역할_정리.md)
+
+<!-- /LECTURE_NAV -->

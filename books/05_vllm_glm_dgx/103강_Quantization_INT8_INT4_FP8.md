@@ -484,3 +484,14 @@ $s\approx0.01181$, $q=\mathrm{round}(-1/s)\approx-85$, $\hat{x}\approx -85s\appr
 다음 **제104강. vLLM 개요와 구조**에서는 이 부품들을 한 런타임으로 묶는 **Inference Engine**의 공개 개념 지도 — API·엔진·워커·스케줄·캐시 — 를 그린다. 내부 미공개 구현을 사실처럼 단정하지 않고, **역할 다이어그램**으로 이해한다.
 
 > 비트를 줄이는 법을 알았다면, 이제 그 가중치를 요청 바다 위에 올리는 엔진을 본다.
+
+<!-- LECTURE_NAV -->
+
+---
+
+### 강의 이동
+
+- **이전 강:** [제102강. Continuous Batching](102강_Continuous_Batching.md)
+- **다음 강:** [제104강. vLLM 개요와 구조](104강_vLLM_개요와_구조.md)
+
+<!-- /LECTURE_NAV -->

@@ -511,3 +511,14 @@ ReLU의 미분은 \(z>0\)에서 1, \(z\le0\)에서 0이다. \(z1\)(또는 동등
 제14강 Chain Rule이 네트워크 위에서 실제로 작동하는 장면을 보게 된다.
 
 > 순방향 계산표를 덮지 말고 옆에 두자. 곧 거꾸로 내려온다.
+
+<!-- LECTURE_NAV -->
+
+---
+
+### 강의 이동
+
+- **이전 강:** [제15강. Neural Network의 구조](15강_Neural_Network의_구조.md)
+- **다음 강:** [제17강. Backpropagation 직접 계산하기](17강_Backpropagation_직접_계산하기.md)
+
+<!-- /LECTURE_NAV -->

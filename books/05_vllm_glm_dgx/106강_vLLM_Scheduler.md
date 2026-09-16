@@ -283,3 +283,14 @@ Admission 가능 여부와 preemption 필요 여부(메모리 예산).
 다음 **제107강. LLM Serving 성능 지표 — TTFT, TPOT, Throughput**에서 지연·처리량 지표를 정의하고, 섞어 쓰면 안 되는 함정을 정리한다.
 
 이전: 제105강 PagedAttention → 메모리 화폐. 이번: 그 화폐의 **배분 정책**.
+
+<!-- LECTURE_NAV -->
+
+---
+
+### 강의 이동
+
+- **이전 강:** [제105강. PagedAttention](105강_PagedAttention.md)
+- **다음 강:** [제107강. LLM Serving 성능 지표 — TTFT, TPOT, Throughput](107강_LLM_Serving_성능_지표_TTFT_TPOT_Throughput.md)
+
+<!-- /LECTURE_NAV -->

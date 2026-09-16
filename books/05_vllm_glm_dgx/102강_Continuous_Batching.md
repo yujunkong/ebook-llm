@@ -496,3 +496,14 @@ Iteration-level scheduling을 한 줄로.
 다음 **제103강. Quantization — INT8, INT4, FP8**에서는 가중치·활성값을 낮은 비트로 표현해 메모리·대역폭을 줄이는 아이디어를, 품질 트레이드오프와 함께 다룬다.
 
 > 빈자리를 채우는 기술 다음에, 자리 자체를 좁히는 기술이 온다.
+
+<!-- LECTURE_NAV -->
+
+---
+
+### 강의 이동
+
+- **이전 강:** [제101강. KV Cache](101강_KV_Cache.md)
+- **다음 강:** [제103강. Quantization — INT8, INT4, FP8](103강_Quantization_INT8_INT4_FP8.md)
+
+<!-- /LECTURE_NAV -->

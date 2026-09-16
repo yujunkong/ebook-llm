@@ -555,3 +555,14 @@ PPO clip은 **이전 정책 \(\pi_{\mathrm{old}}\)** 대비 한 업데이트의 
 다음 **제90강. DPO — Preference를 직접 학습하기**에서는 Reward Model과 PPO 루프를 우회하고, **chosen/rejected 쌍의 로그확률만으로** 정책을 직접 갱신하는 길을 유도한다. \(\beta\)는 그곳에서도 중심 상수로 다시 등장한다.
 
 > KL은 RLHF의 브레이크다. 브레이크의 정신을 손실 함수 하나에 접어 넣는 것이 DPO다.
+
+<!-- LECTURE_NAV -->
+
+---
+
+### 강의 이동
+
+- **이전 강:** [제88강. PPO 구현](88강_PPO_구현.md)
+- **다음 강:** [제90강. DPO — Preference를 직접 학습하기](90강_DPO_Preference를_직접_학습하기.md)
+
+<!-- /LECTURE_NAV -->

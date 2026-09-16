@@ -593,3 +593,14 @@ a_1 &= 0,\quad a_2 = 0 \\
 중간 값 \(z\), \(a\)를 저장해야 하는 이유도 그때 드러난다. 그 저장이 바로 17강 Backpropagation의 출발점이다.
 
 > 뼈대가 생겼다. 이제 신호가 앞에서 뒤로 흐르게 하자.
+
+<!-- LECTURE_NAV -->
+
+---
+
+### 강의 이동
+
+- **이전 강:** [제14강. Chain Rule](14강_Chain_Rule.md)
+- **다음 강:** [제16강. Forward Propagation](16강_Forward_Propagation.md)
+
+<!-- /LECTURE_NAV -->

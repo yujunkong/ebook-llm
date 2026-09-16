@@ -609,3 +609,14 @@ Forward(예측·Loss) → Backward(Gradient) → Update(파라미터 갱신).
 dtype, device, shape, broadcasting, NumPy와의 차이를 익히면, 제20강 Autograd가 오늘 `backward()` 함수를 자동으로 채워 주는 장면을 볼 준비가 된다.
 
 > 엔진을 한 번 손으로 조립해 보았다. 이제 공장 도구(PyTorch)로 넘어간다.
+
+<!-- LECTURE_NAV -->
+
+---
+
+### 강의 이동
+
+- **이전 강:** [제17강. Backpropagation 직접 계산하기](17강_Backpropagation_직접_계산하기.md)
+- **다음 강:** [제19강. PyTorch Tensor](19강_PyTorch_Tensor.md)
+
+<!-- /LECTURE_NAV -->

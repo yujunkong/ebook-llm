@@ -655,3 +655,14 @@ Pointwise 5점 척도. 사람마다 점수 기준이 달라지기 쉽다.
 다음 **제85강. Reward Model 구현**에서는 Preference 쌍을 입력으로 받아, Bradley-Terry 목표로 \(r_\phi(x,y)\)를 학습하는 방법을 수식·숫자·코드로 구현한다. 출력이 스칼라 보상이 되는 순간, 제86강 RLHF 파이프라인이 닫히기 시작한다.
 
 > 정답을 하나 고르는 데이터가 아니라, 승패를 고르는 데이터다. 그 승패로 점수 함수를 만드는 일이 바로 Reward Model이다.
+
+<!-- LECTURE_NAV -->
+
+---
+
+### 강의 이동
+
+- **이전 강:** [제83강. Advantage](83강_Advantage.md)
+- **다음 강:** [제85강. Reward Model 구현](85강_Reward_Model_구현.md)
+
+<!-- /LECTURE_NAV -->

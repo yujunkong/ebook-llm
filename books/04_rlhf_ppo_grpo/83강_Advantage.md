@@ -523,3 +523,14 @@ RL 기호의 기초 사슬이 끝났다.
 
 수학 도구는 손에 쥐었다.  
 이제 **정렬의 데이터**를 연다.
+
+<!-- LECTURE_NAV -->
+
+---
+
+### 강의 이동
+
+- **이전 강:** [제82강. Policy Gradient](82강_Policy_Gradient.md)
+- **다음 강:** [제84강. Preference Dataset](84강_Preference_Dataset.md)
+
+<!-- /LECTURE_NAV -->

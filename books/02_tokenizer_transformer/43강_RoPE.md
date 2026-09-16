@@ -616,3 +616,14 @@ RoPE는 같은 계열의 \(\omega\)로 \(R_{t}\)를 만들어 Q/K에 곱한다.
 
 그다음 제45강 FFN, 제46강에서 Attention+Norm+Residual+FFN을 하나의 Transformer Block으로 조립한다.  
 RoPE는 그 블록 안의 MHA 내부에 옵션으로 꽂힌다.
+
+<!-- LECTURE_NAV -->
+
+---
+
+### 강의 이동
+
+- **이전 강:** [제42강. Positional Encoding](42강_Positional_Encoding.md)
+- **다음 강:** [제44강. LayerNorm과 Residual Connection](44강_LayerNorm과_Residual_Connection.md)
+
+<!-- /LECTURE_NAV -->

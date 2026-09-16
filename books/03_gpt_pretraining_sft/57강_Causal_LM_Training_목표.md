@@ -564,3 +564,14 @@ $p_0=e^3/(e^3+e^0)\approx20.09/21.09\approx0.953$, $\mathrm{CE}\approx-\log0.953
 
 이전 강의: [제56강. GPT 아키텍처 구현](./56강_GPT_아키텍처_구현.md)  
 다음 강의: [제58강. Text Generation — Greedy와 Sampling](./58강_Text_Generation_Greedy와_Sampling.md)
+
+<!-- LECTURE_NAV -->
+
+---
+
+### 강의 이동
+
+- **이전 강:** [제56강. GPT 아키텍처 구현](56강_GPT_아키텍처_구현.md)
+- **다음 강:** [제58강. Text Generation — Greedy와 Sampling](58강_Text_Generation_Greedy와_Sampling.md)
+
+<!-- /LECTURE_NAV -->

@@ -584,3 +584,14 @@ Pretraining과 챗 SFT가 둘 다 Next Token Prediction일 수 있다면, 무엇
 
 이전 강의: **제31강. Embedding — 토큰을 벡터로**  
 다음 강의: **제33강. Softmax와 Logit**
+
+<!-- LECTURE_NAV -->
+
+---
+
+### 강의 이동
+
+- **이전 강:** [제31강. Embedding — 토큰을 벡터로](31강_Embedding_토큰을_벡터로.md)
+- **다음 강:** [제33강. Softmax와 Logit](33강_Softmax와_Logit.md)
+
+<!-- /LECTURE_NAV -->

@@ -508,3 +508,14 @@ Continuous: 정적 배치의 idle/호위·늦은 입학. PagedAttention: 거대 
 그 다음 **제106강. vLLM Scheduler**에서 입학·우선순위·Prefill/Decode 혼합 정책을 더 깊게 보고, **제107강**에서 TTFT·TPOT·Throughput으로 측정 언어를 고정한다.
 
 > 엔진은 마법이 아니다. 이미 배운 Prefill·KV·Batching·Quantization의 운영체제에 가깝다.
+
+<!-- LECTURE_NAV -->
+
+---
+
+### 강의 이동
+
+- **이전 강:** [제103강. Quantization — INT8, INT4, FP8](103강_Quantization_INT8_INT4_FP8.md)
+- **다음 강:** [제105강. PagedAttention](105강_PagedAttention.md)
+
+<!-- /LECTURE_NAV -->

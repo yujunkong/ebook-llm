@@ -618,3 +618,14 @@ Softmax 전 점수 행렬의 미래 위치($j>i$)에 `-inf`를 넣어 확률 0�
 
 이전 강의: [제55강. GPT란 무엇인가](./55강_GPT란_무엇인가.md)  
 다음 강의: [제57강. Causal LM Training 목표](./57강_Causal_LM_Training_목표.md)
+
+<!-- LECTURE_NAV -->
+
+---
+
+### 강의 이동
+
+- **이전 강:** [제55강. GPT란 무엇인가](55강_GPT란_무엇인가.md)
+- **다음 강:** [제57강. Causal LM Training 목표](57강_Causal_LM_Training_목표.md)
+
+<!-- /LECTURE_NAV -->

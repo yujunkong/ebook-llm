@@ -820,3 +820,14 @@ for step in range(300):
 그런데 ChatGPT 같은 **assistant**는 base LM과 다르다. 다음 **제69강. Instruction Tuning의 개념**에서는 왜 지시 따르기 학습이 필요한지, SFT가 Pretraining과 RLHF 사이에 어디에 앉는지부터 정리한다.
 
 > Pretraining으로 말을 잇게 했다면, 이제 “시키는 대로” 말하게 만드는 단계로 가자.
+
+<!-- LECTURE_NAV -->
+
+---
+
+### 강의 이동
+
+- **이전 강:** [제67강. Perplexity와 생성 품질](67강_Perplexity와_생성_품질.md)
+- **다음 강:** [제69강. Instruction Tuning의 개념](69강_Instruction_Tuning의_개념.md)
+
+<!-- /LECTURE_NAV -->

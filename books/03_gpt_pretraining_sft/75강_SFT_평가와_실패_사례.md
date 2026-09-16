@@ -320,3 +320,14 @@ Instruction overfitting（또는 형식 일반화 실패）. 마스크 버그도
 
 이론은 여기까지다.  
 **제76강. 프로젝트 — Mini GPT + SFT**에서는 아주 작은 instruction set으로 SFT를 직접 돌리고, loss mask·before/after 생성·간단한 평가를 한 프로젝트로 닫는다.
+
+<!-- LECTURE_NAV -->
+
+---
+
+### 강의 이동
+
+- **이전 강:** [제74강. QLoRA](74강_QLoRA.md)
+- **다음 강:** [제76강. 프로젝트 — Mini GPT + SFT](76강_프로젝트_Mini_GPT_SFT.md)
+
+<!-- /LECTURE_NAV -->

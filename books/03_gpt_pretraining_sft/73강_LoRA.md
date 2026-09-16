@@ -339,3 +339,14 @@ $$
 
 LoRA는 “작은 행렬만 움직인다”. 그런데 베이스 모델 자체를 GPU에 올리는 비용은 여전히 크다.  
 **제74강. QLoRA**에서는 베이스를 **4-bit로 올려 두고** 그 위에 LoRA를 학습하는 아이디어를 본다. NF4의 직관과, 학습·추론에서 메모리가 줄어드는 이유를 **사실/설명**으로 구분한다.
+
+<!-- LECTURE_NAV -->
+
+---
+
+### 강의 이동
+
+- **이전 강:** [제72강. Chat Template과 Special Tokens](72강_Chat_Template과_Special_Tokens.md)
+- **다음 강:** [제74강. QLoRA](74강_QLoRA.md)
+
+<!-- /LECTURE_NAV -->

@@ -494,3 +494,14 @@ $64 / 4 = 16$.
 ### 17. 다음 강의와 연결
 
 뼈대가 섰다. **제50강. 프로젝트 — Mini Transformer 구현 (2)**에서 작은 텍스트로 배치를 만들고, 학습 루프를 돌리며, greedy 생성으로 “글자가 이어지는지”를 확인한다.
+
+<!-- LECTURE_NAV -->
+
+---
+
+### 강의 이동
+
+- **이전 강:** [제48강. Causal Language Model 구조](48강_Causal_Language_Model_구조.md)
+- **다음 강:** [제50강. 프로젝트 — Mini Transformer 구현 (2)](50강_프로젝트_Mini_Transformer_구현_2.md)
+
+<!-- /LECTURE_NAV -->

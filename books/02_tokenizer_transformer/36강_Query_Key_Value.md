@@ -672,3 +672,14 @@ X
 
 오늘은 왼쪽 가지(Q/K/V 생성)까지.  
 37강은 가운데 점수, 38강은 Softmax와 \(O\), 39강은 모듈 구현, 40강은 마스크다.
+
+<!-- LECTURE_NAV -->
+
+---
+
+### 강의 이동
+
+- **이전 강:** [제35강. Attention이 필요한 이유](35강_Attention이_필요한_이유.md)
+- **다음 강:** [제37강. Dot-Product Attention 계산](37강_Dot_Product_Attention_계산.md)
+
+<!-- /LECTURE_NAV -->

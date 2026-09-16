@@ -559,3 +559,14 @@ LLM logits 텐서의 전형적 3축은 무엇인가?
 `detach`, `torch.no_grad`까지 알면 제21강 `nn.Module`로 모델을 조립할 준비가 끝난다.
 
 > 상자에 송장을 붙였다. 이제 송장이 기울기를 기억하게 하자.
+
+<!-- LECTURE_NAV -->
+
+---
+
+### 강의 이동
+
+- **이전 강:** [제18강. Backpropagation NumPy 구현](18강_Backpropagation_NumPy_구현.md)
+- **다음 강:** [제20강. Autograd — 자동 미분](20강_Autograd_자동_미분.md)
+
+<!-- /LECTURE_NAV -->

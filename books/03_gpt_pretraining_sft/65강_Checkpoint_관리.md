@@ -463,3 +463,14 @@ Best를 고르려면 **기준 지표**가 필요하다.
 
 이전 강의: **제64강. Mixed Precision과 Gradient Accumulation**  
 다음 강의: **제66강. Validation과 Evaluation**
+
+<!-- LECTURE_NAV -->
+
+---
+
+### 강의 이동
+
+- **이전 강:** [제64강. Mixed Precision과 Gradient Accumulation](64강_Mixed_Precision과_Gradient_Accumulation.md)
+- **다음 강:** [제66강. Validation과 Evaluation](66강_Validation과_Evaluation.md)
+
+<!-- /LECTURE_NAV -->

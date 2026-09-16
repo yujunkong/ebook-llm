@@ -405,3 +405,14 @@ def ffn_relu(x, W1, b1, W2, b2):
 - FFN (제45강)
 
 제46강 **Transformer Block 조립**에서 Pre-LN 기준으로 하나로 묶고, 코드를 완성한다.
+
+<!-- LECTURE_NAV -->
+
+---
+
+### 강의 이동
+
+- **이전 강:** [제44강. LayerNorm과 Residual Connection](44강_LayerNorm과_Residual_Connection.md)
+- **다음 강:** [제46강. Transformer Block 조립](46강_Transformer_Block_조립.md)
+
+<!-- /LECTURE_NAV -->

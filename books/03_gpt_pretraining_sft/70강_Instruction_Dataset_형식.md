@@ -416,3 +416,14 @@ Alpaca → messages 변환 후에도 학습 문자열이 달라질 수 있는 �
 다음 **제71강. SFT 구현**에서는 Pretraining 루프와의 차이를 코드로 고정하고, assistant 토큰에만 loss를 주는 SFT를 구현한다.
 
 > 형식을 정했으면, 이제 “어디에 loss를 줄지”를 코드로 못 박자.
+
+<!-- LECTURE_NAV -->
+
+---
+
+### 강의 이동
+
+- **이전 강:** [제69강. Instruction Tuning의 개념](69강_Instruction_Tuning의_개념.md)
+- **다음 강:** [제71강. SFT 구현](71강_SFT_구현.md)
+
+<!-- /LECTURE_NAV -->

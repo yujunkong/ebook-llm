@@ -446,3 +446,14 @@ Sinusoidal/Learned absolute PE는 강력하지만 한계가 있다.
 
 제43강 **RoPE**는 현대 LLM의 위치 인코딩을 이해하는 핵심이다.  
 사실(어떤 모델이 쓰는지)과 설명(왜 상대 위치에 유리한지)을 분명히 구분하며 진행한다.
+
+<!-- LECTURE_NAV -->
+
+---
+
+### 강의 이동
+
+- **이전 강:** [제41강. Multi-Head Attention](41강_Multi_Head_Attention.md)
+- **다음 강:** [제43강. RoPE](43강_RoPE.md)
+
+<!-- /LECTURE_NAV -->

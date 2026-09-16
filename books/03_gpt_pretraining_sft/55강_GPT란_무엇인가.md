@@ -398,3 +398,14 @@ Pretraining은 대량의 일반(또는 혼합) 텍스트에서 next-token을 학
 
 이전 강의: [제54강. 2권 총정리 — GPT로 가는 길](../02_tokenizer_transformer/54강_2권_총정리_GPT로_가는_길.md)  
 다음 강의: [제56강. GPT 아키텍처 구현](./56강_GPT_아키텍처_구현.md)
+
+<!-- LECTURE_NAV -->
+
+---
+
+### 강의 이동
+
+- **이전 강:** [제54강. 2권 총정리 — GPT로 가는 길](../02_tokenizer_transformer/54강_2권_총정리_GPT로_가는_길.md)
+- **다음 강:** [제56강. GPT 아키텍처 구현](56강_GPT_아키텍처_구현.md)
+
+<!-- /LECTURE_NAV -->

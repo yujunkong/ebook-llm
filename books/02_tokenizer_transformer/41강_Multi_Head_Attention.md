@@ -748,3 +748,14 @@ MHA는 “토큰 사이 관계를 여러 눈으로 본다”.
 …
 제48강: Causal LM 전체 지도
 ```
+
+<!-- LECTURE_NAV -->
+
+---
+
+### 강의 이동
+
+- **이전 강:** [제40강. Causal Mask](40강_Causal_Mask.md)
+- **다음 강:** [제42강. Positional Encoding](42강_Positional_Encoding.md)
+
+<!-- /LECTURE_NAV -->

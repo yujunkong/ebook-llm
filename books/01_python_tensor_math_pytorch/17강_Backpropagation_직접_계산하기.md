@@ -701,3 +701,14 @@ ReLU 미분이 0이므로 \(\delta^{(1)}_1=0\), 따라서 \(\partial L/\partial 
 회귀와 작은 분류 예제를 훈련하며, 수치 미분 검증까지 코드로 자동화한다.
 
 > 표의 숫자를 외울 필요는 없다. 흐르는 순서만 몸에 남기면 된다.
+
+<!-- LECTURE_NAV -->
+
+---
+
+### 강의 이동
+
+- **이전 강:** [제16강. Forward Propagation](16강_Forward_Propagation.md)
+- **다음 강:** [제18강. Backpropagation NumPy 구현](18강_Backpropagation_NumPy_구현.md)
+
+<!-- /LECTURE_NAV -->

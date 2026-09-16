@@ -360,3 +360,14 @@ Loss는 잘 내려가는데 생성 문장이 엉망이다. Causal mask 관점에
 배선도를 그렸다. 다음은 **조립**이다.
 
 **제49강. 프로젝트 — Mini Transformer 구현 (1)**에서는 config, 장난감 tokenizer, 모델 스켈레톤, forward shape 검증까지를 한 번에 만든다. 제50강에서 학습과 greedy 생성을 붙인다.
+
+<!-- LECTURE_NAV -->
+
+---
+
+### 강의 이동
+
+- **이전 강:** [제47강. Encoder와 Decoder](47강_Encoder와_Decoder.md)
+- **다음 강:** [제49강. 프로젝트 — Mini Transformer 구현 (1)](49강_프로젝트_Mini_Transformer_구현_1.md)
+
+<!-- /LECTURE_NAV -->

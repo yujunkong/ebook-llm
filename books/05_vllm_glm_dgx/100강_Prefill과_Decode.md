@@ -472,3 +472,14 @@ Decode: 새 토큰(+KV) → 다음 logits + KV 갱신.
 다음 **제101강. KV Cache**에서는 Decode가 다시 읽어야 하는 **Key/Value를 어디에·얼마나·어떤 수식으로** 저장하는지 파고든다. Prefill이 “캐시를 채우는 일”이고 Decode가 “캐시를 쓰며 한 칸씩 늘리는 일”임을 정식화한다.
 
 > 두 국면을 나눈 이유는, 그 사이에 놓인 메모리 구조가 서빙의 주인공이기 때문이다.
+
+<!-- LECTURE_NAV -->
+
+---
+
+### 강의 이동
+
+- **이전 강:** [제99강. Training과 Inference의 차이](99강_Training과_Inference의_차이.md)
+- **다음 강:** [제101강. KV Cache](101강_KV_Cache.md)
+
+<!-- /LECTURE_NAV -->

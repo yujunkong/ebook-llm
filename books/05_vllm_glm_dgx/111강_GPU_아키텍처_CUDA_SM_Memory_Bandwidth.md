@@ -514,3 +514,14 @@ GPU의 천장과 병목 종류를 보았다. 다음 질문은 **그 위에서 �
 다음 강의: **제112강. Inference Engine 비교 — vLLM · TensorRT-LLM · SGLang**
 
 엔진마다 PagedAttention, CUDA Graph, Radix Cache 같은 무기가 다르다. “항상 승자”는 없고, 워크로드·팀·배포 제약에 맞는 선택을 제112강에서 비교한다.
+
+<!-- LECTURE_NAV -->
+
+---
+
+### 강의 이동
+
+- **이전 강:** [제110강. MTP와 Speculative Decoding](110강_MTP와_Speculative_Decoding.md)
+- **다음 강:** [제112강. Inference Engine 비교 — vLLM · TensorRT-LLM · SGLang](112강_Inference_Engine_비교_vLLM_TensorRT_LLM_SGLang.md)
+
+<!-- /LECTURE_NAV -->

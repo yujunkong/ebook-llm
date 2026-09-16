@@ -535,3 +535,14 @@ $t$가 4096→2048이면 이상적으로 약 1/2.
 다음 **제102강. Continuous Batching**에서는 요청이 끝나는 즉시 자리를 비우고, 새 요청을 빈 GPU 시간에 끼워 넣는 **연속 배치**를 다룬다. KV 예산을 빼앗지 않으면서 처리량을 올리는 스케줄의 입구다.
 
 > 메모리가 토큰을 기억한다면, 스케줄러는 그 기억의 자리를 빌려 준다.
+
+<!-- LECTURE_NAV -->
+
+---
+
+### 강의 이동
+
+- **이전 강:** [제100강. Prefill과 Decode](100강_Prefill과_Decode.md)
+- **다음 강:** [제102강. Continuous Batching](102강_Continuous_Batching.md)
+
+<!-- /LECTURE_NAV -->

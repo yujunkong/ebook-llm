@@ -359,3 +359,14 @@ RoCE는 RDMA 경로를 목표로 하고, TCP 경로는 소켓·CPU 개입이 커
 다음 강의: **제115강. 2× DGX Spark 환경 구성**
 
 제115강에서는 GB10 / DGX Spark의 공개 하드웨어 맥락, QSFP·ConnectX-7 토폴로지, 듀얼 노드에서 멀티 GPU(노드) 서빙을 올리는 서사를 다룬다.
+
+<!-- LECTURE_NAV -->
+
+---
+
+### 강의 이동
+
+- **이전 강:** [제113강. Tensor Parallel](113강_Tensor_Parallel.md)
+- **다음 강:** [제115강. 2× DGX Spark 환경 구성](115강_2x_DGX_Spark_환경_구성.md)
+
+<!-- /LECTURE_NAV -->

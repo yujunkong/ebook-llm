@@ -392,3 +392,14 @@ Temperature는 보통 Softmax **앞** logit을 $T$로 나눈다: $\mathrm{softma
 
 이전 강의: [제57강. Causal LM Training 목표](./57강_Causal_LM_Training_목표.md)  
 다음 강의: [제59강. Temperature, Top-K, Top-P](./59강_Temperature_TopK_TopP.md)
+
+<!-- LECTURE_NAV -->
+
+---
+
+### 강의 이동
+
+- **이전 강:** [제57강. Causal LM Training 목표](57강_Causal_LM_Training_목표.md)
+- **다음 강:** [제59강. Temperature, Top-K, Top-P](59강_Temperature_TopK_TopP.md)
+
+<!-- /LECTURE_NAV -->

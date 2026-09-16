@@ -301,3 +301,14 @@ QLoRA（양자화된 베이스）. LoRA는 주로 학습 파라미터 수를 줄
 
 Pretraining과 SFT는 그대로 가져간다.  
 앞으로는 그 위에 **선호와 보상으로 정책을 다시 쓰는** 이야기를 올린다.
+
+<!-- LECTURE_NAV -->
+
+---
+
+### 강의 이동
+
+- **이전 강:** [제77강. Pretraining과 SFT의 역할 정리](77강_Pretraining과_SFT의_역할_정리.md)
+- **다음 강:** [제79강. Post-Training 지도](../04_rlhf_ppo_grpo/79강_Post_Training_지도.md)
+
+<!-- /LECTURE_NAV -->

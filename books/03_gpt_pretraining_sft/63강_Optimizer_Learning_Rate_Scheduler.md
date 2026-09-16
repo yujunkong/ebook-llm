@@ -475,3 +475,14 @@ Optimizer와 LR 스케줄이 준비되었다. 이제 한 번에 큰 배치를 �
 
 이전 강의: **제62강. Training Loop 설계**  
 다음 강의: **제64강. Mixed Precision과 Gradient Accumulation**
+
+<!-- LECTURE_NAV -->
+
+---
+
+### 강의 이동
+
+- **이전 강:** [제62강. Training Loop 설계](62강_Training_Loop_설계.md)
+- **다음 강:** [제64강. Mixed Precision과 Gradient Accumulation](64강_Mixed_Precision과_Gradient_Accumulation.md)
+
+<!-- /LECTURE_NAV -->

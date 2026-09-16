@@ -538,3 +538,14 @@ vocab 끝에 `<|tool|>`를 추가했다고 가정하고:
 
 이전 강의: **제29강. BPE Tokenizer 직접 구현**  
 다음 강의: **제31강. Embedding — 토큰을 벡터로**
+
+<!-- LECTURE_NAV -->
+
+---
+
+### 강의 이동
+
+- **이전 강:** [제29강. BPE Tokenizer 직접 구현](29강_BPE_Tokenizer_직접_구현.md)
+- **다음 강:** [제31강. Embedding — 토큰을 벡터로](31강_Embedding_토큰을_벡터로.md)
+
+<!-- /LECTURE_NAV -->

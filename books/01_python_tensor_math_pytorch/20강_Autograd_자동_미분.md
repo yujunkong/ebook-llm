@@ -713,3 +713,14 @@ LoRA처럼 일부만 학습할 때 Autograd 관점에서 무엇을 끄면 되는
 파라미터 등록, `model.parameters()`, `model.train()/eval()`이 Autograd와 어떻게 붙는지 이어서 본다.
 
 > 손계산으로 엔진을 이해했고, Autograd로 엔진키를 받았다. 이제 차체(`nn.Module`)를 얹자.
+
+<!-- LECTURE_NAV -->
+
+---
+
+### 강의 이동
+
+- **이전 강:** [제19강. PyTorch Tensor](19강_PyTorch_Tensor.md)
+- **다음 강:** [제21강. nn.Module로 모델 만들기](21강_nn_Module로_모델_만들기.md)
+
+<!-- /LECTURE_NAV -->

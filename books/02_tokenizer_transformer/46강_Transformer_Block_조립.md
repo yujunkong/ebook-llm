@@ -638,3 +638,14 @@ Embedding → (Causal Block × N) → LM Head
 
 로 GPT형 Causal LM 전체를 확정한다.  
 제40강에서 배운 마스크가, 조립된 스택 전층에서 살아 숨 쉬는 순간이다.
+
+<!-- LECTURE_NAV -->
+
+---
+
+### 강의 이동
+
+- **이전 강:** [제45강. Feed-Forward Network (MLP)](45강_Feed_Forward_Network_MLP.md)
+- **다음 강:** [제47강. Encoder와 Decoder](47강_Encoder와_Decoder.md)
+
+<!-- /LECTURE_NAV -->

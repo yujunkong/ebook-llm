@@ -579,3 +579,14 @@ Accuracy는 맞음/틀림의 거친 신호라 미분이 거의 없거나 불연�
 다음 **제35강. Attention이 필요한 이유**에서는 RNN·CNN이 긴 문맥에서 겪는 한계를 보고, 왜 언어에 Attention이 필요한지부터 시작한다.
 
 > 확률과 Loss를 얻었으면, 이제 “무엇에 주목할 것인가”를 배우자.
+
+<!-- LECTURE_NAV -->
+
+---
+
+### 강의 이동
+
+- **이전 강:** [제33강. Softmax와 Logit](33강_Softmax와_Logit.md)
+- **다음 강:** [제35강. Attention이 필요한 이유](35강_Attention이_필요한_이유.md)
+
+<!-- /LECTURE_NAV -->

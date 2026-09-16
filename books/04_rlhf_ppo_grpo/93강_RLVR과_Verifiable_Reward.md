@@ -393,3 +393,14 @@ DPO는 고정 선호 쌍에 묶인 오프라인 갱신이고, RLVR은 검증기�
 다음 **제94강. Reasoning Training**에서는 긴 추론 궤적을 허용·장려하면서도 검증을 통과하게 만드는 학습 목표, 데이터, 평가(pass@k 등)를 다룬다. 92~93강이 엔진과 연료라면, 94강은 **운전 방식**에 가깝다.
 
 > 검증 가능한 보상은 "맞았는가"를 말한다. Reasoning training은 그 위에서 "어떻게 생각해도 되는가"를 키운다.
+
+<!-- LECTURE_NAV -->
+
+---
+
+### 강의 이동
+
+- **이전 강:** [제92강. GRPO](92강_GRPO.md)
+- **다음 강:** [제94강. Reasoning Training](94강_Reasoning_Training.md)
+
+<!-- /LECTURE_NAV -->

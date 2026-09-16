@@ -460,3 +460,14 @@ PAD·무시 위치 label을 `-100` 등으로 두었다면 `cross_entropy(..., ig
 
 이전 강의: **제61강. Tokenization Pipeline과 Dataset Packing**  
 다음 강의: **제63강. Optimizer, Learning Rate, Scheduler**
+
+<!-- LECTURE_NAV -->
+
+---
+
+### 강의 이동
+
+- **이전 강:** [제61강. Tokenization Pipeline과 Dataset Packing](61강_Tokenization_Pipeline과_Dataset_Packing.md)
+- **다음 강:** [제63강. Optimizer, Learning Rate, Scheduler](63강_Optimizer_Learning_Rate_Scheduler.md)
+
+<!-- /LECTURE_NAV -->

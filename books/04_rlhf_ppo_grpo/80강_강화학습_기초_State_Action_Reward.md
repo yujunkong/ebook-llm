@@ -606,3 +606,14 @@ $r_\phi(x,y)$ — 에피소드（응답）에 대한 보상 함수 근사.
 - Action-value $Q(s,a)$ — “이 상태에서 이 토큰을 고르면”
 
 를 정의하고, LLM alignment 코드·수식에 어떻게 나타나는지 연결한다.
+
+<!-- LECTURE_NAV -->
+
+---
+
+### 강의 이동
+
+- **이전 강:** [제79강. Post-Training 지도](79강_Post_Training_지도.md)
+- **다음 강:** [제81강. Policy와 Value Function](81강_Policy와_Value_Function.md)
+
+<!-- /LECTURE_NAV -->
