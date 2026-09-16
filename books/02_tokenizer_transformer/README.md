@@ -16,14 +16,14 @@
 | 36 | [36강_Query_Key_Value.md](36강_Query_Key_Value.md) | 작성 완료 |
 | 37 | [37강_Dot_Product_Attention_계산.md](37강_Dot_Product_Attention_계산.md) | 작성 완료 |
 | 38 | [38강_Softmax_Attention과_작은_숫자_예제.md](38강_Softmax_Attention과_작은_숫자_예제.md) | 작성 완료 |
-| 39 | [39강_Self_Attention_구현.md](39강_Self_Attention_구현.md) | 미작성 |
-| 40 | [40강_Causal_Mask.md](40강_Causal_Mask.md) | 미작성 |
+| 39 | [39강_Self_Attention_구현.md](39강_Self_Attention_구현.md) | 작성 완료 |
+| 40 | [40강_Causal_Mask.md](40강_Causal_Mask.md) | 작성 완료 |
 | 41 | [41강_Multi_Head_Attention.md](41강_Multi_Head_Attention.md) | 작성 완료 |
 | 42 | [42강_Positional_Encoding.md](42강_Positional_Encoding.md) | 작성 완료 |
 | 43 | [43강_RoPE.md](43강_RoPE.md) | 작성 완료 |
 | 44 | [44강_LayerNorm과_Residual_Connection.md](44강_LayerNorm과_Residual_Connection.md) | 작성 완료 |
 | 45 | [45강_Feed_Forward_Network_MLP.md](45강_Feed_Forward_Network_MLP.md) | 작성 완료 |
-| 46 | [46강_Transformer_Block_조립.md](46강_Transformer_Block_조립.md) | 미작성 |
+| 46 | [46강_Transformer_Block_조립.md](46강_Transformer_Block_조립.md) | 작성 완료 |
 | 47 | [47강_Encoder와_Decoder.md](47강_Encoder와_Decoder.md) | 작성 완료 |
 | 48 | [48강_Causal_Language_Model_구조.md](48강_Causal_Language_Model_구조.md) | 작성 완료 |
 | 49 | [49강_프로젝트_Mini_Transformer_구현_1.md](49강_프로젝트_Mini_Transformer_구현_1.md) | 작성 완료 |
