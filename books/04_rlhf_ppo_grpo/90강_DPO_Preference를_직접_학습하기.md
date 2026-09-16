@@ -347,6 +347,65 @@ A. 상대 margin이 개선되는 중일 수 있다. 다만 절대 품질 붕괴�
 **Q. ORPO/KTO와 뭐가 다르나?**  
 A. 참조 사용·손실 형태·필요 데이터(쌍 vs 단일)가 다르다. 90강 원형 식을 기준으로 “무엇이 빠지고 무엇이 대체됐는지”를 대조한다.
 
+### 16b. 암묵 보상 곡선 읽기
+
+학습 중 다음 네 스칼라를 같이 그린다.
+
+1. \(\mathbb{E}[\Delta_w]=\mathbb{E}[\log\pi_\theta(y_w)-\log\pi_{\mathrm{ref}}(y_w)]\)
+2. \(\mathbb{E}[\Delta_l]\)
+3. margin \(=\mathbb{E}[\Delta_w-\Delta_l]\)
+4. pair accuracy \(=\mathbb{E}[\mathbf{1}\{z>0\}]\)
+
+이상적 패턴(설명용):
+
+```text
+margin ↑
+pair acc ↑ (0.5 → 0.7+)
+Δ_w 는 완만히 ↑ 또는 유지
+Δ_l 은 ↓
+KL(π||π_ref) 는 예산 안
+```
+
+위험 패턴:
+
+- margin↑인데 generate 품질↓ → 데이터 노이즈·길이 해킹
+- pair acc≈1, KL 폭주 → β 너무 작음 / lr 과다
+- 모든 Δ가 크게 음수 → 정책이 참조에서 무너지며 상대만 맞춤
+
+### 16c. Bradley–Terry가 깨질 때
+
+BT는 전이성·쌍별 독립을 가정하는 단순 모델이다. 실제 선호에는
+
+- 심판 불일치
+- 문맥 의존(같은 쌍이라도 사용자마다 다름)
+- 비전이적 사이클 (\(A\succ B\succ C\succ A\))
+
+이 있다. DPO는 그 가정 위에서 우도를 최대화할 뿐이므로, **데이터 정합**이 알고리즘보다 먼저다. 84~85강의 데이터 품질 이야기가 여기로 이어진다.
+
+### 16d. 제88강·제89강과의 삼각 관계
+
+```text
+88 PPO: online, 명시 r, clip, (value)
+89 KL:  r_total = r - β KL(π||π_ref)
+90 DPO: 같은 KL-제약 최적성을 선호 NLL로 재매개
+```
+
+한 문장:
+
+> DPO는 “PPO를 안 돌린다”가 핵심이 아니라, **KL-제약 보상 최대화의 해를 선호 손실로 직접 맞춘다**가 핵심이다.
+
+### 16e. 한 줄 체크리스트 (90강 종료 조건)
+
+이 강의를 닫기 전에 다음을 빈칸 없이 말할 수 있어야 한다.
+
+1. BT: \(p(y_w\succ y_l)=\sigma(r_w-r_l)\)
+2. 최적 정책: \(\pi_r\propto\pi_{\mathrm{ref}}e^{r/\beta}\)
+3. 암묵 보상: \(r=\beta\log(\pi/\pi_{\mathrm{ref}})+\beta\log Z\)
+4. 손실: \(-\log\sigma\big(\beta(\Delta_w-\Delta_l)\big)\)
+5. \(\beta\)↑ → 참조에 붙음 / \(\beta\)↓ → 선호에 민감
+6. 오프라인이라 탐색은 PPO/GRPO보다 약할 수 있음
+
+
 ### 17. 핵심 정리
 
 - DPO는 KL-제약 보상 최대화의 최적 정책을 선호 우도에 대입해, RM·PPO 없이 \(\pi_\theta\)를 학습한다.

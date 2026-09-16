@@ -356,6 +356,35 @@ ref는 고정이므로, 데이터셋 전부에 대해 `lp_w_ref`, `lp_l_ref`를 
 
 교육 코드에서는 가독성을 위해 매 스텝 계산을 유지한다.
 
+### 16b. End-to-end 가짜 배치 워크스루
+
+텍스트로 한 바퀴만 더 돈다.
+
+```text
+batch size = 1
+y_w tokens logp_π = -10.0, logp_ref = -11.0  → Δw = +1.0
+y_l tokens logp_π = -12.0, logp_ref = -10.0  → Δl = -2.0
+margin = 3.0, β = 0.1 → z = 0.3
+loss = -log σ(0.3) ≈ 0.554
+```
+
+backward 후:
+
+- \(y_w\) 쪽 토큰 가능도 ↑ 압력
+- \(y_l\) 쪽 토큰 가능도 ↓ 압력
+- ref logits에는 grad 없음
+
+이 숫자를 노트북에 재현해 두면 91강의 단위 테스트가 완성된다.
+
+
+### 16c. 91강 종료 체크
+
+- [ ] 손계산 loss와 `logsigmoid` 결과가 일치
+- [ ] chosen grad 부호 / rejected grad 부호가 기대와 일치
+- [ ] ref 파라미터 `requires_grad=False`
+- [ ] response mask에 프롬프트가 섞이지 않음
+- [ ] chat template이 SFT와 동일
+
 ### 17. 핵심 정리
 
 - DPO 구현의 핵은 네 로그확률과 `-logsigmoid(β·margin)`이다.
@@ -363,8 +392,29 @@ ref는 고정이므로, 데이터셋 전부에 대해 `lp_w_ref`, `lp_l_ref`를 
 - 응답 마스크와 shift를 단위 테스트로 고정한다.
 - 로깅은 loss뿐 아니라 margin·pair acc·Δlogp를 본다.
 - 라이브러리 변형이 많으니, 원형 식으로 먼저 검증한 뒤 옵션을 켠다.
+- Collator·chat template·LoRA·ref 캐시는 실무에서 성능을 좌우한다.
 
-### 14. 핵심 용어
+### 18. 수치 안정과 mixed precision
+
+bf16/fp16에서 log_softmax·logsigmoid는 대체로 안정적이지만, 다음을 지킨다.
+
+1. 손실은 fp32로 누적하는 편이 안전하다(`loss.float()`).
+2. `exp(logp_theta - logp_old)` 형태의 ratio는 PPO/GRPO에서 더 민감하고, DPO는 log-space margin이라 상대적으로 낫다.
+3. Grad scaler를 쓰면 DPO에서도 overflow 로그를 본다.
+
+### 19. 미니 학습 일지 템플릿
+
+```text
+step | loss | margin | pair_acc | chosen_Δ | rejected_Δ | lr | notes
+---- | ---- | ------ | -------- | -------- | ----------- | -- | -----
+0    | 0.69 | 0.00   | 0.50     | 0.00     | 0.00        | .. | start
+...
+```
+
+`chosen_Δ = mean(logπ_θ(y_w)-logπ_ref(y_w))`  
+`rejected_Δ`도 같이 보면 “승자만 올리는지, 패자만 내리는지”가 보인다.
+
+### 20. 핵심 용어
 
 | 용어 | 한 줄 의미 |
 |---|---|
@@ -374,8 +424,10 @@ ref는 고정이므로, 데이터셋 전부에 대해 `lp_w_ref`, `lp_l_ref`를 
 | pair accuracy | margin(또는 β margin)>0 비율 |
 | reference freeze | \(\pi_{\mathrm{ref}}\) 가중치 고정 |
 | logsigmoid | \(\log\sigma\)의 안정 구현 |
+| ref cache | 고정 참조 로그확률 사전계산 |
+| collator | 선호 쌍을 텐서 배치로 묶는 전처리 |
 
-### 15. 복습 문제
+### 21. 복습 문제
 
 #### 문제 1（코드）
 
@@ -396,6 +448,18 @@ ref는 고정이므로, 데이터셋 전부에 대해 `lp_w_ref`, `lp_l_ref`를 
 #### 문제 5（연결）
 
 제92강 GRPO는 DPO처럼 “상대 비교”를 쓴다. DPO의 비교 단위와 GRPO의 비교 단위는 어떻게 다르다고 예상하는가?
+
+#### 문제 6（디버그）
+
+학습 시작부터 pair accuracy가 1.0인데 holdout 생성 품질이 나빠졌다. 가능한 원인 두 가지는?
+
+#### 문제 7（LoRA）
+
+policy만 LoRA 학습하고 ref는 베이스 SFT를 freeze한다. ref에도 같은 LoRA를 실수로 켜면 어떤 신호가 약해지는가?
+
+#### 문제 8（로그）
+
+`chosen_Δ`만 크게 오르고 `rejected_Δ`는 그대로인 것과, 그 반대인 것은 각각 무엇을 시사하는가?
 
 ---
 
@@ -421,7 +485,19 @@ rejected를 올리거나 chosen을 내리는 쪽으로 기울기가 반전되어
 
 DPO는 **고정된 선호 쌍** \((y_w,y_l)\)의 상대 로그비다. GRPO는 같은 프롬프트에서 **새로 샘플한 그룹** 안에서 보상(또는 점수)의 상대적 우위로 advantage를 만든다.
 
-### 16. 다음 강의와 연결
+#### 문제 6
+
+데이터가 너무 쉽거나 β/lr이 과다해 암묵 보상만 과적합. 또는 평가 프롬프트 분포가 학습과 다름.
+
+#### 문제 7
+
+\(\log(\pi/\pi_{\mathrm{ref}})\)의 참조 쪽도 같이 움직여 KL 닻·상대 로그비 신호가 왜곡·약화된다.
+
+#### 문제 8
+
+전자는 chosen 강화 위주, 후자는 rejected 억제 위주. margin은 둘 다 커질 수 있으나 생성 품질 부작용이 다를 수 있어 정성 평가가 필요하다.
+
+### 22. 다음 강의와 연결
 
 오프라인 선호 학습의 손이 끝났다.  
 다음 **제92강. GRPO**에서는 PPO식 클리핑·그룹 샘플·**비평가(value) 없이** 상대 이득으로 정책을 올리는 최근 흐름을 **설명 관점**으로 정리한다. 세부 하이퍼파라미터는 논문·구현마다 다르다는 전제를 명시한다.
