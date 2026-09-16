@@ -2,15 +2,14 @@
 
 이 폴더는 《밑바닥부터 LLM》 4권(79~98강) 원고를 둔다.
 
-## 작성 현황（일부）
+상태: 작성 중 (89~93강 완료)
 
 | 강 | 파일 | 상태 |
 |---:|---|---|
-| 79 | `79강_Post_Training_지도.md` | 작성 |
-| 80 | `80강_강화학습_기초_State_Action_Reward.md` | 작성 |
-| 81 | `81강_Policy와_Value_Function.md` | 작성 |
-| 82 | `82강_Policy_Gradient.md` | 작성 |
-| 83 | `83강_Advantage.md` | 작성 |
-| 84~98 | — | 진행 중 / 커리큘럼 확정 |
+| 89 | `89강_KL_Divergence의_역할.md` | 완료 |
+| 90 | `90강_DPO_Preference를_직접_학습하기.md` | 완료 |
+| 91 | `91강_DPO_구현.md` | 완료 |
+| 92 | `92강_GRPO.md` | 완료 |
+| 93 | `93강_RLVR과_Verifiable_Reward.md` | 완료 |
 
 관련 문서: [커리큘럼](../../docs/CURRICULUM.md)
