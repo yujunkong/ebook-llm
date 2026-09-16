@@ -294,7 +294,7 @@ def train_optimizer_step(
 ┌─────────────────────────────────────────┐
 │ Parameters (종종 FP32 마스터)            │
 │ Gradients                               │
-│ Adam m, v  (파라미트당 추가 상태)         │
+│ Adam m, v  (파라미터당 추가 상태)         │
 │ Activations (micro-batch, 정밀도 의존)   │
 │ Autocast workspace / 임시 버퍼          │
 └─────────────────────────────────────────┘
