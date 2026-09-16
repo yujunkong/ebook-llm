@@ -18,3 +18,12 @@
 특정 강의 요청이 있으면 해당 강의를 우선한다.
 
 다음 기본 진행: **5권 99강. Training과 Inference의 차이**
+
+### 커리큘럼 변경 (5권, 번호 유지)
+
+| 강 | 이전 | 변경 |
+|---:|---|---|
+| 108 | GLM 계열 모델 구조 | 모델 알고리즘 계열별 모델 구조 |
+| 112 | GB10과 DGX Spark 구조 | Inference Engine 비교 — vLLM · TensorRT-LLM · SGLang |
+
+GB10/DGX Spark 하드웨어 설명은 **115강**에서 다룬다.
