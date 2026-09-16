@@ -8,14 +8,14 @@
 | 28 | [28강_Character_Word_Subword_Tokenization.md](28강_Character_Word_Subword_Tokenization.md) | 작성 완료 |
 | 29 | [29강_BPE_Tokenizer_직접_구현.md](29강_BPE_Tokenizer_직접_구현.md) | 작성 완료 |
 | 30 | [30강_Vocabulary와_Special_Tokens.md](30강_Vocabulary와_Special_Tokens.md) | 작성 완료 |
-| 31 | [31강_Embedding_토큰을_벡터로.md](31강_Embedding_토큰을_벡터로.md) | 미작성 |
-| 32 | [32강_Language_Model과_Next_Token_Prediction.md](32강_Language_Model과_Next_Token_Prediction.md) | 미작성 |
+| 31 | [31강_Embedding_토큰을_벡터로.md](31강_Embedding_토큰을_벡터로.md) | 작성 완료 |
+| 32 | [32강_Language_Model과_Next_Token_Prediction.md](32강_Language_Model과_Next_Token_Prediction.md) | 작성 완료 |
 | 33 | [33강_Softmax와_Logit.md](33강_Softmax와_Logit.md) | 미작성 |
 | 34 | [34강_Cross_Entropy_Loss.md](34강_Cross_Entropy_Loss.md) | 작성 완료 |
 | 35 | [35강_Attention이_필요한_이유.md](35강_Attention이_필요한_이유.md) | 작성 완료 |
 | 36 | [36강_Query_Key_Value.md](36강_Query_Key_Value.md) | 작성 완료 |
 | 37 | [37강_Dot_Product_Attention_계산.md](37강_Dot_Product_Attention_계산.md) | 작성 완료 |
-| 38 | [38강_Softmax_Attention과_작은_숫자_예제.md](38강_Softmax_Attention과_작은_숫자_예제.md) | 미작성 |
+| 38 | [38강_Softmax_Attention과_작은_숫자_예제.md](38강_Softmax_Attention과_작은_숫자_예제.md) | 작성 완료 |
 | 39 | [39강_Self_Attention_구현.md](39강_Self_Attention_구현.md) | 미작성 |
 | 40 | [40강_Causal_Mask.md](40강_Causal_Mask.md) | 미작성 |
 | 41 | [41강_Multi_Head_Attention.md](41강_Multi_Head_Attention.md) | 작성 완료 |
