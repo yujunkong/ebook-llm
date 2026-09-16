@@ -1,0 +1,4 @@
+# generated previews (rebuild with scripts/build_math_preview.py)
+epub/preview/
+# optional: uncomment to ignore built EPUBs too
+# epub/*.epub

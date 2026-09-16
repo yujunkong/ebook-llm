@@ -47,7 +47,22 @@ epub/           # 최종 EPUB 산출물
 친절한 기술 서적 문체를 유지합니다.  
 쉽게 설명하되 얕게 설명하지 않으며, 직관 → 수학 → 숫자 예제 → 코드 → LLM 연결 순서를 따릅니다.
 
+## 수식 렌더링
+
+원고의 `$$…$$` 는 의도된 LaTeX다. 뷰어가 수식 엔진을 안 쓰면 원문이 그대로 보인다.
+
+```bash
+# 브라우저에서 스크린샷처럼 보기 (KaTeX)
+python3 scripts/build_math_preview.py books/01_python_tensor_math_pytorch/09강_Scalar_Vector_Matrix_Tensor.md
+
+# EPUB3 (MathML)
+python3 scripts/build_epub.py --book 1
+```
+
+자세한 설명: [docs/MATH_RENDERING.md](docs/MATH_RENDERING.md)
+
 ## 최종 산출물
 
-- `01_밑바닥부터_LLM_1권.epub` ~ `05_밑바닥부터_LLM_5권.epub`
+- `epub/01_밑바닥부터_LLM_1권.epub` ~ `05_밑바닥부터_LLM_5권.epub`
 - Sigil에서 편집 가능한 EPUB3
+- 미리보기 HTML: `epub/preview/`
