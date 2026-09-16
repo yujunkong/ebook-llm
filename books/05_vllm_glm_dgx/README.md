@@ -7,7 +7,7 @@
 | 99 | [99강_Training과_Inference의_차이.md](99강_Training과_Inference의_차이.md) | 작성 완료 |
 | 100 | [100강_Prefill과_Decode.md](100강_Prefill과_Decode.md) | 작성 완료 |
 | 101 | [101강_KV_Cache.md](101강_KV_Cache.md) | 작성 완료 |
-| 102 | [102강_Continuous_Batching.md](102강_Continuous_Batching.md) | 미작성 |
+| 102 | [102강_Continuous_Batching.md](102강_Continuous_Batching.md) | 작성 완료 |
 | 103 | [103강_Quantization_INT8_INT4_FP8.md](103강_Quantization_INT8_INT4_FP8.md) | 미작성 |
 | 104 | [104강_vLLM_개요와_구조.md](104강_vLLM_개요와_구조.md) | 미작성 |
 | 105 | [105강_PagedAttention.md](105강_PagedAttention.md) | 작성 완료 |
