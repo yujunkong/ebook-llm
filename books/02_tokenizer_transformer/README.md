@@ -10,7 +10,7 @@
 | 30 | [30강_Vocabulary와_Special_Tokens.md](30강_Vocabulary와_Special_Tokens.md) | 작성 완료 |
 | 31 | [31강_Embedding_토큰을_벡터로.md](31강_Embedding_토큰을_벡터로.md) | 작성 완료 |
 | 32 | [32강_Language_Model과_Next_Token_Prediction.md](32강_Language_Model과_Next_Token_Prediction.md) | 작성 완료 |
-| 33 | [33강_Softmax와_Logit.md](33강_Softmax와_Logit.md) | 미작성 |
+| 33 | [33강_Softmax와_Logit.md](33강_Softmax와_Logit.md) | 작성 완료 |
 | 34 | [34강_Cross_Entropy_Loss.md](34강_Cross_Entropy_Loss.md) | 작성 완료 |
 | 35 | [35강_Attention이_필요한_이유.md](35강_Attention이_필요한_이유.md) | 작성 완료 |
 | 36 | [36강_Query_Key_Value.md](36강_Query_Key_Value.md) | 작성 완료 |
