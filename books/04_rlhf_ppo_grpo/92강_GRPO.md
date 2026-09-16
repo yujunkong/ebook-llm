@@ -467,3 +467,14 @@ advantage 스케일이 바뀌어 같은 lr에서도 실효 스텝 크기가 달�
 다음 **제93강. RLVR과 Verifiable Reward**에서는 유닛테스트·수학 체커처럼 **자동으로 참/거짓을 판정할 수 있는 보상**과, 그 위에서 돌아가는 RL(및 reasoning 모델) 연결을 다룬다.
 
 > 상대화할 점수가 깨끗할수록, 그룹 학습의 이빨이 살아난다.
+
+<!-- LECTURE_NAV -->
+
+---
+
+### 강의 이동
+
+- **이전 강:** [제91강. DPO 구현](91강_DPO_구현.md)
+- **다음 강:** [제93강. RLVR과 Verifiable Reward](93강_RLVR과_Verifiable_Reward.md)
+
+<!-- /LECTURE_NAV -->

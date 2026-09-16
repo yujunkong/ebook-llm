@@ -404,3 +404,14 @@ User Guide/주문 SKU/실제 `lsblk` 등 장치 실측으로 확인한다.
 다음 강의: **제116강. 프로젝트 — 실제 LLM Serving**
 
 제116강은 vLLM(또는 스케치)으로 모델을 띄우고, TTFT/TPOT 템플릿으로 병목을 해석한다. 제117강은 그 측정을 GPU 최적화 실험으로 확장한다.
+
+<!-- LECTURE_NAV -->
+
+---
+
+### 강의 이동
+
+- **이전 강:** [제114강. NCCL과 RoCE](114강_NCCL과_RoCE.md)
+- **다음 강:** [제116강. 프로젝트 — 실제 LLM Serving](116강_프로젝트_실제_LLM_Serving.md)
+
+<!-- /LECTURE_NAV -->

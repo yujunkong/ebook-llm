@@ -655,3 +655,14 @@ K (T, d_k) --transpose--> K^T (d_k, T)
 4. Softmax는 오늘 필수인가?
 
 답: 1) Query 위치의 점수 목록 2) 내적 점수 나눗셈 3) 2 4) 아니오(38강).
+
+<!-- LECTURE_NAV -->
+
+---
+
+### 강의 이동
+
+- **이전 강:** [제36강. Query, Key, Value](36강_Query_Key_Value.md)
+- **다음 강:** [제38강. Softmax Attention과 작은 숫자 예제](38강_Softmax_Attention과_작은_숫자_예제.md)
+
+<!-- /LECTURE_NAV -->

@@ -646,3 +646,14 @@ $$
 ```
 
 출력단(33–34)과 문맥단(35–40)이 만났고, 이제 문맥단을 다중 헤드로 확장한다.
+
+<!-- LECTURE_NAV -->
+
+---
+
+### 강의 이동
+
+- **이전 강:** [제39강. Self-Attention 구현](39강_Self_Attention_구현.md)
+- **다음 강:** [제41강. Multi-Head Attention](41강_Multi_Head_Attention.md)
+
+<!-- /LECTURE_NAV -->

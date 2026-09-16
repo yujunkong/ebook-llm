@@ -405,3 +405,14 @@ TP의 “비용” 칸을 채울 차례다.
 다음 강의: **제114강. NCCL과 RoCE**
 
 제114강에서는 all-reduce가 실제로 어떤 라이브러리로 도는지, RoCE가 멀티노드에서 어떤 위치인지 개관한다. 제115강에서 그 지식을 2× DGX Spark 토폴로지에 적용한다.
+
+<!-- LECTURE_NAV -->
+
+---
+
+### 강의 이동
+
+- **이전 강:** [제112강. Inference Engine 비교 — vLLM · TensorRT-LLM · SGLang](112강_Inference_Engine_비교_vLLM_TensorRT_LLM_SGLang.md)
+- **다음 강:** [제114강. NCCL과 RoCE](114강_NCCL과_RoCE.md)
+
+<!-- /LECTURE_NAV -->

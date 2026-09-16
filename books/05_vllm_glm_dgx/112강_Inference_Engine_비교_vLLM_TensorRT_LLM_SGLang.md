@@ -408,3 +408,14 @@ KV를 효율적으로 할당·회수하면 더 많은 요청을 동시에 올려
 다음 강의: **제113강. Tensor Parallel**
 
 제113강에서는 텐서를 GPU들에 샤딩하는 방법, 필요한 통신, 언제 TP가 도움이 되는지를 다룬다. 그 통신의 구현 계층이 제114강 NCCL·RoCE다.
+
+<!-- LECTURE_NAV -->
+
+---
+
+### 강의 이동
+
+- **이전 강:** [제111강. GPU 아키텍처 — CUDA, SM, Memory Bandwidth](111강_GPU_아키텍처_CUDA_SM_Memory_Bandwidth.md)
+- **다음 강:** [제113강. Tensor Parallel](113강_Tensor_Parallel.md)
+
+<!-- /LECTURE_NAV -->

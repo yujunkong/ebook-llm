@@ -227,3 +227,14 @@ SFT（●）. Pretrain은 △ 수준.
 
 역할 경계가 선명해졌다.  
 **제78강. 3권 총정리 — Post-Training으로**에서는 55~77강을 한 지도에 다시 올리고, 체크리스트를 만든 뒤 **제79강. Post-Training 지도**로 넘긴다.
+
+<!-- LECTURE_NAV -->
+
+---
+
+### 강의 이동
+
+- **이전 강:** [제76강. 프로젝트 — Mini GPT + SFT](76강_프로젝트_Mini_GPT_SFT.md)
+- **다음 강:** [제78강. 3권 총정리 — Post-Training으로](78강_3권_총정리_Post_Training으로.md)
+
+<!-- /LECTURE_NAV -->

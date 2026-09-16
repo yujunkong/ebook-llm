@@ -466,3 +466,14 @@ $2 \times 8 = 16$.
 
 이전 강의: **제63강. Optimizer, Learning Rate, Scheduler**  
 다음 강의: **제65강. Checkpoint 관리**
+
+<!-- LECTURE_NAV -->
+
+---
+
+### 강의 이동
+
+- **이전 강:** [제63강. Optimizer, Learning Rate, Scheduler](63강_Optimizer_Learning_Rate_Scheduler.md)
+- **다음 강:** [제65강. Checkpoint 관리](65강_Checkpoint_관리.md)
+
+<!-- /LECTURE_NAV -->

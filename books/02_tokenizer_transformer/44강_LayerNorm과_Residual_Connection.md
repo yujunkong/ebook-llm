@@ -429,3 +429,14 @@ Residual + Norm + Attn + Residual + Norm + FFN
 
 Attention이 토큰 사이를 섞으면, FFN은 **토큰마다** 비선형 변환을 가한다.  
 제46강에서 Norm/Residual/Attn/FFN을 하나의 Block으로 조립한다.
+
+<!-- LECTURE_NAV -->
+
+---
+
+### 강의 이동
+
+- **이전 강:** [제43강. RoPE](43강_RoPE.md)
+- **다음 강:** [제45강. Feed-Forward Network (MLP)](45강_Feed_Forward_Network_MLP.md)
+
+<!-- /LECTURE_NAV -->

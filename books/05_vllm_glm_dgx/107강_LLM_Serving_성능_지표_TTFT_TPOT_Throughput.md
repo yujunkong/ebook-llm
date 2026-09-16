@@ -515,3 +515,14 @@ $\mathrm{E2E}\approx\mathrm{TTFT}+\mathrm{TPOT}\times(N_{\mathrm{out}}-1)$.
 다음 **제108강. 모델 알고리즘 계열별 모델 구조**에서 Dense decoder-only, MoE, hybrid/SSM 등 계열 지도를 그리고 서빙 함의를 연결한다.
 
 지표는 “점수”가 아니라 **진단 언어**다. 제106강의 큐 상태와 이 강의의 TTFT/TPOT를 같이 읽어야 병목이 보인다. 제118강에서 리포트 작성법을 다시 확장한다.
+
+<!-- LECTURE_NAV -->
+
+---
+
+### 강의 이동
+
+- **이전 강:** [제106강. vLLM Scheduler](106강_vLLM_Scheduler.md)
+- **다음 강:** [제108강. 모델 알고리즘 계열별 모델 구조](108강_모델_알고리즘_계열별_모델_구조.md)
+
+<!-- /LECTURE_NAV -->

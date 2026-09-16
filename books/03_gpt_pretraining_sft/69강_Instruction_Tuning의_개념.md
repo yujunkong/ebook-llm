@@ -352,3 +352,14 @@ Pretraining(base) 단계의 미니 산출물이다. 제70강에서는 Instructio
 다음 **제70강. Instruction Dataset 형식**에서는 Alpaca-like 필드, `system`/`user`/`assistant` messages, 그리고 프롬프트 마스킹의 미리보기를 다룬다.
 
 > 지시 따르기를 말하려면, 먼저 “지시 데이터”가 어떤 모양인지 고정해야 한다.
+
+<!-- LECTURE_NAV -->
+
+---
+
+### 강의 이동
+
+- **이전 강:** [제68강. 프로젝트 — Mini GPT Pretraining](68강_프로젝트_Mini_GPT_Pretraining.md)
+- **다음 강:** [제70강. Instruction Dataset 형식](70강_Instruction_Dataset_형식.md)
+
+<!-- /LECTURE_NAV -->

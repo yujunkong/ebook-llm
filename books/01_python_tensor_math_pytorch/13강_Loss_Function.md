@@ -546,3 +546,14 @@ $$
 그것이 Backpropagation의 문이다.
 
 > 나침반(Loss)을 얻었으면, 이제 깊은 산에서 기울기를 전달하는 규칙을 배우자.
+
+<!-- LECTURE_NAV -->
+
+---
+
+### 강의 이동
+
+- **이전 강:** [제12강. Gradient와 Gradient Descent](12강_Gradient와_Gradient_Descent.md)
+- **다음 강:** [제14강. Chain Rule](14강_Chain_Rule.md)
+
+<!-- /LECTURE_NAV -->

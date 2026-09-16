@@ -456,3 +456,14 @@ Attention이 필요하다고 해서 무조건 \(T^2\)를 감수하라는 뜻은 
 - [ ] Attention 출력을 “가중합”으로 말할 수 있다  
 - [ ] \(O(T^2)\) 대가가 있음을 안다  
 - [ ] Q/K/V는 아직 이름만 예고임을 안다
+
+<!-- LECTURE_NAV -->
+
+---
+
+### 강의 이동
+
+- **이전 강:** [제34강. Cross Entropy Loss](34강_Cross_Entropy_Loss.md)
+- **다음 강:** [제36강. Query, Key, Value](36강_Query_Key_Value.md)
+
+<!-- /LECTURE_NAV -->

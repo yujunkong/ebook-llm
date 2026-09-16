@@ -598,3 +598,14 @@ Loss에서 LM Head, 각 Transformer Block, Embedding에 이르는 모든 연산�
 Forward는 행렬곱의 반복이고, Backward는 이번 강의의 Chain Rule이다.
 
 > 연쇄법칙까지 왔다면, 이제 신경망이라는 기계를 설계할 차례다.
+
+<!-- LECTURE_NAV -->
+
+---
+
+### 강의 이동
+
+- **이전 강:** [제13강. Loss Function](13강_Loss_Function.md)
+- **다음 강:** [제15강. Neural Network의 구조](15강_Neural_Network의_구조.md)
+
+<!-- /LECTURE_NAV -->

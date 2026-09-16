@@ -593,3 +593,14 @@ $$
 
 이전 강의: **제32강. Language Model과 Next Token Prediction**  
 다음 강의: **제34강. Cross Entropy Loss**
+
+<!-- LECTURE_NAV -->
+
+---
+
+### 강의 이동
+
+- **이전 강:** [제32강. Language Model과 Next Token Prediction](32강_Language_Model과_Next_Token_Prediction.md)
+- **다음 강:** [제34강. Cross Entropy Loss](34강_Cross_Entropy_Loss.md)
+
+<!-- /LECTURE_NAV -->

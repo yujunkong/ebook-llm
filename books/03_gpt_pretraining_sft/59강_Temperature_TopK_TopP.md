@@ -527,3 +527,14 @@ CE/PPL은 보통 teacher-forcing 정답 분포(온도 1, 절단 없음)로 측�
 
 이전 강의: [제58강. Text Generation — Greedy와 Sampling](./58강_Text_Generation_Greedy와_Sampling.md)  
 다음 강의: [제60강. Pretraining Dataset 구성](./60강_Pretraining_Dataset_구성.md)
+
+<!-- LECTURE_NAV -->
+
+---
+
+### 강의 이동
+
+- **이전 강:** [제58강. Text Generation — Greedy와 Sampling](58강_Text_Generation_Greedy와_Sampling.md)
+- **다음 강:** [제60강. Pretraining Dataset 구성](60강_Pretraining_Dataset_구성.md)
+
+<!-- /LECTURE_NAV -->

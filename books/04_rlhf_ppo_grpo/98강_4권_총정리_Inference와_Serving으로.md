@@ -240,3 +240,14 @@ Goodhart / 평가 과적합 / proxy 숭배（택1 이상）.
 
 다음 책은 **5권. vLLM · GLM · DGX Spark**다.  
 첫 강의는 **제99강. Training과 Inference의 차이**다. 정렬된 가중치를 들고, 이제 **토큰이 하드웨어 위에서 어떻게 흐르는지**로 넘어간다.
+
+<!-- LECTURE_NAV -->
+
+---
+
+### 강의 이동
+
+- **이전 강:** [제97강. 논문·실무 흐름 정리](97강_논문_실무_흐름_정리.md)
+- **다음 강:** [제99강. Training과 Inference의 차이](../05_vllm_glm_dgx/99강_Training과_Inference의_차이.md)
+
+<!-- /LECTURE_NAV -->

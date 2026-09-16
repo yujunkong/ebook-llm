@@ -498,3 +498,14 @@ Inference: 생성 계산 자체. Serving: 그 계산을 다수 요청·운영 �
 다음 **제100강. Prefill과 Decode**에서는 한 요청의 수명을 **프롬프트를 밀어 넣는 구간**과 **토큰을 잇는 구간**으로 쪼개고, 왜 한쪽은 compute에 가깝고 다른 쪽은 memory bandwidth에 가까운 이야기가 나오는지（설명 수준）를 다룬다.
 
 > 가중치는 같아도, 시간이 흐르는 방식이 다르다.
+
+<!-- LECTURE_NAV -->
+
+---
+
+### 강의 이동
+
+- **이전 강:** [제98강. 4권 총정리 — Inference와 Serving으로](../04_rlhf_ppo_grpo/98강_4권_총정리_Inference와_Serving으로.md)
+- **다음 강:** [제100강. Prefill과 Decode](100강_Prefill과_Decode.md)
+
+<!-- /LECTURE_NAV -->

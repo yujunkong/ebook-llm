@@ -449,3 +449,14 @@ Pretraining과 SFT의 **공통점 하나**와 **차이점 하나**를 쓰시오.
 다음 **제72강. Chat Template과 Special Tokens**에서는 `apply_chat_template` 개념, 역할 특수 토큰, 학습·추론 일치 규칙을 다룬다. 그다음 **제73강. LoRA**에서 전체 가중치를 건드리지 않는 효율적 SFT로 확장한다.
 
 > Loss를 어디에 줄지 알았으면, 이제 “어떤 문자열에” 줄지를 템플릿으로 고정하자.
+
+<!-- LECTURE_NAV -->
+
+---
+
+### 강의 이동
+
+- **이전 강:** [제70강. Instruction Dataset 형식](70강_Instruction_Dataset_형식.md)
+- **다음 강:** [제72강. Chat Template과 Special Tokens](72강_Chat_Template과_Special_Tokens.md)
+
+<!-- /LECTURE_NAV -->

@@ -558,3 +558,14 @@ Loss를 줄이는 방향으로 Embedding 행렬의 각 성분이 조금씩 바�
 MSE와 Cross Entropy의 직관을 숫자로 보고, 왜 LLM이 Cross Entropy를 쓰는지 연결한다.
 
 > 하강법을 알았으면, 이제 내려갈 언덕(Loss)의 높이를 정의하자.
+
+<!-- LECTURE_NAV -->
+
+---
+
+### 강의 이동
+
+- **이전 강:** [제11강. 미분과 편미분](11강_미분과_편미분.md)
+- **다음 강:** [제13강. Loss Function](13강_Loss_Function.md)
+
+<!-- /LECTURE_NAV -->

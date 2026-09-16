@@ -1004,3 +1004,14 @@ sum logprob.
 
 ### 21. 다음 강의와 연결
 **제96강. Alignment의 한계와 부작용**에서 reward hacking, sycophancy, over-refusal, 분포 이동, 평가 한계를 정리한다. 제95강 report의 실패 로그가 있으면 사례로 삼아라.
+
+<!-- LECTURE_NAV -->
+
+---
+
+### 강의 이동
+
+- **이전 강:** [제94강. Reasoning Training](94강_Reasoning_Training.md)
+- **다음 강:** [제96강. Alignment의 한계와 부작용](96강_Alignment의_한계와_부작용.md)
+
+<!-- /LECTURE_NAV -->

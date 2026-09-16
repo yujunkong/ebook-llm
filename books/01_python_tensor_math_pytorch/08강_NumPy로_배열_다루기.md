@@ -682,3 +682,14 @@ np.argmax(logits, axis=-1)
 0차원부터 고차원까지, “모양”이 의미를 갖는 이유를 선형대수 관점에서 고정한 뒤, PyTorch Tensor로 넘어간다.
 
 > 배열을 다루게 되었다. 이제 그 배열에 수학 이름을 붙인다.
+
+<!-- LECTURE_NAV -->
+
+---
+
+### 강의 이동
+
+- **이전 강:** [제7강. 파일 입출력과 데이터 다루기](07강_파일_입출력과_데이터_다루기.md)
+- **다음 강:** [제9강. Scalar, Vector, Matrix, Tensor](09강_Scalar_Vector_Matrix_Tensor.md)
+
+<!-- /LECTURE_NAV -->

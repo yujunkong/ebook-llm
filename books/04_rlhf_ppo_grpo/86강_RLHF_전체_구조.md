@@ -629,3 +629,14 @@ Advantage (또는 value baseline / GAE).
 제85강의 RM 점수와 제83강의 Advantage가, 제87강의 PPO 손실 안에서 만난다.
 
 > RLHF는 단일 손실이 아니라, 닻(reference)·점수(RM)·정책(π)·업데이트(PPO)의 협주이다.
+
+<!-- LECTURE_NAV -->
+
+---
+
+### 강의 이동
+
+- **이전 강:** [제85강. Reward Model 구현](85강_Reward_Model_구현.md)
+- **다음 강:** [제87강. PPO 직관과 수식](87강_PPO_직관과_수식.md)
+
+<!-- /LECTURE_NAV -->

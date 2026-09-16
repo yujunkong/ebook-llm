@@ -564,3 +564,14 @@ $$
 
 로 **평균 대비 초과 보상**을 정의해, 왜 PPO·GRPO가 이 신호를 쓰는지 고정한 뒤  
 **제84강. Preference Dataset**으로 데이터 층에 착륙한다.
+
+<!-- LECTURE_NAV -->
+
+---
+
+### 강의 이동
+
+- **이전 강:** [제81강. Policy와 Value Function](81강_Policy와_Value_Function.md)
+- **다음 강:** [제83강. Advantage](83강_Advantage.md)
+
+<!-- /LECTURE_NAV -->

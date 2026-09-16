@@ -495,3 +495,14 @@ Validation loss(평균 NLL)를 고정된 홀드아웃으로 재고, 그 지수�
 이제 부품을 한데 모아 **작은 코퍼스에서 Pretraining을 끝까지** 돌려 볼 차례다. 다음 **제68강. 프로젝트 — Mini GPT Pretraining**에서는 `config / data / model / train / generate` 구조로 미니 GPT를 학습하고, loss 곡선·PPL·샘플 생성을 한 번에 확인한다.
 
 > 숫자를 읽을 줄 알면, 이제 그 숫자가 움직이는 학습을 직접 돌려 보자.
+
+<!-- LECTURE_NAV -->
+
+---
+
+### 강의 이동
+
+- **이전 강:** [제66강. Validation과 Evaluation](66강_Validation과_Evaluation.md)
+- **다음 강:** [제68강. 프로젝트 — Mini GPT Pretraining](68강_프로젝트_Mini_GPT_Pretraining.md)
+
+<!-- /LECTURE_NAV -->
