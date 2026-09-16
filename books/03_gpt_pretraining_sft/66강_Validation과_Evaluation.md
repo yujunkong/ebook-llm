@@ -238,6 +238,18 @@ for global_step in range(start_step + 1, total_steps + 1):
 
 설명: `max_batches`로 자른 val loss는 **근사 모니터**다. 논문/최종 보고에는 더 긴 평가를 따로 두는 편이 좋다.
 
+체크리스트로 남기면:
+
+```text
+[ ] val 파일 경로·해시 기록
+[ ] tokenizer 이름·버전 기록
+[ ] ignore_index / EOS 정책 train과 동일?
+[ ] eval dtype·device 기록
+[ ] 사용한 토큰 수 N 기록
+```
+
+프로토콜이 흔들리면 “어제보다 val이 좋아졌다”는 문장이 무의미해진다.
+
 ### 12. Loss 평가의 한계 (제67강 예고)
 
 Validation CE loss가 내려가도:
@@ -275,6 +287,14 @@ step 600  train=nan  val=nan
 ```
 
 → 즉시 중단, 직전 last/best로 롤백, AMP/lr/데이터 점검.
+
+세 번째 패턴:
+
+```text
+step 1000 train=4.0 val=1.0
+```
+
+→ val이 **너무** 좋으면 축하 전에 누수·전처리 불일치를 의심한다. held-out이 진짜 held-out인지부터 확인한다.
 
 ### 14. Running train loss와 Val를 같이 보기
 
