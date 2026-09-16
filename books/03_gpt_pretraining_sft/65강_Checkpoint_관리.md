@@ -293,7 +293,75 @@ state = model.module.state_dict()
 
 “파일이 생겼다” ≠ “로드 가능한 완전한 체크포인트”.
 
-### 14. 흔한 버그
+### 14. 디렉터리 규약 예시
+
+```text
+runs/mini_gpt_exp01/
+  config.yaml          # 또는 config.json
+  train.log
+  checkpoints/
+    last.pt
+    best.pt
+    step_0000500.pt
+    step_0001000.pt
+  export/
+    model.safetensors  # 또는 weights_only.pt
+    config.json
+```
+
+규약을 미리 정하면 제68강 프로젝트에서 “파일이 어디 있지?”로 시간을 잃지 않는다.
+
+### 15. 회전(Rotation) — 디스크 지키기
+
+모든 step 체크포인트를 영구 보관하면 디스크가 먼저 죽는다.
+
+```python
+from collections import deque
+
+kept = deque(maxlen=3)  # 최근 3개 step ckpt만
+
+def save_rotating(step, path_fn, save_fn):
+    path = path_fn(step)
+    save_fn(path)
+    kept.append(path)
+    # deque가 오래된 경로를 밀어내면 파일 삭제
+    # (maxlen 초과 시 왼쪽부터 사라지므로, 삭제 목록을 따로 관리해도 됨)
+```
+
+`last.pt`와 `best.pt`는 회전에서 **제외**하는 것이 일반적이다.
+
+### 16. 메타데이터에 넣을 것
+
+재현에 도움이 되는 메타:
+
+```python
+meta = {
+    "global_step": global_step,
+    "tokens_seen": tokens_seen,
+    "best_val_loss": best_val_loss,
+    "config": config_dict,
+    "code_git_sha": git_sha_or_none,   # 있으면
+    "torch_version": torch.__version__,
+    "notes": "amp=bf16 accum=4",
+}
+```
+
+설명: git SHA까지 넣으면 “어느 코드로 뽑힌 가중치인지” 추적이 쉬워진다. 필수는 아니지만 실험 노트의 품질이 올라간다.
+
+### 17. 부분 로드와 전이학습 예고
+
+SFT(제71강)나 LoRA(제73강)로 넘어갈 때는 종종 **가중치만** 로드한다.
+
+```python
+ckpt = torch.load("export/weights_only.pt", map_location="cpu")
+missing, unexpected = model.load_state_dict(ckpt["model"], strict=False)
+print("missing", missing)
+print("unexpected", unexpected)
+```
+
+`strict=False`는 강력하지만 위험하다. 누락 키를 **반드시 출력**한다. 침묵 속 부분 로드는 버그의 온상이다.
+
+### 18. 흔한 버그
 
 1. **가중치만 저장하고 lr·step을 잊음** — 재개 시 cosine이 처음부터.
 2. **best를 last 경로에 덮어씀** — 복구 포인트 소실.
@@ -301,8 +369,9 @@ state = model.module.state_dict()
 4. **config 미저장** — 몇 주 뒤 hidden size를 기억 못함.
 5. **eval 모드 가중치를 저장한 뒤 train 버퍼를 오해** — Dropout 자체는 대개 가중치에 없으나, 버퍼(BatchNorm 등)가 있으면 모드 유의. LLM LayerNorm은 다른 이슈이나 “모드와 저장”을 한 묶음으로 점검.
 6. **신뢰 불가 경로의 `torch.load`** — 보안 이슈.
+7. **장치 불일치** — CUDA 텐서가 박힌 ckpt를 CPU에서 map_location 없이 로드.
 
-### 15. 핵심 정리
+### 19. 핵심 정리
 
 - Resume 체크포인트는 model + optimizer + scheduler + step(+ scaler)을 묶는다.
 - Last는 복구, Best는 지표 기준 선택이다. 역할을 파일명으로 분리한다.
@@ -310,7 +379,7 @@ state = model.module.state_dict()
 - safetensors는 가중치 배포·로드의 **형식 옵션**으로 이해한다. resume 번들과 용도를 섞지 말 것.
 - 제66강 val 지표가 best 갱신 트리거가 된다.
 
-### 16. 핵심 용어
+### 20. 핵심 용어
 
 | 용어 | 의미 |
 |---|---|
@@ -322,8 +391,10 @@ state = model.module.state_dict()
 | Atomic save | 임시 기록 후 교체하는 저장 관행 |
 | safetensors | 텐서 가중치 저장 형식 옵션 |
 | `map_location` | 로드 시 장치 배치 |
+| Rotation | 오래된 ckpt 삭제·유지 정책 |
+| `strict=False` | 부분 키 로드 허용(위험 동반) |
 
-### 17. 복습 문제
+### 21. 복습 문제
 
 #### 문제 1 (목록)
 
@@ -352,6 +423,10 @@ Resume 번들과 safetensors export를 한 파일로 섞지 말라고 한 이유
 
 제64강 `GradScaler`를 쓰는 FP16 학습에서 체크포인트에 scaler를 빼면 어떤 현상이 생길 수 있는가?
 
+#### 문제 6 (운영)
+
+`best.pt`만 남기고 `last.pt`를 안 남기면 장애 복구에서 무엇이 불편해지는가?
+
 ---
 
 ### 정답 및 해설
@@ -376,7 +451,11 @@ Optimizer/Scheduler state와 step을 복원하지 않아 모멘트·lr 위치가
 
 loss scale이 초기값으로 돌아가 재개 직후 overflow·step skip·불안정이 날 수 있다.
 
-### 18. 다음 강의와 연결
+#### 문제 6
+
+best는 예전의 좋은 지점일 수 있어, 장애 직전 최신 상태(모멘트·step 포함)로 이어가기 어렵다. last가 복구의 기본이다.
+
+### 22. 다음 강의와 연결
 
 Best를 고르려면 **기준 지표**가 필요하다.
 

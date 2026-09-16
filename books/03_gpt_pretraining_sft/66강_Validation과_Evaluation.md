@@ -276,7 +276,63 @@ step 600  train=nan  val=nan
 
 → 즉시 중단, 직전 last/best로 롤백, AMP/lr/데이터 점검.
 
-### 14. 흔한 버그
+### 14. Running train loss와 Val를 같이 보기
+
+Train은 매 step(또는 window 평균), Val은 희소 샘플이다. 비교할 때:
+
+- 같은 **smoothing 창** 개념으로 train을 보고
+- val 토큰 수가 충분한지 확인하고
+- 축을 `global_step` 또는 `tokens_seen`으로 통일한다
+
+```python
+# 개념: 지수이동평균으로 train 노이즈 완화
+ema = None
+beta = 0.9
+ema = loss if ema is None else (beta * ema + (1 - beta) * loss)
+```
+
+EMA train과 val을 같은 그래프에 올리면 “진짜 일반화 악화”와 “배치 노이즈”를 덜 혼동한다.
+
+### 15. 온라인 Val 부분집합
+
+전체 val이 비싸면:
+
+1. **monitor set**: 매 `eval_every`마다 짧게
+2. **full val**: 드물게 전체 패스
+3. best 갱신은 정책을 명시 (monitor 기준인지 full 기준인지)
+
+설명: monitor로 best를 갱신하면 노이즈 우승 확률이 올라간다. 타협안은 “monitor가 개선되면 full val을 한 번 더 돌려 확인 후 best 확정”이다.
+
+### 16. 생성 스모크 테스트 (짧게)
+
+Loss 평가와 별도로, 고정 프롬프트 몇 개에 대해 greedy/sampling 생성을 저장한다.
+
+```python
+@torch.no_grad()
+def smoke_generate(model, tokenizer, prompts, max_new_tokens=40):
+    model.eval()
+    outs = []
+    for p in prompts:
+        # 제58~59강 생성 루틴 호출 (여기선 자리만)
+        outs.append(generate_fn(model, tokenizer, p, max_new_tokens))
+    model.train()
+    return outs
+```
+
+주기적으로 텍스트를 읽어보면 causal mask 누수·반복·붕괴를 loss보다 일찍 발견하는 경우가 있다. 정량 점수는 제67강.
+
+### 17. Early stopping 개념
+
+**Early stopping**은 val 지표가 오래 개선되지 않으면 학습을 멈추거나 best로 되돌리는 전략이다.
+
+Pretraining에서는:
+
+- 예산이 토큰으로 고정되어 있으면 “중지”보다 **best 선택**이 더 흔하다.
+- 작은 말뭉치·다에폭에서는 early stopping이 더 직접적이다.
+
+사실처럼 “인내 스텝=N이 표준”이라고 쓰지 않는다. 인내 구간은 과제·노이즈에 의존한다.
+
+### 18. 흔한 버그
 
 1. **eval 후 `train()` 미복귀**
 2. **val에서 `backward` 또는 optim step** — held-out 오염
@@ -284,8 +340,9 @@ step 600  train=nan  val=nan
 4. **train과 다른 tokenize/EOS 정책**
 5. **너무 짧은 val로 best를 잦게 갱신** — 노이즈 우승
 6. **test를 매일 봐서 사실상 val로 사용** — 최종 보고 신뢰 하락
+7. **AMP train / FP32 val을 아무 기록 없이 비교** — 곡선 해석이 어긋남
 
-### 15. 핵심 정리
+### 19. 핵심 정리
 
 - Held-out validation loss는 Pretraining의 기본 자동 평가 신호다.
 - Eval은 `eval()` + `no_grad()` + 토큰 가중 CE로 돌리고, 학습 모드로 복귀한다.
@@ -293,7 +350,7 @@ step 600  train=nan  val=nan
 - Train/Val 곡선 패턴으로 발산·과적합·파이프라인 버그를 조기에 읽는다.
 - Loss만으로 생성 품질을 단정하지 말고, 제67강으로 평가 축을 넓힌다.
 
-### 16. 핵심 용어
+### 20. 핵심 용어
 
 | 용어 | 의미 |
 |---|---|
@@ -305,8 +362,10 @@ step 600  train=nan  val=nan
 | Eval protocol | 비교 가능한 평가 절차 고정 |
 | Best checkpoint | val 지표 기준 저장본 |
 | Leakage | train/val 혼입 |
+| Monitor set | 저비용 부분 val |
+| Early stopping | 개선 정체 시 중단·되돌리기 |
 
-### 17. 복습 문제
+### 21. 복습 문제
 
 #### 문제 1 (개념)
 
@@ -327,6 +386,10 @@ Eval을 매 step 돌리면 생기는 문제 두 가지를 쓰시오.
 #### 문제 5 (연결)
 
 제65강 `best.pt` 갱신 조건을 이번 강의 용어로 한 줄로 쓰시오. 제67강으로 넘길 “남는 질문”도 한 줄 쓰시오.
+
+#### 문제 6 (신호)
+
+Train/Val이 동시에 NaN이 되었다. 첫으로 확인할 것 세 가지를 쓰시오.
 
 ---
 
@@ -353,7 +416,11 @@ Eval을 매 step 돌리면 생기는 문제 두 가지를 쓰시오.
 예: “held-out val loss가 최저일 때 best checkpoint를 저장한다.”  
 남는 질문: “그 best가 생성 품질·Perplexity 해석에서도 좋은가?” → 제67강.
 
-### 18. 다음 강의와 연결
+#### 문제 6
+
+예: 직전 배치 데이터/라벨, lr·AMP scale, grad_norm/클립, 체크포인트 롤백 가능성.
+
+### 22. 다음 강의와 연결
 
 Validation loss라는 나침반을 달았다.
 
