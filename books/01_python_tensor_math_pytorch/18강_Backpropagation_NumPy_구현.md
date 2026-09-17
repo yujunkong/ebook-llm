@@ -245,6 +245,43 @@ $$
 
 ---
 
+## 단샘플 outer와 배치 행렬곱이 같은 이유
+
+$B=1$일 때 $\partial L/\partial\hat{Y}$는 스칼라 $\delta^{(2)}$, $A^{(1)}$은 행벡터입니다.
+
+$$
+\frac{\partial L}{\partial W^{(2)}}
+=
+\begin{bmatrix}\delta^{(2)}\end{bmatrix}
+\begin{bmatrix}a_1 & a_2\end{bmatrix}
+=
+\delta^{(2)}\,(\mathbf{a}^{(1)})^{\top}
+$$
+
+숫자로 $\delta^{(2)}=-0.79$, $\mathbf{a}^{(1)}=[0.30,0.35]$이면
+
+$$
+\frac{\partial L}{\partial W^{(2)}}
+=
+\begin{bmatrix}-0.237 & -0.2765\end{bmatrix}
+$$
+
+은닉도 같습니다.
+
+$$
+\frac{\partial L}{\partial W^{(1)}}
+=
+\begin{bmatrix}\delta_1\\\delta_2\end{bmatrix}
+\begin{bmatrix}x_1 & x_2\end{bmatrix}
+=
+\begin{bmatrix}
+-0.395 & -0.1975 \\
+0.316 & 0.158
+\end{bmatrix}
+$$
+
+배치에서는 여러 샘플의 외적을 **행 방향으로 합산**한 것이 `dZ.T @ X`입니다.
+
 ## 코드로 구현하기
 
 ### 7.1 유틸과 모델 파라미터

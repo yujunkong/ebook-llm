@@ -262,6 +262,66 @@ $$
 
 ---
 
+## 그래프를 손으로 따라가기 — mul/add/relu
+
+2-2-1 Forward의 일부를 노드로 분해합니다.
+
+$$
+u = w^{(2)}_1 a^{(1)}_1
+,\quad
+v = w^{(2)}_2 a^{(1)}_2
+,\quad
+\hat{y}=u+v+b^{(2)}
+$$
+
+숫자: $a_1=0.30$, $a_2=0.35$, $w_1=0.5$, $w_2=-0.4$, $b=0.2$.
+
+$$
+u=0.15,\quad v=-0.14,\quad \hat{y}=0.21
+$$
+
+$L=\frac12(\hat{y}-y)^2$, $y=1$이면 $\partial L/\partial\hat{y}=-0.79$입니다.
+
+덧셈 노드는 Gradient를 복사합니다.
+
+$$
+\frac{\partial L}{\partial u}=-0.79
+,\quad
+\frac{\partial L}{\partial v}=-0.79
+,\quad
+\frac{\partial L}{\partial b^{(2)}}=-0.79
+$$
+
+곱셈 노드:
+
+$$
+\frac{\partial L}{\partial w^{(2)}_1}
+=
+\frac{\partial L}{\partial u}\cdot a^{(1)}_1
+=
+(-0.79)\cdot 0.30
+=
+-0.237
+$$
+
+$$
+\frac{\partial L}{\partial a^{(1)}_1}
+=
+\frac{\partial L}{\partial u}\cdot w^{(2)}_1
+=
+(-0.79)\cdot 0.5
+=
+-0.395
+$$
+
+이 값이 `W2.grad[0,0]`, 그리고 은닉으로 흘러가는 upstream의 첫 성분과 같습니다.  
+Autograd는 각 `MulBackward`/`AddBackward`에서 위 규칙을 적용할 뿐입니다.
+
+> 📘 **심화**
+>
+> Residual $y=x+f(x)$이면 Backward에서 $\partial L/\partial x$에
+> $\partial L/\partial y$가 **한 번 더** 더해집니다. Transformer 전역 Gradient 흐름의 핵심입니다.
+
 ## 코드로 구현하기
 
 ### 7.1 최소 예제

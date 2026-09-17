@@ -255,6 +255,30 @@ Attention에서 자주 나오는 패턴입니다.
 
 ---
 
+### 5.6 `nn.Linear`와의 대응
+
+`nn.Linear(in_features, out_features)`는 배치 입력 $X\in\mathbb{R}^{B\times d_{\mathrm{in}}}$에 대해
+
+$$
+Y = X W^{\top} + \mathbf{b}
+,\quad
+W\in\mathbb{R}^{d_{\mathrm{out}}\times d_{\mathrm{in}}}
+,\quad
+\mathbf{b}\in\mathbb{R}^{d_{\mathrm{out}}}
+$$
+
+를 계산합니다. 19강에서 `X @ W.T + b`로 쓰는 식과 동일합니다.
+
+한 샘플 행벡터 $\mathbf{x}^{\top}$라면
+
+$$
+\mathbf{y}^{\top} = \mathbf{x}^{\top} W^{\top} + \mathbf{b}^{\top}
+= (W\mathbf{x})^{\top} + \mathbf{b}^{\top}
+$$
+
+즉 열벡터 관점의 $W\mathbf{x}+\mathbf{b}$와 같은 선형 변환입니다.  
+관례만 행/열로 바꿔 적을 뿐, 수학은 하나입니다.
+
 ## 작은 숫자로 직접 계산하기 — 16강 Forward를 Tensor로
 
 ```text
