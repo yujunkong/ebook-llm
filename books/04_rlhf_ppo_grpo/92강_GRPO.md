@@ -404,6 +404,26 @@ LOO: $b_i=\frac1{G-1}\sum_{j\neq i}r_j$, $\hat A_i=r_i-b_i$.
 다양성 프록시 $u=\#\{\mathrm{unique\ ex}(y_i)\}/G$.
 
 
+## 그룹 크기 $G$ 선택 가이드（설명）
+
+| $G$ | 이득 | 비용 |
+|---:|---|---|
+| 2 | 최소 상대 비교 | baseline 잡음 큼 |
+| 4~8 | 혼합 그룹 빈도↑ (이진 $r$) | 샘플·verify 배수 |
+| 16+ | 통계 안정 | 처리량·지연 압박 |
+
+verifiable 이진 보상에서는 $1-p^G-(1-p)^G$가 충분히 커지도록 난이도·$G$·온도를 **같이** 본다.
+
+### 로그 필수 항목
+
+```text
+mean_r, std_r, frac_zero_A, frac_mixed_groups,
+clip_frac, approx_kl, unique_answers, format_rate
+```
+
+`frac_zero_A≈1`이면 학습이 멈춘 것과 같다.
+
+
 ## LLM에서는 어디에 사용될까?
 
 이번 92강에서 배운 개념은 이후 Transformer · GPT · 서빙 강의에서 반복해서 등장합니다. 각 수식·코드 블록을 “실제 모델의 어느 단계인가”와 연결해 다시 읽어 보세요.

@@ -324,6 +324,26 @@ $$
 가정 숫자로 용량 계획하지 말 것 — 비례 연습만.
 
 
+## 스케줄러가 국면을 나누는 이유（정량 감각）
+
+한 iteration에 prefill 토큰 $S_{\mathrm{sum}}$과 decode 시퀀스 $B_{\mathrm{dec}}$가 섞이면, 작업 프로필이 이질적이다.
+
+```text
+Prefill-heavy chunk → SM compute·큰 GEMM
+Decode-heavy chunk → KV bandwidth·작은 GEMM
+```
+
+지표를 국면 없이 평균하면 TTFT/TPOT 진단이 흐려진다. 로그에 `phase=prefill|decode|mixed`를 남긴다.
+
+### 길이 레버
+
+| 늘리는 것 | 먼저 맞는 지표 |
+|---|---|
+| 프롬프트 $S$ | TTFT |
+| 출력 $N_{\mathrm{out}}$ | 총지연·TPOT×길이 |
+| 동시성 $B$ | KV 메모리·스케줄 대기 |
+
+
 ## LLM에서는 어디에 사용될까?
 ### 8.1 TTFT와 Prefill
 

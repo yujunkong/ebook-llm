@@ -471,6 +471,13 @@ $$
 스케일이 바뀌면 PPO lr·clip 체감이 달라진다.
 
 
+## PPO·GRPO로 넘기는 한 줄
+
+PPO: $\mathbb{E}[\min(\rho\hat A,\mathrm{clip}(\rho)\hat A)]$ — $\hat A$는 GAE/value.  
+GRPO: 같은 clip 골격, $\hat A$는 그룹 상대 $r$.  
+공통 뿌리: $\nabla\log\pi\cdot A$ (제82강).
+
+
 ## LLM에서는 어디에 사용될까?
 
 이번 83강에서 배운 개념은 이후 Transformer · GPT · 서빙 강의에서 반복해서 등장합니다. 각 수식·코드 블록을 “실제 모델의 어느 단계인가”와 연결해 다시 읽어 보세요.
