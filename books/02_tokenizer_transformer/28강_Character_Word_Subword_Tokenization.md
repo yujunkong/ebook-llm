@@ -413,6 +413,43 @@ toks = list("low lower newest")
 print(bpe_merge_count(toks, ("e","w")))
 ```
 
+<!-- enrich-agent-bfea -->
+## 분할 비용의 한 줄 정리
+
+같은 문자열 $s$에 대해 세 방식의 길이를 $T_{\mathrm{char}}, T_{\mathrm{word}}, T_{\mathrm{sub}}$라 하면 대개
+
+$$
+T_{\mathrm{word}} \le T_{\mathrm{sub}} \le T_{\mathrm{char}}
+$$
+
+이고, 어휘 크기는 대략 반대 방향입니다.
+
+$$
+V_{\mathrm{char}} \ll V_{\mathrm{sub}} \ll V_{\mathrm{word}}^{\mathrm{(open)}}
+$$
+
+Attention 비용이 $O(T^2)$에 가깝다면, $T$를 줄이는 Subword는 **계산·메모리** 측면에서도 이득입니다.
+
+$$
+\mathrm{Cost} \propto T^2 \cdot d
+$$
+
+### 압축률
+
+$$
+\rho=\frac{\#\mathrm{chars}}{T}
+$$
+
+$\rho$가 클수록 토큰 하나가 더 많은 문자를 품습니다. 언어·도메인·토크나이저에 따라 $\rho$는 달라지므로, 공개 모델의 수치를 단정하지 마세요.
+
+```python
+# 같은 문장의 T 비교 (초간단)
+s = "토큰화는 절충이다"
+T_char = len(s)
+T_word = len(s.split())
+print("T_char", T_char, "T_word", T_word)
+```
+
 ## LLM에서는 어디에 사용될까?
 대표적 선택:
 

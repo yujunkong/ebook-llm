@@ -498,6 +498,29 @@ class Block(nn.Module):
         return x
 ```
 
+<!-- enrich-agent-bfea -->
+## 아키텍처 체크리스트 (1부)
+
+1. $C \% H = 0$ 인가? ($d_k=C/H$)
+2. `vocab_size`가 Tokenizer와 같은가?
+3. Causal mask가 상삼각을 $-\infty$로 막는가?
+4. `logits.shape == (B, T, V)` 인가?
+
+$$
+d_k = \frac{C}{H},\qquad
+Q,K,V\in\mathbb{R}^{B\times H\times T\times d_k}
+$$
+
+파라미터 감각(초미니):
+
+$$
+|\theta|
+\;\gtrsim\;
+V\cdot C + N\cdot O(C^2)
+$$
+
+(정확한 계수보다 **자릿수**만 가늠합니다.)
+
 ## LLM에서는 어디에 사용될까?
 
 이번 49강에서 배운 개념은 이후 Transformer · GPT · 서빙 강의에서 반복해서 등장합니다. 각 수식·코드 블록을 “실제 모델의 어느 단계인가”와 연결해 다시 읽어 보세요.

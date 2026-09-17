@@ -475,6 +475,35 @@ loss = F.cross_entropy(logits[:,:-1].reshape(-1,V), targets[:,1:].reshape(-1))
 print(float(loss))
 ```
 
+<!-- enrich-agent-bfea -->
+## 학습 루프 수식 카드 (2부)
+
+한 스텝:
+
+$$
+L_{\mathcal{B}}(\theta)
+=
+-\frac{1}{|\mathcal{B}|T}
+\sum_{b=1}^{B}\sum_{t=1}^{T}
+\log p_\theta(y_{b,t}\mid x_{b,\le t})
+$$
+
+$$
+\theta\leftarrow\theta-\eta\nabla_\theta L_{\mathcal{B}}(\theta)
+$$
+
+생성(greedy):
+
+$$
+x_{t+1}=\arg\max_v\, z_{t,v}
+$$
+
+overfit sanity:
+
+$$
+L_{\mathrm{one\text{-}batch}} \ll \log V
+$$
+
 ## LLM에서는 어디에 사용될까?
 
 이번 50강에서 배운 개념은 이후 Transformer · GPT · 서빙 강의에서 반복해서 등장합니다. 각 수식·코드 블록을 “실제 모델의 어느 단계인가”와 연결해 다시 읽어 보세요.
