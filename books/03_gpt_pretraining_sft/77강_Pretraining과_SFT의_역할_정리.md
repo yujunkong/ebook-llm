@@ -144,6 +144,18 @@ SFT:       주어진 지시에 대한 “바람직한 답”을 이어 쓴다
               └─ No → 평가·디코딩·툴/RAG 등 다른 층
 ```
 
+## 수식 보강 — Pretrain vs SFT
+
+Pretrain: $\mathcal{D}_{\mathrm{web}}$ 위 무조건부 LM.
+
+SFT: $\mathcal{D}_{\mathrm{instr}}$ 위 조건부 응답 LM.
+
+$$
+p_{\mathrm{pt}}(x)\ \vs\ p_{\mathrm{sft}}(y\mid c)
+$$
+
+같은 CE 뼈대, 다른 데이터 분포입니다.
+
 ## LLM에서는 어디에 사용될까?
 
 이번 77강에서 배운 개념은 이후 Transformer · GPT · 서빙 강의에서 반복해서 등장합니다. 각 수식·코드 블록을 “실제 모델의 어느 단계인가”와 연결해 다시 읽어 보세요.

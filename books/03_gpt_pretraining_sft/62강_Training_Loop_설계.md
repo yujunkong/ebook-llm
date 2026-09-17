@@ -364,6 +364,14 @@ Eval/Checkpoint를 **너무 자주** 하면 처리량(tok/s)이 떨어진다. �
 6. **clip을 `step` 뒤에 적용** — 이미 갱신된 뒤라 의미 없음.
 7. **손실을 Python float로 너무 일찍 변환** — 그래프 끊김은 `backward` 전 `loss`에 하면 안 됨. 로그용 `detach`는 가능.
 
+## 수식 보강 — 스텝과 토큰 예산
+
+$$
+N_{\mathrm{tokens}}\approx E\cdot B\cdot T\cdot\eta
+$$
+
+학습률 스케줄 $\eta_t$는 보통 warmup 후 cosine 감쇠입니다.
+
 ## LLM에서는 어디에 사용될까?
 
 이번 62강에서 배운 개념은 이후 Transformer · GPT · 서빙 강의에서 반복해서 등장합니다. 각 수식·코드 블록을 “실제 모델의 어느 단계인가”와 연결해 다시 읽어 보세요.

@@ -405,6 +405,16 @@ mean=0.67
 6. [ ] （선택）epoch 과다로 overfitting 재현
 7. [ ] （선택）LoRA vs full
 
+## 수식 보강 — Mini SFT
+
+초기화 $\theta\leftarrow\theta_{\mathrm{pt}}$ 후
+
+$$
+\min_\theta L_{\mathrm{SFT}}(\theta)
+$$
+
+작은 학습률로 짧은 에폭이 흔합니다(과적합·지식 망각 완화).
+
 ## LLM에서는 어디에 사용될까?
 
 이번 76강에서 배운 개념은 이후 Transformer · GPT · 서빙 강의에서 반복해서 등장합니다. 각 수식·코드 블록을 “실제 모델의 어느 단계인가”와 연결해 다시 읽어 보세요.

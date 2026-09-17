@@ -393,6 +393,16 @@ def build_loader(chunks, pad_id, batch_size=4, shuffle=True):
 - [ ] labels의 `ignore_index` 비율이 비정상적으로 크지 않은가?
 - [ ] (경계 마스크 사용 시) 문서가 바뀌는 위치 전후로 attend 금지인지 단위 테스트가 있는가?
 
+## 수식 보강 — Packing 효율
+
+문서 길이가 짧으면 패딩 낭비가 큽니다. 패킹 효율
+
+$$
+\eta=\frac{\#\mathrm{real\_tokens}}{B\cdot T}
+$$
+
+을 높이면 스텝당 유효 토큰이 늘어납니다.
+
 ## LLM에서는 어디에 사용될까?
 
 이번 61강에서 배운 개념은 이후 Transformer · GPT · 서빙 강의에서 반복해서 등장합니다. 각 수식·코드 블록을 “실제 모델의 어느 단계인가”와 연결해 다시 읽어 보세요.

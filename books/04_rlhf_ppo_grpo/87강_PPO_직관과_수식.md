@@ -405,6 +405,14 @@ ratio = exp(logp - logp_old)   # 권장
 ratio = exp(logp)/exp(logp_old) # 비추천 (오버플로)
 ```
 
+## 수식 보강 — PPO clip 한 줄
+
+$$
+L^{\mathrm{CLIP}}=\mathbb{E}\big[\min(r_t A_t,\ \mathrm{clip}(r_t,1-\varepsilon,1+\varepsilon)A_t)\big]
+$$
+
+$r_t=\pi_\theta/\pi_{\mathrm{old}}$입니다.
+
 ## LLM에서는 어디에 사용될까?
 RLHF-PPO 스택에서의 위치:
 

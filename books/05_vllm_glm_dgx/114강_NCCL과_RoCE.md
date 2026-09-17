@@ -253,6 +253,16 @@ env | grep -E 'NCCL|CUDA_VISIBLE|GLOO|UCX' | sort
 4. NCCL 로그를 안 켠 채 애플리케이션만 재시작한다.  
 5. RoCE·IB·TCP를 동의어로 말한다.
 
+## 수식 보강 — AllReduce 부피
+
+데이터 크기 $B_{\mathrm{bytes}}$, 참여 GPU $N$이면 ring allreduce 통신량은 대략
+
+$$
+\sim 2\frac{N-1}{N}B_{\mathrm{bytes}}
+$$
+
+차수입니다. 대역폭·지연이 TP 스케일을 제한합니다.
+
 ## LLM에서는 어디에 사용될까?
 
 이번 114강에서 배운 개념은 이후 Transformer · GPT · 서빙 강의에서 반복해서 등장합니다. 각 수식·코드 블록을 “실제 모델의 어느 단계인가”와 연결해 다시 읽어 보세요.

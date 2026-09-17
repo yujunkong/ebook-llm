@@ -375,6 +375,14 @@ step별 loss를 `losses.txt`에 쓰고, (선택) matplotlib로 꺾은선을 그�
 
 이것이 2권의 실전 관문이다. 규모만 키우면 3권 Mini GPT / Pretraining으로 이어진다.
 
+## 수식 보강 — 학습 스텝
+
+$$
+\theta\leftarrow\theta-\eta\nabla_\theta L_{\mathcal{B}}(\theta)
+$$
+
+체크포인트는 $\theta$와 옵티마이저 상태의 스냅샷입니다. 생성은 $\hat x_{t}=\arg\max p(\cdot\mid x_{<t})$ 또는 샘플링입니다.
+
 ## LLM에서는 어디에 사용될까?
 
 이번 50강에서 배운 개념은 이후 Transformer · GPT · 서빙 강의에서 반복해서 등장합니다. 각 수식·코드 블록을 “실제 모델의 어느 단계인가”와 연결해 다시 읽어 보세요.

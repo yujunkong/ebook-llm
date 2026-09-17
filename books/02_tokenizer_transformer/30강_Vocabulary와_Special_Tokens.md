@@ -358,6 +358,16 @@ PAD를 “의미 있는 토큰”으로 배우고 싶지 않을 때 유용하다
 
 상세한 Embedding 자체는 31강에서 다룬다.
 
+## 수식 보강 — Special tokens
+
+어휘 $V$에 $\langle\mathrm{pad}\rangle,\langle\mathrm{bos}\rangle,\langle\mathrm{eos}\rangle$ 등을 추가합니다.
+
+$$
+V_{\mathrm{total}}=V_{\mathrm{base}}+V_{\mathrm{special}}
+$$
+
+마스킹 손실에서는 pad 위치를 $\mathcal{T}$에서 제외합니다.
+
 ## LLM에서는 어디에 사용될까?
 Hugging Face식 속성 예:
 

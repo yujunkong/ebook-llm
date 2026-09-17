@@ -339,6 +339,14 @@ Pretraining에서는:
 6. **test를 매일 봐서 사실상 val로 사용** — 최종 보고 신뢰 하락
 7. **AMP train / FP32 val을 아무 기록 없이 비교** — 곡선 해석이 어긋남
 
+## 수식 보강 — 불안정 신호
+
+손실 spike, $\mathrm{grad\_norm}=\|\nabla L\|$ 폭발, NaN은 스케일/LR/데이터 버그를 의심합니다. Grad clip:
+
+$$
+g\leftarrow g\cdot\min\Big(1,\frac{\tau}{\|g\|}\Big)
+$$
+
 ## LLM에서는 어디에 사용될까?
 
 이번 66강에서 배운 개념은 이후 Transformer · GPT · 서빙 강의에서 반복해서 등장합니다. 각 수식·코드 블록을 “실제 모델의 어느 단계인가”와 연결해 다시 읽어 보세요.

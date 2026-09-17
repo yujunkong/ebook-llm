@@ -204,6 +204,14 @@ for h in range(attn.size(0)):
 - [ ] (선택) 학습 전후 PNG 비교
 - [ ] 관찰 한 줄을 “사실”과 “해석”으로 나눠 메모
 
+## 수식 보강 — Attention map
+
+$$
+A=\mathrm{softmax}\Big(\frac{QK^{\top}}{\sqrt{d_k}}+M\Big)\in\mathbb{R}^{T\times T}
+$$
+
+시각화는 $A$의 행(쿼리)→열(키) 가중치를 히트맵으로 보는 일입니다. 행 합은 1입니다.
+
 ## LLM에서는 어디에 사용될까?
 
 이번 51강에서 배운 개념은 이후 Transformer · GPT · 서빙 강의에서 반복해서 등장합니다. 각 수식·코드 블록을 “실제 모델의 어느 단계인가”와 연결해 다시 읽어 보세요.

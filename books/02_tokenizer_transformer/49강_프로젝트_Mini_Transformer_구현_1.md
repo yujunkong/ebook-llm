@@ -398,6 +398,21 @@ Pre-LN 대신 Post-LN(`x = LN(x + Attn(x))`)으로 바꿔 smoke test가 통과�
 4. **Dropout만 켜고 eval 모드를 잊음**  
    1부는 smoke test라 괜찮지만, 50강 생성 시 `model.eval()`이 필요하다.
 
+## 수식 보강 — Mini Transformer 목표
+
+한 블록:
+
+$$
+x\leftarrow x+\mathrm{MHA}(\mathrm{LN}(x)),\quad
+x\leftarrow x+\mathrm{FFN}(\mathrm{LN}(x))
+$$
+
+언어모델 손실:
+
+$$
+L=-\frac{1}{|\mathcal{T}|}\sum_{t\in\mathcal{T}}\log p(x_t\mid x_{<t})
+$$
+
 ## LLM에서는 어디에 사용될까?
 
 이번 49강에서 배운 개념은 이후 Transformer · GPT · 서빙 강의에서 반복해서 등장합니다. 각 수식·코드 블록을 “실제 모델의 어느 단계인가”와 연결해 다시 읽어 보세요.

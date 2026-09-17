@@ -346,6 +346,14 @@ print("unexpected", unexpected)
 6. **신뢰 불가 경로의 `torch.load`** — 보안 이슈.
 7. **장치 불일치** — CUDA 텐서가 박힌 ckpt를 CPU에서 map_location 없이 로드.
 
+## 수식 보강 — Validation 손실
+
+$$
+L_{\mathrm{val}}=-\frac{1}{|\mathcal{T}_{\mathrm{val}}|}\sum\log p_\theta(x_t\mid x_{<t})
+$$
+
+Early stopping은 $L_{\mathrm{val}}$이 개선되지 않으면 학습을 멈춥니다.
+
 ## LLM에서는 어디에 사용될까?
 
 이번 65강에서 배운 개념은 이후 Transformer · GPT · 서빙 강의에서 반복해서 등장합니다. 각 수식·코드 블록을 “실제 모델의 어느 단계인가”와 연결해 다시 읽어 보세요.

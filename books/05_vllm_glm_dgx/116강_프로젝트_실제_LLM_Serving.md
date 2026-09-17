@@ -604,6 +604,14 @@ if __name__ == "__main__":
 5. 환경 스냅샷 없이 옵션만 잔뜩 변경  
 6. TP 멀티노드를 체크리스트 Step 1에 배치  
 
+## 수식 보강 — Serving SLO
+
+$$
+\mathrm{TTFT}\le \tau_1,\quad \mathrm{TPOT}\le \tau_2,\quad \mathrm{error\ rate}\le \epsilon
+$$
+
+같은 제약을 만족하는 최대 QPS/토큰처리량이 용량입니다.
+
 ## LLM에서는 어디에 사용될까?
 
 이번 116강에서 배운 개념은 이후 Transformer · GPT · 서빙 강의에서 반복해서 등장합니다. 각 수식·코드 블록을 “실제 모델의 어느 단계인가”와 연결해 다시 읽어 보세요.

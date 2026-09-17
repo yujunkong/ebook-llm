@@ -701,6 +701,14 @@ for step in range(300):
 
 이것이 3권 Pretraining 구간의 실전 관문이다. 규모·데이터를 키우면 “본격 Pretraining”으로 확장되고, 다음 장부터는 **같은 가중치에 지시 따르기를 심는 SFT**로 넘어간다.
 
+## 수식 보강 — Mini GPT 학습 목표
+
+$$
+\min_\theta\ \mathbb{E}_{x\sim\mathcal{D}}\Big[-\sum_t\log p_\theta(x_t\mid x_{<t})\Big]
+$$
+
+모델은 Embedding+ $N$ Blocks+LM Head입니다.
+
 ## LLM에서는 어디에 사용될까?
 
 이번 68강에서 배운 개념은 이후 Transformer · GPT · 서빙 강의에서 반복해서 등장합니다. 각 수식·코드 블록을 “실제 모델의 어느 단계인가”와 연결해 다시 읽어 보세요.

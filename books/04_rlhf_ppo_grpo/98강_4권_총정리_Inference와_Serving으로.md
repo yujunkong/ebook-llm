@@ -145,6 +145,16 @@ $$
 | “잘 되는데 이상하다” | 96 |
 | 논문 이야기 과신 | 97 |
 
+## 수식 보강 — 학습에서 서빙으로
+
+학습된 $\pi_\theta$의 추론은 Prefill+Decode입니다.
+
+$$
+T_{\mathrm{total}}\approx\mathrm{TTFT}+(T_{\mathrm{out}}-1)\mathrm{TPOT}
+$$
+
+5권은 이 지연·메모리를 줄이는 장치(KV, batching, quant)를 다룹니다.
+
 ## LLM에서는 어디에 사용될까?
 
 이번 98강에서 배운 개념은 이후 Transformer · GPT · 서빙 강의에서 반복해서 등장합니다. 각 수식·코드 블록을 “실제 모델의 어느 단계인가”와 연결해 다시 읽어 보세요.

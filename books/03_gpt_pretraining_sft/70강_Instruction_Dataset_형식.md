@@ -275,6 +275,14 @@ if __name__ == "__main__":
 
 이 책은 특정 공개 데이터셋의 “점수”를 주장하지 않는다. **자기 미니 JSONL을 깨끗하게 만드는 습관**이 목표다.
 
+## 수식 보강 — Instruction 샘플
+
+하나의 샘플을 $(c,y)$로 두면 SFT 손실은 응답 토큰만:
+
+$$
+L=-\sum_{t\in y}\log p_\theta(y_t\mid c,y_{<t})
+$$
+
 ## LLM에서는 어디에 사용될까?
 - 공개 SFT 데이터는 Alpaca-like와 ShareGPT/messages 계열이 공존한다.
 - 많은 학습 프레임워크가 messages를 받아 내부에서 chat template을 적용한다.

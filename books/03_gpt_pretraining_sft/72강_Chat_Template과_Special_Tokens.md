@@ -302,6 +302,16 @@ messages (정답 없음)
 
 이 두 경로가 **같은 `apply_chat_template` 구현**을 import해야 한다. train 스크립트에 문자열을 하드코딩하고 generate에 다른 하드코딩을 두지 말 것.
 
+## 수식 보강 — Chat template
+
+메시지 열 $(m_1,\ldots,m_k)$를 특수 토큰으로 직렬화합니다.
+
+$$
+\text{string}=\mathrm{Template}(m_1,\ldots,m_k)
+$$
+
+토크나이저 후 ID 열이 모델 입력이 됩니다. 역할(user/assistant/system) 경계가 학습 신호입니다.
+
 ## LLM에서는 어디에 사용될까?
 - 모델 카드에 `chat_template`(종종 Jinja)가 배포되는 경우가 많다.
 - 토크나이저 설정과 가중치가 한 쌍이다. 토크나이저만 다른 버전으로 바꾸면 특수 토큰 ID가 어긋난다.

@@ -183,6 +183,16 @@ class Scheduler:
 4. 엔진 버전 없이 “vLLM은 항상 X 정책”이라고 단정
 5. PagedAttention 없이 스케줄만 논해 OOM 원인을 놓침 — 둘은 한 쌍이다
 
+## 수식 보강 — 스케줄러 목표
+
+대기열 요청을 GPU 메모리·배치 제약 하에서 배치합니다.
+
+$$
+\max\ \mathrm{throughput}\ \mathrm{s.t.}\ \mathrm{Mem}_{KV}+\mathrm{Mem}_{model}\le M
+$$
+
+선점/중단은 긴 요청이 짧은 요청을 막지 않게 합니다.
+
 ## LLM에서는 어디에 사용될까?
 
 이번 106강에서 배운 개념은 이후 Transformer · GPT · 서빙 강의에서 반복해서 등장합니다. 각 수식·코드 블록을 “실제 모델의 어느 단계인가”와 연결해 다시 읽어 보세요.

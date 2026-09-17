@@ -411,6 +411,18 @@ def approx_kl(logp_theta, logp_ref):
 2. RM에 gradient가 흐름 → RL 단계에서는 freeze가 기본
 3. prompt 길이·response 길이를 나눠 logprob 슬라이싱
 
+## 수식 보강 — RLHF 파이프라인
+
+$$
+\pi_{\mathrm{SFT}}\to r_\phi\to \pi_{\mathrm{RL}}
+$$
+
+목표 스케치:
+
+$$
+\max_\pi\ \mathbb{E}_{x,y\sim\pi}[r_\phi(x,y)]-\beta\mathrm{KL}(\pi\|\pi_{\mathrm{ref}})
+$$
+
 ## LLM에서는 어디에 사용될까?
 연구·제품에서 보이는 변형:
 
