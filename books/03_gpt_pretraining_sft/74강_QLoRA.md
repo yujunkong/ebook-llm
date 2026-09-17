@@ -368,6 +368,40 @@ NF4: 블록 스케일 $s$와 코드북 인덱스 $q_i$, $\hat w_i=s\cdot q_i$.
 
 학습 양자화 ≠ 추론 양자화. Merge 후 BF16 서빙 가능.
 
+
+## 워크드 예제 — 비트·trainable·함정
+
+### 비트 산수
+
+| 표현 | bytes/param |
+|---|---:|
+| FP32 | 4 |
+| FP16 | 2 |
+| 8-bit | 1 |
+| 4-bit | 0.5 |
+
+$N=7\times10^9$: FP16 가중치 $\approx14$GB 감각, 4-bit $\approx3.5$GB 감각.  
+학습 VRAM ≠ 이 숫자(activation·LoRA·fragmentation).
+
+### Trainable 세기
+
+$C=4096$, $r=16$, layers $32$, modules $\{q,v,o\}$:
+
+$$
+\#=32\cdot3\cdot16\cdot(4096+4096)=12{,}582{,}912
+$$
+
+Base $7$B 대비 $\sim0.18\%$.
+
+### 흔한 함정
+
+1. 베이스 unfreeze → QLoRA가 아님  
+2. loss에 프롬프트 포함 → 지시 복사  
+3. “VRAM이 항상 N GB” 단정  
+4. 학습 4-bit = 서빙 4-bit로 동일시
+
+Fact: 저장 비트↓. Explanation: 같은 GPU에서 큰 베이스 SFT가 쉬워질 **수** 있음.
+
 ## LLM에서는 어디에 사용될까?
 
 이번 74강에서 배운 개념은 이후 Transformer · GPT · 서빙 강의에서 반복해서 등장합니다. 각 수식·코드 블록을 “실제 모델의 어느 단계인가”와 연결해 다시 읽어 보세요.

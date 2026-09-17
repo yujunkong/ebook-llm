@@ -276,6 +276,38 @@ $$
 \mathrm{Sat}=\frac1M\sum_m\mathbf{1}\{\text{응답}_m\text{이 제약}_m\text{만족}\}
 $$
 
+
+## 워크드 예제 — 마스크와 제약 분해
+
+샘플 토큰화(가상 id):
+
+```text
+[U1 U2 U3 U4 | A1 A2 A3]
+ prompt(4)      resp(3)
+```
+
+SFT 마스크: prompt 위치 `ignore`, 응답 3토큰만 CE.
+
+평균을 응답 길이로 나누면 배치 내 “짧은 답”이 상대적으로 크게 보일 수 있다.
+
+### 제약 분해 연습
+
+지시: `한국어로, 불릿 3개, 코드 없이, 초등 설명: CPU vs GPU`
+
+| 제약 | 검사 아이디어 |
+|---|---|
+| 언어 | 한글 비율/언어 탐지 |
+| 개수 | 줄 머리 `-`/`*` 3개 |
+| 금지 | ` ``` ` 또는 `def ` 부재 |
+| 청중 | 전문 용어 밀도(휴리스틱) |
+
+$\mathrm{Sat}$는 이런 지시자 평균이다. PPL과 독립.
+
+### Base vs SFT 한 줄
+
+Base: $p(x_t\mid x_{<t})$ on documents.  
+SFT: $p(a_t\mid u,a_{<t})$ on instruction pairs.
+
 ## LLM에서는 어디에 사용될까?
 공개·산업 파이프라인에서 흔히 관찰되는 패턴:
 

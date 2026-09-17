@@ -308,6 +308,42 @@ Dec-only  : 위치 t → 과거 ≤t 만
 Enc-Dec   : Dec self(causal) + Dec query↔Enc memory
 ```
 
+
+## 워크드 예제 — 길이 4 마스크와 Cross score
+
+토큰 `[BOS, A, B, C]` ($T=4$).
+
+**Encoder self:** $4\times4$ 전부 attend 가능(패딩 없으면 $M=0$).
+
+**Decoder causal:** 위치 2(`B`)의 허용 키는 인덱스 $0,1,2$뿐. Softmax 지지 집합 크기 3.
+
+**Cross:** $T_d=3$, $T_e=5$이면
+
+$$
+S\in\mathbb{R}^{3\times5},\quad
+A=\mathrm{softmax}(S)\ (\text{행 정규화}),\quad
+\mathrm{Out}=AV\in\mathbb{R}^{3\times d}
+$$
+
+행 합이 1인지 확인해 Cross가 “원문 위치 위의 분포”임을 본다.
+
+**손실 스케치:** Decoder-only에서 입력 `BOS A B` → 타깃 `A B C`이면 항 3개:
+
+$$
+-\log p(A\mid\mathrm{BOS})-\log p(B\mid\mathrm{BOS},A)-\log p(C\mid\mathrm{BOS},A,B)
+$$
+
+Encoder-only MLM이 `B`를 가리면 조건이 양방향 $A,C$를 포함해 **생성 규칙과 다른 조건부**가 된다.
+
+### GPT가 Encoder-Decoder가 아닌 이유(구조)
+
+표준 GPT형 스택에는 Cross-Attention 모듈이 없다.  
+프롬프트와 생성 토큰이 **같은 Causal Self-Attention** 위에서 이어질 뿐이다.
+
+$$
+x=\mathrm{concat}(\mathrm{prompt},\mathrm{gen})\quad\text{하나의 스트림}
+$$
+
 ## LLM에서는 어디에 사용될까?
 사실:
 

@@ -301,6 +301,28 @@ $$
 P(x_{t_0+1:t_0+K}\mid x_{1:t_0})=\prod_{k}P(x_{t_0+k}\mid x_{<t_0+k})
 $$
 
+
+## 워크드 예제 — 루프·시드·EOS
+
+의사코드 한 바퀴:
+
+1. `idx_cond = idx[:, -L:]` ($L=\mathrm{block\_size}$)
+2. `logits = model(idx_cond)` → `[B,T',V]`
+3. `z = logits[:, -1, :]`
+4. greedy: `next = z.argmax(-1)` / sample: `Categorical(softmax(z))`
+5. `idx = cat(idx, next)`
+6. `next==EOS`면 해당 배치 종료
+
+### 같은 $p$에서 5번 샘플
+
+$p=(0.05,0.80,0.15)$이면 기댓값적으로 id1이 4번 안팎, id2가 가끔.  
+`torch.manual_seed(0)`으로 재현 가능한지 확인하는 것이 디버깅 기본이다.
+
+### Greedy 반복 병
+
+모드만 고르면 $P(\text{same}|\text{same})$가 큰 토큰(마침표·줄바꿈·특수)에서 루프가 생기기 쉽다.  
+Sampling·temperature·top-p는 그 **병의 출구**이지, 모델 가중치를 바꾸지는 않는다.
+
 ## LLM에서는 어디에 사용될까?
 제품 챗봇은 드물게 순수 greedy만 쓴다. 보통:
 

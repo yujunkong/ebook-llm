@@ -342,6 +342,33 @@ Adam 상태도 $P_{\mathrm{lora}}$에만 비례해 축소.
 
 $B=0$ 초기화 ⇒ 시작 시 $\Delta W=0$ ⇒ 사전학습 forward 유지.
 
+
+## 워크드 예제 — BA 곱·비율·merge
+
+$d_{\mathrm{out}}=3,d_{\mathrm{in}}=4,r=1$,
+
+$$
+B=\begin{bmatrix}0.5\\-1\\2\end{bmatrix},
+A=\begin{bmatrix}1&0&-1&2\end{bmatrix}
+$$
+
+$$
+BA=\begin{bmatrix}
+0.5&0&-0.5&1\\
+-1&0&1&-2\\
+2&0&-2&4
+\end{bmatrix}
+$$
+
+자유도 $7$ vs full $12$. 모든 행이 $A$의 배수 → rank 1.
+
+$\alpha=r=8$이면 스케일 1.  
+$x=(1,1,1,1)$일 때 $(xA)B = (2)\cdot B^\top$ 관례에 맞춰 forward를 한 줄로 검증하라.
+
+Merge 후 단일 $W$로 추론하면 추가 matmul 없음.
+
+과적합 경고: 데이터 500건에 attn+FFN 전부 $r=64$ → 자유도 과다 위험(제75강).
+
 ## LLM에서는 어디에 사용될까?
 
 이번 73강에서 배운 개념은 이후 Transformer · GPT · 서빙 강의에서 반복해서 등장합니다. 각 수식·코드 블록을 “실제 모델의 어느 단계인가”와 연결해 다시 읽어 보세요.

@@ -334,6 +334,37 @@ $$
 생성: logits[:, -1, :] 만 decode → append
 ```
 
+
+## 워크드 예제 — Mini shape·파라미터·시프트
+
+설정: $B=2,T=8,C=64,V=1000,N=4$, learned PE, tying.
+
+```text
+idx        [2,8]
+tok+pos    [2,8,64]
+×4 blocks  [2,8,64]
+ln_f       [2,8,64]
+logits     [2,8,1000]
+```
+
+파라미터(대략):
+
+| 모듈 | 식 | 값 |
+|---|---|---:|
+| tok_emb | $VC$ | 64000 |
+| pos_emb | $T_{\max}C$ (여기선 8) | 512 |
+| blocks | $N\cdot12C^2$ | 196608 |
+| lm_head | tying | 0 |
+| **합** | | **≈261k** |
+
+타깃 시프트: `logits[:, :-1]` vs `idx[:, 1:]` → 비교 길이 $T-1=7$.
+
+한 위치 CE: $z\in\mathbb{R}^{1000}$, 정답 id $y$.  
+$\mathcal{L}_t=-\log\mathrm{softmax}(z)_y$.
+
+생성 시에는 $T$를 1씩 늘리며 `logits[:, -1, :]`만 사용.  
+`block_size`를 넘으면 `idx[:, -block_size:]`로 잘라 PE 테이블·마스크 크기를 지킨다.
+
 ## LLM에서는 어디에 사용될까?
 
 이번 48강에서 배운 개념은 이후 Transformer · GPT · 서빙 강의에서 반복해서 등장합니다. 각 수식·코드 블록을 “실제 모델의 어느 단계인가”와 연결해 다시 읽어 보세요.
