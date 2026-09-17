@@ -151,7 +151,7 @@ Pretrain: $\mathcal{D}_{\mathrm{web}}$ 위 무조건부 LM.
 SFT: $\mathcal{D}_{\mathrm{instr}}$ 위 조건부 응답 LM.
 
 $$
-p_{\mathrm{pt}}(x)\ \vs\ p_{\mathrm{sft}}(y\mid c)
+p_{\mathrm{pt}}(x)\ \text{ vs }\ p_{\mathrm{sft}}(y\mid c)
 $$
 
 같은 CE 뼈대, 다른 데이터 분포입니다.

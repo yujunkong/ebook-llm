@@ -511,6 +511,39 @@ draft/verify 비용 증가와 수락 실패 시 낭비가 커져 오히려 느�
 
 엔진·구조·하드웨어가 한 줄로 이어진다.
 
+<!-- enrich-110-depth -->
+## 스펙큘레이티브 속도up 식
+
+드래프트가 $\gamma$토큰을 제안하고 타깃이 검증할 때, 수락률을 $\alpha$라 하면 대략
+
+$$
+\mathbb{E}[\text{전진 토큰}]
+\approx
+\alpha\cdot\gamma
+\quad\text{（스텝당, 단순 모형）}
+$$
+
+벽시계 이득（개념）:
+
+$$
+\mathrm{Speedup}
+\approx
+\frac{T_{\mathrm{base}}}{T_{\mathrm{draft}}+T_{\mathrm{verify}}/\mathbb{E}[\text{전진}]}
+$$
+
+$\alpha$가 낮으면 verify 비용만 늘고 이득이 사라진다.
+
+MTP（Multi-Token Prediction）는 헤드가 여러 위치를 공동 예측해 드래프트 품질을 올리려는 계열이다. 수락률 $\alpha$와 드래프트 비용의 트레이드오프가 핵심이다.
+
+### 측정 체크
+
+- 토큰당 수락률 $\hat\alpha$
+- 평균 수락 길이
+- 베이스 대비 TTFT/TPOT
+- 품질（동일 디코드 파라미터）회귀 여부
+
+숫자 없이 “스펙큘레이티브라서 빠르다”고 쓰지 않는다.
+
 <!-- LECTURE_NAV -->
 
 ---

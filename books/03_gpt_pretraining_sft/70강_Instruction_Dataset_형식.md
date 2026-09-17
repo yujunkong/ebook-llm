@@ -397,6 +397,102 @@ def render(q, a):
 print(render("1+1?", "2"))
 ```
 
+
+<!-- enrich-pass-1f64 -->
+## 수식 전개 — Instruction 샘플의 토큰화
+
+샘플 $(c, r)$（context/prompt, response）를 이어 붙인 시퀀스 $x=\mathrm{cat}(c,r)$에 대해 SFT는 보통
+
+$$
+L
+=
+-\sum_{t\in\mathcal{R}}\log p_\theta(x_t\mid x_{<t})
+$$
+
+만 최소화합니다. $\mathcal{R}$은 응답 토큰 위치 집합입니다.
+
+마스크로 쓰면
+
+$$
+m_t
+=
+\begin{cases}
+1 & t\in\mathcal{R}\\
+0 & \text{otherwise}
+\end{cases}
+$$
+
+$$
+L
+=
+\frac{\sum_t m_t(-\log p_t)}{\sum_t m_t}
+$$
+
+## Shape 표 — Instruction JSON → 텐서
+
+| 필드 | 예 | 결과 |
+|---|---|---|
+| `instruction` | 문자열 | 프롬프트 일부 |
+| `input` | 선택 문자열 | 프롬프트 일부 |
+| `output` | 문자열 | 응답 |
+| `input_ids` | — | `(T,)` / `(B,T)` |
+| `labels` | — | 프롬프트는 `-100` |
+
+## 구현 스케치 — 스키마 정규화
+
+```python
+def normalize_row(row):
+    if "messages" in row:
+        return {"messages": row["messages"]}
+    instr = row.get("instruction", "")
+    inp = row.get("input", "")
+    out = row.get("output") or row.get("response", "")
+    user = instr if not inp else f"{instr}\n{inp}"
+    return {
+        "messages": [
+            {"role": "user", "content": user},
+            {"role": "assistant", "content": out},
+        ]
+    }
+```
+
+Alpaca형과 chat형를 **한 스키마로 수렴**시키면 제72강 템플릿이 단순해집니다.
+
+## 실패 모드 — Instruction 데이터
+
+| 실패 | 증상 | 처방 |
+|---|---|---|
+| output 빈 문자열 | 학습 신호 0 | 검증기 |
+| 시스템 프롬프트 혼재 | 스타일 붕괴 | 필드 분리 |
+| train/eval 중복 | 가짜 점수 | 해시 검사 |
+| 다국어 깨짐 | 토큰 폭주 | 인코딩 검사 |
+
+## 실습 코드 — 길이 통계
+
+```python
+def response_length_stats(rows, tok):
+    lens = []
+    for r in rows:
+        out = r.get("output") or r["messages"][-1]["content"]
+        lens.append(len(tok(out)))
+    lens.sort()
+    return {"n": len(lens), "p50": lens[len(lens)//2], "max": lens[-1]}
+```
+
+응답이 전부 한 줄이면 형식 다양성 부족을 의심합니다.
+
+## 수식 보강 — 다턴 샘플
+
+턴 $u_1,a_1,\ldots,u_k,a_k$에서 손실 구간은 보통 모든 assistant 턴입니다.
+
+$$
+\mathcal{R}
+=
+\bigcup_{j=1}^{k}\mathrm{span}(a_j)
+$$
+
+사용자 턴은 문맥으로만 남깁니다（제71~72강）.
+
 ## LLM에서는 어디에 사용될까?
 - 공개 SFT 데이터는 Alpaca-like와 ShareGPT/messages 계열이 공존한다.
 - 많은 학습 프레임워크가 messages를 받아 내부에서 chat template을 적용한다.

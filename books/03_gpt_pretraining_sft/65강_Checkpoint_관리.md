@@ -479,6 +479,97 @@ print("ok")
 
 원자적 저장: `*.tmp` → rename.
 
+
+<!-- enrich-pass-1f64 -->
+## 수식 전개 — 체크포인트 크기
+
+가중치만 FP32로 저장할 때 대략
+
+$$
+\mathrm{size}_{\mathrm{weights}}
+\approx
+4\cdot\#\theta
+\quad(\mathrm{bytes})
+$$
+
+입니다. Adam 상태（$m,v$）까지 포함하면
+
+$$
+\mathrm{size}_{\mathrm{full}}
+\approx
+\mathrm{size}_{\mathrm{weights}}
++
+2\cdot 4\cdot\#\theta
+=
+12\cdot\#\theta
+$$
+
+정도로 불어날 수 있습니다（실제는 dtype·샤딩에 따라 다름）.
+
+Best/Last 선택 규칙 예:
+
+$$
+\theta_{\mathrm{best}}
+=
+\arg\min_{c\in\mathcal{C}} L_{\mathrm{val}}(c)
+$$
+
+## Shape / 파일 표
+
+| 키 | 내용 |
+|---|---|
+| `model` | `state_dict` |
+| `optimizer` | Adam 모멘트 등 |
+| `scheduler` | last_epoch 등 |
+| `scaler` | GradScaler 상태 |
+| `step` / `tokens` | 재개 좌표 |
+| `config` | 하이퍼·시드 |
+
+## 구현 스케치 — 원자적 저장
+
+```python
+def save_ckpt(path, payload):
+    tmp = path.with_suffix(".tmp")
+    torch.save(payload, tmp)
+    tmp.replace(path)  # 원자적에 가깝게 교체
+```
+
+쓰기 도중 크래시가 나도 이전 체크포인트가 남습니다.
+
+## 실패 모드 — Checkpoint
+
+| 실패 | 증상 | 처방 |
+|---|---|---|
+| optim 미저장 | resume 후 loss 점프 | full ckpt |
+| DataParallel 접두사 | load 실패 | `module.` strip |
+| best를 train loss로 | 과적합 채택 | val/harness |
+| 디스크 가득 | 저장 실패 | rotation |
+
+## 실습 코드 — 로드 검증
+
+```python
+def smoke_load(model, path):
+    ckpt = torch.load(path, map_location="cpu")
+    missing, unexpected = model.load_state_dict(ckpt["model"], strict=False)
+    assert not missing, missing
+    print({"step": ckpt.get("step"), "unexpected": unexpected})
+```
+
+저장 직후 바로 smoke load를 돌려 “파일이 있다”가 아니라 **로드된다**를 확인하세요.
+
+## 수식 보강 — 회전（rotation）
+
+최대 $R$개만 유지할 때, 스텝 순 정렬 후
+
+$$
+\mathcal{C}
+\leftarrow
+\mathrm{topR}_{\mathrm{step}}(\mathcal{C})
+\cup\{\theta_{\mathrm{best}}\}
+$$
+
+처럼 best는 별도 보호합니다.
+
 ## LLM에서는 어디에 사용될까?
 
 이번 65강에서 배운 개념은 이후 Transformer · GPT · 서빙 강의에서 반복해서 등장합니다. 각 수식·코드 블록을 “실제 모델의 어느 단계인가”와 연결해 다시 읽어 보세요.

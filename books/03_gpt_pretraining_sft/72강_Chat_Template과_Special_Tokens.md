@@ -434,6 +434,89 @@ $$
 p_\theta(y\mid \mathrm{tmpl}(x)) \neq p_\theta(y\mid x)
 $$
 
+
+<!-- enrich-pass-1f64 -->
+## 수식 전개 — 템플릿은 결정적 맵
+
+메시지 리스트 $M=((r_i,c_i))_{i=1}^{n}$에 대해 템플릿 $\mathcal{T}$는 문자열（또는 토큰열）을 만듭니다.
+
+$$
+x=\mathcal{T}(M)
+$$
+
+학습과 서빙에서 $\mathcal{T}$가 다르면 분포가 어긋납니다.
+
+특수 토큰 집합 $\mathcal{S}=\{\texttt{bos},\texttt{eos},\texttt{im\_start},\ldots\}$에 대해
+
+$$
+\mathrm{id}:\mathcal{S}\to\mathbb{Z}
+$$
+
+가 tokenizer vocabulary에 등록되어 있어야 합니다. 미등록 문자열을 그대로 넣으면 **조각 토큰**으로 쪼개져 의미가 깨집니다.
+
+### 마스크와의 결합
+
+assistant 스팬만 남기는 마스크는 템플릿이 찍은 경계에 의존합니다.
+
+$$
+m_t=1\iff t\in\mathrm{span}_{\mathcal{T}}(\text{assistant})
+$$
+
+## Shape 표 — apply_chat_template
+
+| 입출력 | 예 |
+|---|---|
+| messages | `List[{role, content}]` |
+| rendered string | `str` |
+| `input_ids` | `(T,)` |
+| special token ids | scalar씩 |
+
+## 구현 스케치 — 경계 기록
+
+```python
+def render_with_spans(messages, tok):
+    ids, spans, roles = [], {}, []
+    for msg in messages:
+        piece = format_role(msg)  # 역할별 특수 토큰 포함
+        start = len(ids)
+        ids.extend(tok(piece))
+        end = len(ids)
+        spans.setdefault(msg["role"], []).append((start, end))
+    return ids, spans
+```
+
+spans로 labels를 만들면 제71강 마스크와 정확히 맞습니다.
+
+## 실패 모드 — Chat Template
+
+| 실패 | 증상 | 처방 |
+|---|---|---|
+| train≠serve 템플릿 | 지시 준수 실패 | 단일 소스 |
+| special token 미등록 | 조각화 | `add_special_tokens` |
+| 시스템 롤 무시 | 톤 불안정 | 템플릿에 명시 |
+| 공백/개행 불일치 | 토큰 어긋남 | 스냅샷 테스트 |
+
+## 실습 코드 — 스냅샷 테스트
+
+```python
+def test_template_snapshot(apply_fn, messages, expected):
+    got = apply_fn(messages)
+    assert got == expected, repr(got)
+```
+
+템플릿을 바꾸면 스냅샷을 의도적으로 갱신합니다. 조용히 바꾸지 마세요.
+
+## 수식 보강 — 멀티턴 길이
+
+$$
+T
+=
+\big|\mathcal{T}(M)\big|
+\le T_{\max}
+$$
+
+초과 시 오래된 턴부터 자르는 truncation 정책을 문서화하세요. 응답 스팬이 잘리면 학습 신호가 사라집니다.
+
 ## LLM에서는 어디에 사용될까?
 - 모델 카드에 `chat_template`(종종 Jinja)가 배포되는 경우가 많다.
 - 토크나이저 설정과 가중치가 한 쌍이다. 토크나이저만 다른 버전으로 바꾸면 특수 토큰 ID가 어긋난다.

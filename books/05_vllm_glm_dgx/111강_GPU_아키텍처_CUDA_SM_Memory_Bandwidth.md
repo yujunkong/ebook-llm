@@ -529,6 +529,41 @@ GPU의 천장과 병목 종류를 보았다. 다음 질문은 **그 위에서 �
 
 엔진마다 PagedAttention, CUDA Graph, Radix Cache 같은 무기가 다르다. “항상 승자”는 없고, 워크로드·팀·배포 제약에 맞는 선택을 제112강에서 비교한다.
 
+<!-- enrich-111-depth -->
+## 로프라인으로 decode를 보기
+
+연산 강도:
+
+$$
+I=\frac{\mathrm{FLOPs}}{\mathrm{Bytes}_{\mathrm{HBM}}}
+$$
+
+로프라인:
+
+$$
+\mathrm{Perf}
+\le
+\min\big(\mathrm{PeakFLOP},\ I\cdot \mathrm{BW}_{\mathrm{HBM}}\big)
+$$
+
+LLM decode는 종종 **메모리 바운드**에 가깝다. 가중치·KV 재사용이 BW를 잠식한다.
+
+대략적 토큰 시간 감각:
+
+$$
+t_{\mathrm{tok}}
+\gtrsim
+\frac{M_{\mathrm{weights}}+M_{\mathrm{KV,read}}}{\mathrm{BW}_{\mathrm{eff}}}
+$$
+
+배치를 키우면 가중치 재사용이 늘어 $I$가 올라갈 수 있다. Continuous Batching의 동기가 여기에도 있다.
+
+### SM·점유율 메모
+
+- SM 부족: launch·동기화·작은 커널
+- BW 부족: 거대 가중치 스트리밍·KV
+- 실무는 Nsight로 **어느 쪽이 천장인지**를 먼저 본다
+
 <!-- LECTURE_NAV -->
 
 ---

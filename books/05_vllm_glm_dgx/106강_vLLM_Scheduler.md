@@ -501,6 +501,51 @@ Admission 가능 여부와 preemption 필요 여부(메모리 예산).
 
 이전: 제105강 PagedAttention → 메모리 화폐. 이번: 그 화폐의 **배분 정책**.
 
+<!-- enrich-106-depth -->
+## 스케줄러 목적함수를 운영 지표로
+
+개념 목표:
+
+$$
+\max_{\mathcal{B}}\;\mathrm{tokens/s}
+\quad
+\mathrm{s.t.}\;
+\mathrm{Mem}(\mathcal{B})\le M,\;
+|\mathcal{B}|\le B_{\max},\;
+\mathrm{TTFT}_{P99}\le S
+$$
+
+세 번째 제약（SLO）이 빠지면 처리량만 좋은 “나쁜 스케줄”이 나온다.
+
+### Preemption 비용
+
+선점 후 재개 시 추가 비용（정성）:
+
+$$
+C_{\mathrm{preempt}}
+\approx
+C_{\mathrm{recompute\ prefill}}
++
+C_{\mathrm{queue\ wait}}
+$$
+
+블록 부족:
+
+$$
+\mathrm{free\_blocks} < \left\lceil\frac{\ell}{b}\right\rceil
+\;\Rightarrow\;
+\text{admit 거부 또는 preempt}
+$$
+
+### 로그에 남길 최소 필드
+
+- waiting/running 길이
+- admit/preempt 횟수
+- 스텝당 prefill 토큰 vs decode 토큰
+- KV 블록 사용률
+
+이 필드가 제118강 리포트의 “스케줄러 건강” 섹션이 된다.
+
 <!-- LECTURE_NAV -->
 
 ---

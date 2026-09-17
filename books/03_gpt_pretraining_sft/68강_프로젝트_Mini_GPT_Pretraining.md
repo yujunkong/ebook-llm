@@ -771,6 +771,91 @@ $$
 체크포인트에는 적어도 $\theta$, $t$, config를 남기고, 생성 샘플은 같은 프롬프트로 step마다 저장합니다.  
 성공 선언은 “loss가 조금 내려갔다”가 아니라 **로그·샘플·재개 가능 ckpt**가 남았는지로 합니다.
 
+
+<!-- enrich-pass-1f64 -->
+## 수식 전개 — Mini Pretraining 목표
+
+프로젝트의 학습 목표는 Causal LM CE입니다.
+
+$$
+L
+=
+-\frac{1}{\sum m_{b,t}}
+\sum_{b,t} m_{b,t}\log p_\theta(x_{b,t}\mid x_{b,<t})
+$$
+
+성공의 최소 증거:
+
+$$
+L_{\mathrm{overfit}}^{\mathrm{(1\ batch)}} \to 0^{+}
+\quad\text{and}\quad
+L_{\mathrm{train}}\downarrow
+$$
+
+생성 샘플은 정량 점수가 아니라 **데이터 패턴 반영**을 눈으로 확인합니다.
+
+### 파라미터 수 스케치
+
+임베딩·블록·헤드를 합친 $\#\theta$에 대해 체크포인트 크기는
+
+$$
+\mathrm{size}\approx 4\cdot\#\theta
+$$
+
+（FP32 가중치만）입니다. Mini에서는 수 MB~수십 MB가 정상 감각입니다.
+
+## Shape 표 — 프로젝트 텐서
+
+| 모듈 | Shape |
+|---|---|
+| `input_ids` | `(B, T)` |
+| token emb | `(B, T, d)` |
+| logits | `(B, T, V)` |
+| loss | `()` |
+
+## 실패 모드 — Mini GPT Pretrain
+
+| 실패 | 증상 | 처방 |
+|---|---|---|
+| 라벨 미시프트 | Loss↓·생성 붕괴 | y = x[:,1:] |
+| vocab 불일치 | index 오류 | tok/모델 V 통일 |
+| val 미분리 | 착시 | tiny held-out |
+| 시드 없음 | 재현 실패 | seed 고정 |
+
+## 실습 코드 — Overfit 한 배치
+
+```python
+def overfit_one_batch(model, batch, opt, steps=200):
+    model.train()
+    for i in range(steps):
+        opt.zero_grad(set_to_none=True)
+        loss = compute_loss(model, batch)
+        loss.backward()
+        opt.step()
+        if i % 20 == 0:
+            print(i, float(loss))
+```
+
+한 배치에서 Loss가 내려가지 않으면 스케줄·AMP 전에 **배선**을 고칩니다.
+
+## 수식 보강 — 샘플링 연결
+
+학습 분포에서 생성은
+
+$$
+x_{t+1}\sim\mathrm{Categorical}\big(\mathrm{softmax}(z_t/\tau)\big)
+$$
+
+입니다. $\tau\to 0$이면 greedy에 가깝습니다（제58~59강）.
+
+### 토큰 예산
+
+$$
+S\approx B_{\mathrm{tok}}/(B\cdot T\cdot\eta)
+$$
+
+config에 $B_{\mathrm{tok}}, B, T$를 명시해 제62~64강과 용어를 맞추세요.
+
 ## LLM에서는 어디에 사용될까?
 
 이번 68강에서 배운 개념은 이후 Transformer · GPT · 서빙 강의에서 반복해서 등장합니다. 각 수식·코드 블록을 “실제 모델의 어느 단계인가”와 연결해 다시 읽어 보세요.

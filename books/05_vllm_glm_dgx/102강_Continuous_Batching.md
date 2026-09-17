@@ -524,6 +524,36 @@ Iteration-level scheduling을 한 줄로.
 
 > 빈자리를 채우는 기술 다음에, 자리 자체를 좁히는 기술이 온다.
 
+<!-- enrich-102-depth -->
+## 배치 효율을 수식으로 다시 보기
+
+정적 배치에서 패딩 낭비를 $p$, 유효 토큰 비율을 $\eta$라 하면
+
+$$
+\eta = \frac{\sum_i \ell_i}{B\cdot \ell_{\max}}
+\approx 1-p
+$$
+
+Continuous Batching은 시퀀스가 끝나는 즉시 자리를 비워 $\eta$를 올린다.
+
+대략적 처리량 감각:
+
+$$
+\mathrm{Throughput}
+\approx
+\frac{N_{\mathrm{active}}\cdot \bar{r}_{\mathrm{decode}}}{1+\kappa_{\mathrm{prefill}}}
+$$
+
+여기서 $\bar{r}_{\mathrm{decode}}$는 decode 토큰/초, $\kappa_{\mathrm{prefill}}$는 prefill이 배치를 잠식하는 상대 비용이다.
+
+### 실무 체크 세 줄
+
+1. 평균 배치 내 활성 시퀀스 수 $N_{\mathrm{active}}$를 로그로 남긴다.
+2. prefill 유입이 TTFT P99를 깨는지 본다.
+3. 패딩 비율 리포트를 정적 배치 대비로 남긴다.
+
+이 세 줄이 제106강 스케줄러·제118강 리포트와 같은 언어가 된다.
+
 <!-- LECTURE_NAV -->
 
 ---

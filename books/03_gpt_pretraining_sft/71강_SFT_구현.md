@@ -389,6 +389,93 @@ $$
 | EOS 누락 | 무한 생성 |
 | 템플릿 mismatch | eval 급락 |
 
+
+<!-- enrich-pass-1f64 -->
+## 수식 전개 — Response-only CE
+
+프롬프트 토큰을 제외한 SFT 손실:
+
+$$
+L_{\mathrm{SFT}}
+=
+-\frac{1}{\sum_t m_t}
+\sum_t m_t\log p_\theta(x_t\mid x_{<t})
+$$
+
+$m_t=0$인 위치는 `ignore_index=-100`으로 구현합니다.
+
+라벨 시프트와 마스크가 어긋나면
+
+$$
+\sum_t m_t(-\log p_t)
+$$
+
+가 “쉬운 프롬프트 토큰”을 포함해 Loss가 낙관적으로 내려갑니다. **단위 테스트로 마스크 합**을 검증하세요.
+
+### 프리트레인과의 차이
+
+$$
+L_{\mathrm{PT}}=-\sum_{t=1}^{T}\log p_t,
+\qquad
+L_{\mathrm{SFT}}=-\sum_{t\in\mathcal{R}}\log p_t
+$$
+
+## Shape 표 — 마스크 텐서
+
+| 텐서 | Shape | 값 |
+|---|---|---|
+| `input_ids` | `(B, T)` | 토큰 ID |
+| `labels` | `(B, T)` | 응답 ID / `-100` |
+| `loss_mask` | `(B, T)` | 0/1（선택） |
+| `logits` | `(B, T, V)` | |
+
+## 구현 스케치 — 마스크 합 테스트
+
+```python
+def assert_mask_only_response(labels, response_spans):
+    # response_spans: list of (start, end) per batch row
+    for b, spans in enumerate(response_spans):
+        for t in range(labels.size(1)):
+            in_resp = any(s <= t < e for s, e in spans)
+            if in_resp:
+                assert labels[b, t] != -100
+            else:
+                assert labels[b, t] == -100
+```
+
+## 실패 모드 — SFT 구현
+
+| 실패 | 증상 | 처방 |
+|---|---|---|
+| 프롬프트까지 loss | 지시 무시·암기 | mask 테스트 |
+| 템플릿 불일치 | 추론 시 형식 붕괴 | train=serve 템플릿 |
+| 패딩을 응답으로 | Loss 왜곡 | pad→-100 |
+| lr 과다 | 스타일 붕괴 | lr↓·epoch↓ |
+
+## 실습 코드 — CE with ignore
+
+```python
+import torch.nn.functional as F
+
+def sft_loss(logits, labels):
+    # logits: (B,T,V), labels: (B,T)
+    return F.cross_entropy(
+        logits.view(-1, logits.size(-1)),
+        labels.view(-1),
+        ignore_index=-100,
+    )
+```
+
+## 수식 보강 — 유효 토큰 비율
+
+$$
+\rho
+=
+\frac{\sum_{b,t} 1[y_{b,t}\ne-100]}{B\cdot T}
+$$
+
+$\rho$가 너무 작으면 학습이 느리고, 너무 크면 프롬프트 누수를 의심합니다. 로그에 $\rho$를 남기세요.
+
 ## LLM에서는 어디에 사용될까?
 - Hugging Face `Trainer` / 각종 SFTTrainer가 `labels` 마스크를 자동·반자동으로 처리하는 경우가 많다.
 - 그래도 **템플릿·토크나이저·마스크**가 어긋나면 조용히 잘못된 학습이 된다. 자동을 믿기 전에 한 샘플의 `labels`를 decode해 보라.

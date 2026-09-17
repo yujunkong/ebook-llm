@@ -448,7 +448,7 @@ $$
 Perplexity:
 
 $$
-\mathrm{PPL}=\exp\Bigl(\frac{1}{N}\sum_i -\log p_i\Bigr)
+\mathrm{PPL}=\exp\left(\frac{1}{N}\sum_i -\log p_i\right)
 $$
 
 ```python
@@ -459,6 +459,95 @@ print(ppl)
 ```
 
 정확도·동의율 등 태스크 지표는 PPL과 함께 보세요.
+
+
+<!-- enrich-pass-1f64 -->
+## 수식 전개 — Val Loss와 PPL
+
+토큰 평균 validation CE
+
+$$
+L_{\mathrm{val}}
+=
+\frac{\sum_{(b,t)\in\mathrm{val}} m_{b,t}(-\log p_{b,t})}{\sum m_{b,t}}
+$$
+
+에 대해 perplexity는
+
+$$
+\mathrm{PPL}
+=
+\exp(L_{\mathrm{val}})
+$$
+
+입니다（자연로그 CE 가정）. 로그 밑이 바뀌면 변환을 맞추세요.
+
+### Early stopping 감각
+
+인내 구간 $P$ 동안 개선이 없으면 중단:
+
+$$
+\text{stop if }
+\min_{j=0..P} \big(L_{\mathrm{val}}(t-j)-L_{\mathrm{val}}^{\star}\big)
+\ge 0
+$$
+
+여기서 $L_{\mathrm{val}}^{\star}$는 지금까지 최저입니다.
+
+## Shape 표 — Eval 배치
+
+| 텐서 | Shape | 모드 |
+|---|---|---|
+| `input_ids` | `(B, T)` | `model.eval()` |
+| `logits` | `(B, T, V)` | `torch.no_grad()` |
+| 집계 버퍼 | scalar | 토큰 가중 합 |
+
+## 구현 스케치 — 토큰 가중 집계
+
+```python
+@torch.no_grad()
+def eval_loss(model, loader, ignore_index=-100):
+    model.eval()
+    total, n = 0.0, 0
+    for batch in loader:
+        logits = model(batch["input_ids"])
+        loss, count = token_ce_sum(logits, batch["labels"], ignore_index)
+        total += loss
+        n += count
+    return total / max(n, 1)
+```
+
+배치 평균을 단순 평균하면 짧은 배치가 과대 대표됩니다. **토큰 수 가중**이 기본입니다.
+
+## 실패 모드 — Validation
+
+| 실패 | 증상 | 처방 |
+|---|---|---|
+| train 모드로 eval | Dropout 노이즈 | `eval()`+no_grad |
+| Val에 누수 | 낙관적 곡선 | 경로·해시 분리 |
+| 프로토콜 변경 | 곡선 단절 | decoding/길이 고정 |
+| micro-loss만 비교 | 착시 | token-avg |
+
+## 실습 코드 — 발산 감지
+
+```python
+def unstable(loss, grad_norm, thr_loss=50.0, thr_grad=1e3):
+    return (not math.isfinite(loss)) or loss > thr_loss or grad_norm > thr_grad
+```
+
+불안정 시 lr·데이터·AMP를 의심하고, 체크포인트로 롤백합니다（제65강）.
+
+## 수식 보강 — Running average
+
+지수 이동 평균
+
+$$
+\bar L_t
+=
+\beta\bar L_{t-1}+(1-\beta)L_t
+$$
+
+는 로그 노이즈를 줄이지만, **결정에 쓰는 공식 Val**과는 분리해 기록하세요.
 
 ## LLM에서는 어디에 사용될까?
 

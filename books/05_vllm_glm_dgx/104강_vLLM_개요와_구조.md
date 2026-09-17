@@ -521,6 +521,44 @@ Continuous: 정적 배치의 idle/호위·늦은 입학. PagedAttention: 거대 
 
 > 엔진은 마법이 아니다. 이미 배운 Prefill·KV·Batching·Quantization의 운영체제에 가깝다.
 
+<!-- enrich-104-depth -->
+## 구성 요소를 비용 식으로 연결하기
+
+vLLM류 엔진을 네 블록으로 보면:
+
+```text
+API/Tokenizer → Scheduler → Attention+KV(Paged) → Sampler
+```
+
+메모리 상한:
+
+$$
+M_{\mathrm{model}}+M_{\mathrm{KV}}+M_{\mathrm{act}}
+\le
+M_{\mathrm{GPU}}
+$$
+
+KV는 대략
+
+$$
+M_{\mathrm{KV}}
+\approx
+2\cdot L\cdot H\cdot d_h\cdot T_{\mathrm{tot}}\cdot b
+$$
+
+스케줄러는 $T_{\mathrm{tot}}$（전 시퀀스 합）을 블록 단위로 자르며 배치를 고른다.
+
+### 한 줄 역할 카드
+
+| 블록 | 질문 |
+|---|---|
+| Scheduler | 누구를 이번 스텝에 넣을까 |
+| PagedAttention | KV를 어디에 붙일까 |
+| Continuous Batching | 끝난 자리를 바로 채울까 |
+| Sampler | 다음 토큰 분포를 어떻게 뽑을까 |
+
+다음 강（PagedAttention·Scheduler）은 이 표의 두 칸을 깊게 판다.
+
 <!-- LECTURE_NAV -->
 
 ---
