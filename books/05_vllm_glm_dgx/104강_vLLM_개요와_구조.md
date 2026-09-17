@@ -396,6 +396,16 @@ print("free blocks", eng.pool.free)
 7. **제105강을 건너뛰고 페이지만 주문처럼 외움**  
    블록이 푸는 문제가 제101~102의 낭비다.
 
+## 수식 보강 — 스케줄링 목표
+
+대략
+
+$$
+\max\ \mathrm{throughput}\ \mathrm{s.t.}\ \mathrm{Mem}_{KV}+\mathrm{Mem}_{w}\le \mathrm{Mem}_{GPU}
+$$
+
+대기 시간과 TTFT 제약을 함께 둡니다.
+
 ## LLM에서는 어디에 사용될까?
 
 이번 104강에서 배운 개념은 이후 Transformer · GPT · 서빙 강의에서 반복해서 등장합니다. 각 수식·코드 블록을 “실제 모델의 어느 단계인가”와 연결해 다시 읽어 보세요.

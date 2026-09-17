@@ -391,6 +391,16 @@ def load_jsonl(path: str) -> List[Document]:
         → 생성이 데이터 패턴을 일부 반영
 ```
 
+## 수식 보강 — 데이터셋 토큰 수
+
+대략
+
+$$
+N_{\mathrm{tokens}}\approx \#\mathrm{docs}\times \mathrm{avg\_len}
+$$
+
+패킹 효율 $\eta$면 실제 스텝당 유효 토큰은 $B\cdot T\cdot\eta$입니다.
+
 ## LLM에서는 어디에 사용될까?
 
 이번 60강에서 배운 개념은 이후 Transformer · GPT · 서빙 강의에서 반복해서 등장합니다. 각 수식·코드 블록을 “실제 모델의 어느 단계인가”와 연결해 다시 읽어 보세요.

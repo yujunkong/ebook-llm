@@ -497,6 +497,17 @@ h = stack(x, causal=False)
 
 제48강은 `causal=True` 스택 위에 Embedding과 LM Head를 얹는다.
 
+## 수식 보강 — Pre-LN 블록
+
+$$
+\begin{aligned}
+x &\leftarrow x + \mathrm{MHA}(\mathrm{LN}(x)) \\
+x &\leftarrow x + \mathrm{FFN}(\mathrm{LN}(x))
+\end{aligned}
+$$
+
+(Pre-LN 관례. Post-LN은 LN 위치가 다릅니다.)
+
 ## LLM에서는 어디에 사용될까?
 사실:
 

@@ -269,6 +269,37 @@ class DictDataset(Dataset):
 
 기본 collate는 같은 키끼리 리스트/텐서로 묶는다. 텍스트 문자열은 텐서가 아니므로, 학습 전에 토큰 ID 텐서로 바꾸거나 커스텀 `collate_fn`이 필요하다.
 
+## 수식 보강 — 배치 · 에폭 · 스텝 수
+
+데이터셋 크기 $N$, 배치 크기 $B$이면 한 에폭의 업데이트 횟수는
+
+$$
+\mathrm{steps/epoch} = \left\lceil \frac{N}{B} \right\rceil
+$$
+
+입니다. $E$ 에폭 학습하면 대략
+
+$$
+\mathrm{total\ steps} \approx E \cdot \left\lceil \frac{N}{B} \right\rceil
+$$
+
+입니다.
+
+미니배치 평균 손실은 샘플 손실의 평균입니다.
+
+$$
+L_{\mathcal{B}}(\theta)
+=
+\frac{1}{|\mathcal{B}|}
+\sum_{i\in\mathcal{B}} \ell(f_\theta(x_i), y_i)
+$$
+
+LLM의 언어모델링에서는 $(x_i,y_i)$가 “문맥 토큰 → 다음 토큰” 쌍이며, 패킹되면 한 배치 Shape가 `(B, T)` 토큰 ID가 됩니다.
+
+> **핵심**
+>
+> DataLoader는 수학적으로 “인덱스 집합 $\mathcal{B}$를 샘플링해 $L_{\mathcal{B}}$를 만드는 장치”입니다.
+
 ## LLM에서는 어디에 사용될까?
 LLM 학습 데이터는 대략 다음 파이프라인을 따른다.
 

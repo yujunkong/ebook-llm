@@ -324,6 +324,87 @@ def ffn_relu(x, W1, b1, W2, b2):
     return h @ W2 + b2
 ```
 
+## 수식 보강 — FFN / MLP
+
+Transformer MLP(흔히 GeLU):
+
+$$
+\mathrm{FFN}(x)=W_2\,\sigma(W_1 x+b_1)+b_2
+$$
+
+Shape: $d\to d_{\mathrm{ff}}\to d$ (예: $d_{\mathrm{ff}}=4d$). 토큰별로 독립 적용됩니다.
+
+### 파라미터·FLOPs
+
+bias 무시, $d_{\mathrm{ff}}=4d$:
+
+$$
+
+\#\mathrm{params}_{\mathrm{FFN}} = d\cdot 4d + 4d\cdot d = 8d^2
+
+$$
+
+토큰 하나 forward FLOPs 감각(곱셈·덧셈을 거칠게):
+
+$$
+
+O(d\cdot 4d + 4d\cdot d) = O(8d^2)
+
+$$
+
+길이 $T$면 $O(8 T d^2)$. Attention의 $O(T^2 d)$와 비교하는 법은 제52강.
+
+### SwiGLU 스케치
+
+게이트가 있는 변형(개념):
+
+$$
+
+\mathrm{SwiGLU}(x)
+=
+\big(\mathrm{SiLU}(x W_{\mathrm{gate}}) \odot (x W_{\mathrm{up}})\big) W_{\mathrm{down}}
+
+$$
+
+중간 차원이 $d_{\mathrm{ff}}$일 때 선형이 **세 장**이라 파라미터는 약 $3 d d_{\mathrm{ff}}$ 수준(세부 설정 다양).  
+교육용 Mini에서는 2층 GeLU/ReLU로 충분하다.
+
+### 손계산 — ReLU FFN
+
+$d=2$, $d_{\mathrm{ff}}=4$, bias 0,
+
+$$
+
+W_1=\begin{bmatrix}1&0\\0&1\\1&1\\-1&0\end{bmatrix}^\top
+\text{ (구현에 맞게 }xW_1\text{)},
+\quad
+x=(1, -2)
+$$
+
+더 단순한 행벡터 관례: $xW_1$ 결과가 $z=(1,-2, -1, -1)$이라고 치자(임의 설정).
+
+$$
+
+\mathrm{ReLU}(z)=(1,0,0,0)
+$$
+
+$W_2$가 첫 은닉 유닛만 출력에 $(0.5, -1)$로 연결하면
+
+$$
+
+\mathrm{FFN}(x)=(0.5,\ -1)
+$$
+
+음수 좌표가 죽은 ReLU 때문에 사라지는 모습을 본다. GeLU는 음수도 부드럽게 통과시킨다.
+
+### Attention vs FFN 역할 (정량 힌트)
+
+| | Attention | FFN |
+|---|---|---|
+| 혼합 축 | 시퀀스($T$) | 특징($d$) |
+| $T$ 의존 비용 | $O(T^2 d)$ | $O(T d\cdot d_{\mathrm{ff}})$ |
+| 공유 | 모든 위치가 같은 $W_Q,\ldots$ | 모든 위치가 같은 $W_1,W_2$ |
+
 ## LLM에서는 어디에 사용될까?
 사실:
 

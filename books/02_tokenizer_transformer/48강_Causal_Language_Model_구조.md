@@ -272,9 +272,154 @@ context [1, t]
 5. **weight tying 후 한쪽만 초기화/재할당**  
    공유 참조가 깨지면 파라미터가 두 벌이 된다. `is`로 동일 객체인지 확인한다.
 
+## 수식 보강 — Next-token 분해
+
+시퀀스 $\mathbf{x}=(x_1,\ldots,x_T)$의 결합확률을 causal로 분해합니다.
+
+$$
+p(\mathbf{x})=\prod_{t=1}^{T} p(x_t\mid x_{<t})
+$$
+
+로그우도:
+
+$$
+\log p(\mathbf{x})=\sum_{t=1}^{T}\log p(x_t\mid x_{<t})
+$$
+
+모델은 각 $t$에서 logits $\mathbf{z}_t\in\mathbb{R}^{V}$를 내고 $p(\cdot\mid x_{<t})=\mathrm{softmax}(\mathbf{z}_t)$로 둡니다. 학습은 $-\log p$의 토큰 평균을 최소화합니다.
+
+## 수식·정량 보강 — CLM 전체 배선
+
+### 결합 분포와 손실
+
+$$
+\log P_\theta(x_{1:T})=\sum_{t=1}^{T}\log P_\theta(x_t\mid x_{<t})
+$$
+
+$$
+\mathcal{L}=-\frac{1}{|\mathcal{B}|}\sum_{x\in\mathcal{B}}\sum_{t}\log P_\theta(x_t\mid x_{<t})
+$$
+
+(패딩은 `ignore_index`.)
+
+### 파라미터 수
+
+$$
+\#\mathrm{params}\approx VC+T_{\max}C+N\cdot 12C^2
+\quad(+\,VC\ \text{if not tied})
+$$
+
+Mini 예: $V=100,C=64,T_{\max}=32,N=2$, tying →  
+emb $6400$ + pos $2048$ + blocks $2\cdot12\cdot64^2=98304$ → $\approx 1.07\times10^5$.
+
+### 타깃 시프트 손계산
+
+입력 $\mathbf{x}=[7,3,9,1]$, 타깃 $\mathbf{y}=[3,9,1,\mathrm{EOS}]$.  
+위치 0 logit → 토큰 3, 위치 1 → 9.
+
+### Weight tying
+
+$$
+z_t=h_t W_e^\top,\qquad z_{t,v}=h_t^\top(W_e)_{v,:}
+$$
+
+$$
+P(x_{t+1}=v\mid x_{\le t})=\frac{e^{z_{t,v}}}{\sum_u e^{z_{t,u}}}
+$$
+
+### 생성 vs 학습 shape
+
+```text
+학습: logits[B,T,V] 전원 CE
+생성: logits[:, -1, :] 만 decode → append
+```
+
+
+## 워크드 예제 — Mini shape·파라미터·시프트
+
+설정: $B=2,T=8,C=64,V=1000,N=4$, learned PE, tying.
+
+```text
+idx        [2,8]
+tok+pos    [2,8,64]
+×4 blocks  [2,8,64]
+ln_f       [2,8,64]
+logits     [2,8,1000]
+```
+
+파라미터(대략):
+
+| 모듈 | 식 | 값 |
+|---|---|---:|
+| tok_emb | $VC$ | 64000 |
+| pos_emb | $T_{\max}C$ (여기선 8) | 512 |
+| blocks | $N\cdot12C^2$ | 196608 |
+| lm_head | tying | 0 |
+| **합** | | **≈261k** |
+
+타깃 시프트: `logits[:, :-1]` vs `idx[:, 1:]` → 비교 길이 $T-1=7$.
+
+한 위치 CE: $z\in\mathbb{R}^{1000}$, 정답 id $y$.  
+$\mathcal{L}_t=-\log\mathrm{softmax}(z)_y$.
+
+생성 시에는 $T$를 1씩 늘리며 `logits[:, -1, :]`만 사용.  
+`block_size`를 넘으면 `idx[:, -block_size:]`로 잘라 PE 테이블·마스크 크기를 지킨다.
+
+
+## 추가 연습 — forward 체크리스트
+
+1. `idx.dtype`이 long/int64인가?
+2. $T\le block_size$인가?
+3. 각 block 입출력 `[B,T,C]`인가?
+4. causal mask가 attention 안에 있는가?
+5. loss에서 시프트가 맞는가?
+6. tying 시 `lm_head.weight is tok_emb.weight`인가?
+
+작은 버그: mask를 끄면 train loss↓·generate 붕괴.  
+이것이 CLM의 **정의적 제약**이다.
+
+로짓 온도는 생성 규칙(제58~59강)이지 구조 모듈이 아니다.
+
 ## LLM에서는 어디에 사용될까?
 
 이번 48강에서 배운 개념은 이후 Transformer · GPT · 서빙 강의에서 반복해서 등장합니다. 각 수식·코드 블록을 “실제 모델의 어느 단계인가”와 연결해 다시 읽어 보세요.
+
+
+## 수식 카드 — Causal LM
+
+$$
+P(x_{1:T})=\prod_t P(x_t\mid x_{<t}),\quad
+\mathrm{logits}=W_U\,\mathrm{LN}(\mathrm{Blocks}(E_x+P))
+$$
+
+$$
+\#\mathrm{params}\approx VC+T_{\max}C+12NC^2
+$$
+
+Shape: `[B,T]→[B,T,C]→[B,T,V]`.
+
+
+## 연결 복습 — Block에서 CLM까지
+
+제46강 Pre-LN 블록:
+
+$$
+x\leftarrow x+\mathrm{Attn}(\mathrm{LN}(x)),\quad
+x\leftarrow x+\mathrm{FFN}(\mathrm{LN}(x))
+$$
+
+이를 $N$번 쌓고 양끝에 Embedding·LM Head를 붙이면 Causal LM이다.  
+RoPE를 쓰면 PE 가산 대신 Attn 내부에서 $Q,K$ 회전(제43강).
+
+손계산 체크: $B=1,T=4,C=8,V=20$ → logits `[1,4,20]`, CE 항(시프트 후) 3개.
+
+
+### 한 줄 요약 수식
+
+$$\mathrm{CLM}=\mathrm{Embed}+\sum_{\ell=1}^{N}\mathrm{Block}_\ell+\mathrm{LMHead},\quad \mathrm{causal\ mask\ in\ Attn}.$$
+
+
+> Shape 관례 `[B,T,C]→[B,T,V]`, 타깃은 한 칸 시프트.
 
 ## 핵심 요약
 - Causal LM은 token embed (+pos) → $N$ Transformer blocks → lm_head로 구성된 Decoder-only 언어 모델이다.

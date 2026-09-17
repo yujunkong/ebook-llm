@@ -464,6 +464,16 @@ if __name__ == "__main__":
 
 제82강 Policy Gradient는 이 `log_prob`에 보상（또는 Advantage）을 곱한다.
 
+## 수식 보강 — MDP 요약
+
+상태 $s$, 행동 $a$, 보상 $r$, 전이 $P$. 목표:
+
+$$
+\max_\pi\ \mathbb{E}\Big[\sum_{t\ge0}\gamma^t r_t\Big]
+$$
+
+LLM에서 $a$는 토큰, $s$는 문맥입니다.
+
 ## LLM에서는 어디에 사용될까?
 ### 9.1 상태 표현
 

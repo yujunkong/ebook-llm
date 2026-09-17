@@ -117,7 +117,7 @@ $$
 
 $$
 
-\mathrm{Attn}(Q,K,V)=\mathrm{softmax}\Big(\frac{QK^\top}{\sqrt{d}}+M\Big)V
+\mathrm{Attn}(Q,K,V)=\mathrm{softmax}\left(\frac{QK^\top}{\sqrt{d}}+M\right)V
 
 $$
 
@@ -139,7 +139,7 @@ $$
 
 $$
 
-\mathrm{Attn}=\mathrm{softmax}\Big(\frac{q_{t+1} K_{1:t+1}^\top}{\sqrt{d}}\Big)V_{1:t+1}
+\mathrm{Attn}=\mathrm{softmax}\left(\frac{q_{t+1} K_{1:t+1}^\top}{\sqrt{d}}\right)V_{1:t+1}
 
 $$
 
@@ -284,6 +284,65 @@ def timed_generate(model, prompt_ids, max_new=16):
 ```
 
 **주의:** `time.perf_counter()` 결과는 머신·부하에 의존한다. 공유·비교용 벤치마크 숫자로 제시하지 말 것.
+
+## 수식 보강 — Prefill / Decode 비용 감각
+
+입력 길이 $T_{\mathrm{in}}$, 출력 길이 $T_{\mathrm{out}}$일 때
+
+- Prefill: 대략 $O(T_{\mathrm{in}}^2 d)$ 성격의 Attention + MLP (한 번에 병렬)
+- Decode: 스텝마다 $O(T_{\mathrm{ctx}} d)$ (KV cache 사용 시), $T_{\mathrm{out}}$번 반복
+
+총 decode 비용 스케치:
+
+$$
+\mathrm{Cost}_{\mathrm{decode}} \sim T_{\mathrm{out}}\cdot O(T_{\mathrm{ctx}} d)
+$$
+
+$T_{\mathrm{ctx}}$는 해당 스텝의 문맥 길이입니다.
+
+## 정량 스케치 — 국면별 비용
+
+Prefill Attention: $\mathrm{FLOPs}\propto L H S^2 d$ ($S^2$ 감각).
+
+Decode 스텝(캐시 길이 $t$): $\propto L H t d$.
+
+KV: $\mathrm{Bytes}_{\mathrm{KV}}(t)\approx 2 L H_{kv} d t b$.
+
+$$
+
+\mathrm{TTFT}\approx T_{\mathrm{queue}}+T_{\mathrm{prefill}},\quad
+\mathrm{TPOT}\approx\mathrm{mean}(T_{\mathrm{decode}})
+$$
+
+총지연 감각 $\approx\mathrm{TTFT}+(N_{\mathrm{out}}-1)\mathrm{TPOT}$.
+
+| 국면 | 전형 감각 | 힌트 |
+|---|---|---|
+| Prefill | compute 여지 | 커널·양자화·병렬 |
+| Decode | memory/bandwidth | KV·배치 |
+
+가정 숫자로 용량 계획하지 말 것 — 비례 연습만.
+
+
+## 스케줄러가 국면을 나누는 이유（정량 감각）
+
+한 iteration에 prefill 토큰 $S_{\mathrm{sum}}$과 decode 시퀀스 $B_{\mathrm{dec}}$가 섞이면, 작업 프로필이 이질적이다.
+
+```text
+Prefill-heavy chunk → SM compute·큰 GEMM
+Decode-heavy chunk → KV bandwidth·작은 GEMM
+```
+
+지표를 국면 없이 평균하면 TTFT/TPOT 진단이 흐려진다. 로그에 `phase=prefill|decode|mixed`를 남긴다.
+
+### 길이 레버
+
+| 늘리는 것 | 먼저 맞는 지표 |
+|---|---|
+| 프롬프트 $S$ | TTFT |
+| 출력 $N_{\mathrm{out}}$ | 총지연·TPOT×길이 |
+| 동시성 $B$ | KV 메모리·스케줄 대기 |
+
 
 ## LLM에서는 어디에 사용될까?
 ### 8.1 TTFT와 Prefill

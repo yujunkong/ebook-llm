@@ -221,6 +221,144 @@ class EncoderDecoderLayer(nn.Module):
 
 완전한 구현은 제49~50강 프로젝트에서, Causal Decoder-only를 우선한다.
 
+## 수식 보강 — Cross-Attention
+
+Decoder cross-attention에서 Query는 decoder 상태, Key/Value는 encoder 출력입니다.
+
+$$
+Q = X_{\mathrm{dec}} W_Q,\quad
+K = X_{\mathrm{enc}} W_K,\quad
+V = X_{\mathrm{enc}} W_V
+$$
+
+$$
+\mathrm{Attn}(Q,K,V)=\mathrm{softmax}\left(\frac{QK^\top}{\sqrt{d_k}}\right)V
+$$
+
+Shape 감각: $X_{\mathrm{dec}}\in\mathbb{R}^{T_\mathrm{dec}\times d}$, $X_{\mathrm{enc}}\in\mathbb{R}^{T_\mathrm{enc}\times d}$이면 점수 행렬은 $(T_\mathrm{dec}\times T_\mathrm{enc})$입니다.
+
+GPT처럼 decoder-only면 cross-attention이 없고 causal self-attention만 남습니다.
+
+## 수식·정량 보강 — 세 가족의 마스크와 손실
+
+### Causal vs Bidirectional 마스크
+
+$T=4$ Causal 마스크(score에 더함):
+
+$$
+M_{\mathrm{causal}}=
+\begin{bmatrix}
+0&-\infty&-\infty&-\infty\\
+0&0&-\infty&-\infty\\
+0&0&0&-\infty\\
+0&0&0&0
+\end{bmatrix}
+$$
+
+Encoder(패딩 없음)는 $M=0$. Softmax 전 $S+M$에서 미래는 $e^{-\infty}=0$.
+
+유효 Causal 연결 수:
+
+$$
+\sum_{i=1}^{T}i=\frac{T(T+1)}{2}=O(T^2)
+$$
+
+### Cross-Attention shape
+
+Decoder 길이 $T_d$, Encoder 길이 $T_e$:
+
+$$
+Q\in\mathbb{R}^{T_d\times d},\ 
+K,V\in\mathbb{R}^{T_e\times d},\ 
+S=\frac{QK^\top}{\sqrt{d}}\in\mathbb{R}^{T_d\times T_e}
+$$
+
+예: $T_e=100$, $T_d=30$ → cross 원소 3000 vs encoder self $10^4$.
+
+### 학습 목표 비교
+
+**Causal LM**
+
+$$
+\mathcal{L}=-\sum_t\log p_\theta(x_t\mid x_{<t})
+$$
+
+**MLM 스케치** (마스크 집합 $\mathcal{M}$)
+
+$$
+\mathcal{L}=-\sum_{t\in\mathcal{M}}\log p_\theta(x_t\mid x_{\setminus\mathcal{M}})
+$$
+
+**Encoder-Decoder 번역**
+
+$$
+\mathcal{L}=-\sum_t\log p_\theta(y_t\mid y_{<t},x_{1:T_e})
+$$
+
+### 파라미터 감각
+
+층당 $\approx 12C^2$라 두면 Decoder-only $N$층 $\sim 12NC^2$, Encoder-Decoder $2N$층 $\sim 24NC^2$(+cross).  
+과제에 맞는 입출력 포트가 우선이며, “항상 Decoder-only가 싸다”는 결론이 아니다.
+
+### 정보 흐름 한 줄
+
+```text
+Enc-only  : 모든 위치 ↔ 모든 위치
+Dec-only  : 위치 t → 과거 ≤t 만
+Enc-Dec   : Dec self(causal) + Dec query↔Enc memory
+```
+
+
+## 워크드 예제 — 길이 4 마스크와 Cross score
+
+토큰 `[BOS, A, B, C]` ($T=4$).
+
+**Encoder self:** $4\times4$ 전부 attend 가능(패딩 없으면 $M=0$).
+
+**Decoder causal:** 위치 2(`B`)의 허용 키는 인덱스 $0,1,2$뿐. Softmax 지지 집합 크기 3.
+
+**Cross:** $T_d=3$, $T_e=5$이면
+
+$$
+S\in\mathbb{R}^{3\times5},\quad
+A=\mathrm{softmax}(S)\ (\text{행 정규화}),\quad
+\mathrm{Out}=AV\in\mathbb{R}^{3\times d}
+$$
+
+행 합이 1인지 확인해 Cross가 “원문 위치 위의 분포”임을 본다.
+
+**손실 스케치:** Decoder-only에서 입력 `BOS A B` → 타깃 `A B C`이면 항 3개:
+
+$$
+-\log p(A\mid\mathrm{BOS})-\log p(B\mid\mathrm{BOS},A)-\log p(C\mid\mathrm{BOS},A,B)
+$$
+
+Encoder-only MLM이 `B`를 가리면 조건이 양방향 $A,C$를 포함해 **생성 규칙과 다른 조건부**가 된다.
+
+### GPT가 Encoder-Decoder가 아닌 이유(구조)
+
+표준 GPT형 스택에는 Cross-Attention 모듈이 없다.  
+프롬프트와 생성 토큰이 **같은 Causal Self-Attention** 위에서 이어질 뿐이다.
+
+$$
+x=\mathrm{concat}(\mathrm{prompt},\mathrm{gen})\quad\text{하나의 스트림}
+$$
+
+
+## 추가 연습 — 가족 분류 체크리스트
+
+다음 문장을 가족으로 분류하고 근거 수식/마스크를 한 줄로 쓰라.
+
+1. “원문을 양방향으로 읽은 뒤 번역문을 왼쪽부터 쓴다.”
+2. “[MASK] 토큰을 양옆 맥락으로 복원한다.”
+3. “챗봇이 사용자 메시지 뒤에 토큰을 이어 붙인다.”
+
+정답 스케치: (1) Enc-Dec + cross (2) Enc-only MLM (3) Dec-only CLM.
+
+파라미터 비교 손계산: $C=512,N=6$.  
+Dec-only $\approx12\cdot6\cdot512^2=1.89\times10^7$.  
+Enc-Dec 두 스택 $\approx3.77\times10^7$(+cross 투영 $2\cdot512^2$ 수준 추가).
+
 ## LLM에서는 어디에 사용될까?
 사실:
 
@@ -282,6 +420,22 @@ Cross-Attention만 새로 추가하면 Encoder-Decoder가 된다.
 
 5. **제목의 Decoder와 GPT Decoder-only를 혼동**  
    원 논문 Decoder는 Encoder 메모리를 본다. GPT는 그 메모리가 없다.
+
+
+## 수식 카드 — Encoder/Decoder
+
+$$
+M^{\mathrm{enc}}_{ij}=0,\quad
+M^{\mathrm{dec}}_{ij}=\begin{cases}0&j\le i\\-\infty&j>i\end{cases}
+$$
+
+$$
+Q_{\mathrm{cross}}=X_{\mathrm{dec}}W^Q,\ 
+K=H_{\mathrm{enc}}W^K,\ 
+V=H_{\mathrm{enc}}W^V
+$$
+
+유효 causal 엣지 $\frac{T(T+1)}{2}$. Cross 원소 $T_d T_e$.
 
 ## 핵심 요약
 - Encoder는 양방향 Self-Attention으로 입력 맥락을 만든다.

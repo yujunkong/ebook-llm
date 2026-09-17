@@ -346,13 +346,13 @@ $$
 
 L_{\mathrm{DPO}}
 =
--\mathbb{E}\log\sigma\Big(
+-\mathbb{E}\log\sigma\left(
 \beta\big[
 (\log\pi_\theta(y_w|x)-\log\pi_{\mathrm{ref}}(y_w|x))
 -
 (\log\pi_\theta(y_l|x)-\log\pi_{\mathrm{ref}}(y_l|x))
 \big]
-\Big)
+\right)
 
 $$
 

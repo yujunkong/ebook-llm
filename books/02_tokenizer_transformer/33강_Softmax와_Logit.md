@@ -462,7 +462,7 @@ Self-Attention에서도 Softmax가 등장한다.
 
 $$
 
-\alpha = \operatorname{softmax}\Big(\frac{QK^{\top}}{\sqrt{d}}\Big)
+\alpha = \operatorname{softmax}\left(\frac{QK^{\top}}{\sqrt{d}}\right)
 
 $$
 
@@ -514,6 +514,14 @@ $K=2$, $\mathbf{z}=[a,b]$일 때 $p_0=(1+e^{b-a})^{-1}$임을 유도하시오. (
 
 6. **확률 0을 기대**  
    Softmax는 이론상 모든 토큰에 양수. 극단적으로 작을 수는 있어도 정확히 0은 아니다. (실수 연산상 0.0이 될 수는 있음)
+
+## 수식 보강 — Softmax 성질
+
+$$
+p_k=\frac{e^{z_k}}{\sum_j e^{z_j}},\quad p_k>0,\ \sum_k p_k=1
+$$
+
+상수 shift에 불변: $\mathrm{softmax}(z+c)=\mathrm{softmax}(z)$. 수치 안정화는 $z\leftarrow z-\max z$ 후 계산합니다.
 
 ## LLM에서는 어디에 사용될까?
 

@@ -368,6 +368,62 @@ x ─ sample G ───┼── y2 ─ r2 ─┼── normalize → Â ──
 4. KL 항이 없으면 장기적으로 무엇이 위험한가?
 5. DPO 데이터만 있는 팀에 GRPO를 권할 조건은 무엇인가?
 
+## 수식 보강 — GRPO 그룹 상대
+
+같은 프롬프트에 응답 그룹 $\{y_i\}_{i=1}^G$를 샘플링하고, 그룹 내 상대 점수(또는 advantage)로 정책을 업데이트합니다. 개념적으로
+
+$$
+A_i = R(y_i) - \frac{1}{G}\sum_{j=1}^G R(y_j)
+$$
+
+처럼 **그룹 평균 대비**로 정규화한 뒤 policy gradient/PPO류 업데이트를 적용합니다. 절대 보상 스케일보다 상대 순위가 중요해집니다.
+
+## 정량 스케치 — 그룹 상대 심화
+
+$$
+
+\hat A_i=\frac{r_i-\mu_x}{\sigma_x+\varepsilon},\quad
+\rho_i=\frac{\pi_\theta(y_i\mid x)}{\pi_{\mathrm{old}}(y_i\mid x)}
+$$
+
+$$
+
+L=-\frac1G\sum_i\min(\rho_i\hat A_i,\mathrm{clip}(\rho_i)\hat A_i)+\beta\,\widehat{\mathrm{KL}}
+$$
+
+이진 보상: $\mu=S/G$, $\sigma=\sqrt{\mu(1-\mu)}$.  
+$S\in\{0,G\}$면 신호 0; $S\approx G/2$에서 상대 신호 최대.
+
+LOO: $b_i=\frac1{G-1}\sum_{j\neq i}r_j$, $\hat A_i=r_i-b_i$.
+
+비용 $\propto G\cdot(T_{\mathrm{gen}}+T_{\mathrm{reward}}+T_{\mathrm{logprob}})$.
+
+손계산: $G=2$, $r=(1,0)$, mean-only $\hat A=(0.5,-0.5)$, $\rho=(1.5,0.7)$, $\varepsilon=0.2$  
+→ $\min$ 항 $(0.6,-0.4)$, 평균 surrogate 감각 $0.1$.
+
+다양성 프록시 $u=\#\{\mathrm{unique\ ex}(y_i)\}/G$.
+
+
+## 그룹 크기 $G$ 선택 가이드（설명）
+
+| $G$ | 이득 | 비용 |
+|---:|---|---|
+| 2 | 최소 상대 비교 | baseline 잡음 큼 |
+| 4~8 | 혼합 그룹 빈도↑ (이진 $r$) | 샘플·verify 배수 |
+| 16+ | 통계 안정 | 처리량·지연 압박 |
+
+verifiable 이진 보상에서는 $1-p^G-(1-p)^G$가 충분히 커지도록 난이도·$G$·온도를 **같이** 본다.
+
+### 로그 필수 항목
+
+```text
+mean_r, std_r, frac_zero_A, frac_mixed_groups,
+clip_frac, approx_kl, unique_answers, format_rate
+```
+
+`frac_zero_A≈1`이면 학습이 멈춘 것과 같다.
+
+
 ## LLM에서는 어디에 사용될까?
 
 이번 92강에서 배운 개념은 이후 Transformer · GPT · 서빙 강의에서 반복해서 등장합니다. 각 수식·코드 블록을 “실제 모델의 어느 단계인가”와 연결해 다시 읽어 보세요.

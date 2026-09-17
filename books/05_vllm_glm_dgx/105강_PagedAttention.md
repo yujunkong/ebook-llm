@@ -391,6 +391,50 @@ Prefix 공유가 켜져 있으면 블록 재사용으로 입장 비용이 줄어
 7. **실측 없이 “N배”** — 제107강 필드 없이 속도 주장을 쓰지 말 것.
 8. **스케줄러와 분리해서만 이해** — free block은 스케줄 화폐다.
 
+## 수식 보강 — PagedAttention 블록
+
+KV를 고정 연속 버퍼가 아니라 페이지(블록) 단위로 관리합니다. 블록 크기 $P$토큰이면 시퀀스 $T$에 필요한 블록 수는
+
+$$
+n_{\mathrm{blocks}} = \left\lceil \frac{T}{P} \right\rceil
+$$
+
+입니다. 내부 단편화를 줄여 배치 내 여러 요청의 KV를 더 빽빽히 담는 것이 목표입니다.
+
+## 정량 스케치 — 블록·단편화
+
+$$
+
+n_{\mathrm{blocks}}(T)=\lceil T/B_s\rceil,\quad
+w(T)=n_{\mathrm{blocks}}B_s-T
+$$
+
+풀 용량 $T_{\mathrm{max}}=N_{\mathrm{phys}}B_s$.
+
+연속 예약 낭비 감각 $T_{\mathrm{max}}-T$ vs 페이지 낭비 $<B_s$.
+
+예: $T_{\mathrm{max}}=4096$, $T=200$, $B_s=16$ → 연속 낭비≈3896, 페이지 $<16$.
+
+논리 위치 $t\mapsto(t\div B_s,\;t\bmod B_s)$. Attention 수식은 불변.
+
+$$
+
+\mathrm{free\_blocks}=N_{\mathrm{phys}}-\sum_s n_{\mathrm{blocks}}(T_s)
+$$
+
+$=0$이면 admission/preemption 이슈(제106강).
+
+CoW: 비공유 $\propto B(S_0+U)$ vs 공유 $\propto S_0+BU$.
+
+
+## KV 공식과 블록의 관계
+
+제101강 $\mathrm{Bytes}_{\mathrm{KV}}\approx 2 L H_{kv} d T b$는 **논리 용량**.  
+페이징은 그 용량을 $B_s$ 단위로 쪼개 **할당 효율**을 올린다. 원소 수 공식 자체는 바꾸지 않는다.
+
+실효 수용 시퀀스 수는 $\mathrm{free\_blocks}$와 길이 분포에 달렸다. 연속 할당 대비 같은 $N_{\mathrm{phys}}$에서 더 많은 가변 길이 요청을 넣을 수 있는 것이 핵심 이득이다.
+
+
 ## LLM에서는 어디에 사용될까?
 
 이번 105강에서 배운 개념은 이후 Transformer · GPT · 서빙 강의에서 반복해서 등장합니다. 각 수식·코드 블록을 “실제 모델의 어느 단계인가”와 연결해 다시 읽어 보세요.

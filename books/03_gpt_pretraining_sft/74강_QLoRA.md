@@ -92,6 +92,35 @@ x  →  dequant(W0_q)로 행렬곱（또는 fused 커널）
 
 **설명:** QLoRA의 체감 이득은 “베이스+옵티마이저” 항을 잘라내는 데서 온다. Activation이 지배적이면 체감이 덜할 수 있다.
 
+### 4.4 메모리 항을 기호로
+
+학습 중 대략:
+
+$$
+
+\mathrm{Mem}
+\approx
+\underbrace{M_{\mathrm{W}}}_{\text{가중치}}
++
+\underbrace{M_{\mathrm{G}}}_{\text{그라디언트}}
++
+\underbrace{M_{\mathrm{opt}}}_{\text{옵티마이저}}
++
+\underbrace{M_{\mathrm{act}}}_{\text{activation}}
+
+$$
+
+| 항 | Full FT (FP16 감각) | QLoRA |
+|---|---|---|
+| $M_{\mathrm{W}}$ | $\approx 2N$ bytes | $\approx 0.5N$ (+메타) |
+| $M_{\mathrm{G}}$ | $\sim M_{\mathrm{W}}$ 수준 | LoRA만 ($\ll$) |
+| $M_{\mathrm{opt}}$ | Adam이면 $\sim 2\sim 8\times$ 가중치 감각 | LoRA만 |
+| $M_{\mathrm{act}}$ | $O(B T \cdot \ldots)$ | **거의 그대로** |
+
+$N$ = 파라미터 수. **설명용**이며 구현·오프로드·체크포인팅에 따라 달라진다.
+
+AdamW가 파라미터당 모멘트 2개를 FP32로 두면, Full FT에서 $M_{\mathrm{opt}}$가 $M_{\mathrm{W}}$를 압도하는 경우가 많다. QLoRA는 이 항을 어댑터 크기로 축소한다.
+
 ## NF4 아이디어（고수준）
 NF4(4-bit NormalFloat)는 “그냥 균등 격자”가 아니라, **정규분포에 가까운 가중치 분포**를 더 잘 표현하도록 양자화 레벨을 배치한 4-bit 형식이다.
 
@@ -114,6 +143,26 @@ NF4 느낌:         .|.|..|....|......    (0 근처 촘촘 — 개념도)
 > **설명:** 정규분포 가정이 잘 맞을수록, 같은 비트로 재구성 오차를 줄이려는 설계다.
 
 실무 라이브러리（예: `bitsandbytes` 계열）는 블록 단위 스케일(absmax 등)과 함께 NF4를 구현한다. 세부 커널은 버전·GPU에 따라 다르다.
+
+### 균등 vs 분위수 — 장난감 1D
+
+값 집합이 표준정규에 가깝다고 가정하고, 2-bit(4레벨)만으로 비교하는 **초소형** 비유:
+
+- 균등: $[-2,2]$를 4등분 → 경계 $-2,-1,0,1,2$. 중앙($0$ 근처)과 꼬리가 같은 폭.
+- 분위수: 표준정규의 25%, 50%, 75% 분위 근처에 경계를 더 촘촘히.
+
+실제 NF4는 4-bit(16레벨)와 정규화·절대최댓값 스케일이 결합된다.  
+블록 크기 $B_b$로 나눈 뒤:
+
+$$
+
+\hat{w}_i = s \cdot q_i,\quad
+q_i\in\mathrm{Codebook}_{\mathrm{NF4}},\quad
+s = \mathrm{scale}(w_{1:B_b})
+
+$$
+
+재구성 오차 $\|w-\hat{w}\|$를 줄이는 것이 목표(고수준).
 
 ## Double quantization 티저（선택）
 QLoRA 논문/구현에는 **양자화 상수 자체를 다시 양자화**하는 double quantization 아이디어가 나온다.
@@ -144,6 +193,43 @@ Backward:
 2. 그라디언트는 LoRA 쪽에 흐름 → 옵티마이저 상태도 작음.
 3. 베이스를 4-bit로 둔 채 **정확한 full FT**를 하는 것은 QLoRA의 목표가 아니다.
 
+### 수식 — QLoRA forward
+
+동결된 양자화 가중치 $W_0^{(q)}$, 스케일 등 메타데이터로 복원한 $\widetilde{W}_0$, LoRA $A,B$, 스케일 $\alpha/r$:
+
+$$
+
+y = x\,\widetilde{W}_0^\top + \frac{\alpha}{r}(x A^\top)B^\top
+
+$$
+
+(행벡터 관례. 구현의 transpose와 맞출 것.)
+
+그라디언트:
+
+$$
+
+\frac{\partial L}{\partial A},\ 
+\frac{\partial L}{\partial B}
+\quad\text{만 갱신},\qquad
+\frac{\partial L}{\partial W_0^{(q)}}=0
+$$
+
+$\widetilde{W}_0$는 저장본이 아니라 **연산용 일시 텐서**인 경우가 많다.
+
+### 손계산 — 메모리 비율만
+
+$N=7\times 10^9$, FP16 가중치 $2N$ bytes vs 4-bit $0.5N$ bytes → 비율 $1/4$.  
+LoRA를 $W_q,W_v$에 $r=8$, $C=4096$, $N_{\mathrm{layer}}=32$만 붙이면 학습 파라미터:
+
+$$
+
+32\cdot 2\cdot 8\cdot(4096+4096) = 4{,}194{,}304
+$$
+
+약 4M. Full $N$의 $\sim 0.06\%$ 수준.  
+Optimizer가 이 4M에만 붙으면, Full FT의 Adam 상태와 자릿수가 다르다.
+
 ## 학습 vs 추론 — 역할을 섞지 말 것
 | 단계 | 흔한 패턴 | 목적 |
 |---|---|---|
@@ -156,6 +242,17 @@ Backward:
 - 학습 때 쓰던 4-bit 베이스를 **그대로** 제품 추론 경로라고 단정하지 않는다.
 - merge한 뒤 다시 양자화할 수도 있고, 고정도로 서빙할 수도 있다.
 - “QLoRA로 학습했으니 추론도 반드시 NF4”는 **사실이 아니다**.
+
+### 병합 후 양자화 (선택 경로)
+
+$$
+
+W_{\mathrm{merged}} = \widetilde{W}_0 + \frac{\alpha}{r}BA
+\quad\to\quad
+\mathrm{Quantize}(W_{\mathrm{merged}})
+$$
+
+학습 때 쓰던 $W_0^{(q)}$와 **동일할 필요는 없다**. 배포 엔진·품질 요구에 따라 FP16 서빙도 흔하다.
 
 ## 최소 사용 스케치（개념）
 아래는 API 암기가 아니라 **구성 요소 체크리스트**용 의사코드다.
@@ -197,6 +294,19 @@ model.print_trainable_parameters()
 - [ ] trainable이 LoRA（+선택 norm）뿐인가
 - [ ] chat template / loss mask가 제71~72강과 일치하는가
 
+### 체크리스트를 수식으로 연결
+
+trainable 파라미터 집합 $\Theta_{\mathrm{LoRA}}=\{A_\ell,B_\ell\}_\ell$에 대해서만
+
+$$
+
+\theta \leftarrow \theta - \eta\, \widehat{\nabla}_\theta L_{\mathrm{SFT}}
+\quad(\theta\in\Theta_{\mathrm{LoRA}})
+$$
+
+베이스 $\Theta_{\mathrm{base}}$는 $\nabla=0$.  
+`print_trainable_parameters()`가 보고하는 비율은 대략 $|\Theta_{\mathrm{LoRA}}|/(|\Theta_{\mathrm{base}}|+|\Theta_{\mathrm{LoRA}}|)$.
+
 ## 품질·안정성 트레이드오프
 | 이득 | 대가·위험 |
 |---|---|
@@ -218,6 +328,96 @@ model.print_trainable_parameters()
 | NF4는 정규분포 분위수에 맞춘 4-bit 코드북 아이디어다 | **설명**（설계 동기）+ 형식 존재는 **사실** |
 | QLoRA 학습 후 추론도 반드시 4-bit여야 한다 | **거짓** |
 | VRAM이 항상 정확히 N GB로 줄어든다 | **단정 금지** — 예시 스케일만 |
+
+## 수식 보강 — QLoRA와 양자화 오차 감각
+
+QLoRA는 기본 가중치를 저비트(예: 4-bit)로 두고 LoRA만 고정밀로 학습합니다.
+
+$$
+W \approx \mathrm{Dequant}(W_{\mathrm{NF4}}) + BA
+$$
+
+양자화 오차를 $\mathcal{E}=W_0-\mathrm{Dequant}(W_{\mathrm{NF4}})$라 하면 실효 변환은
+
+$$
+h = W_0 x - \mathcal{E}x + BAx
+$$
+
+에 가깝습니다. LoRA가 $\mathcal{E}x$의 일부를 보상하도록 학습되는 셈입니다.
+
+## 수식·정량 보강 — QLoRA 메모리
+
+$$
+\mathrm{Mem}\approx M_W+M_G+M_{\mathrm{opt}}+M_{\mathrm{act}}
+$$
+
+4-bit $M_W\approx0.5N$ bytes vs FP16 $2N$ → 이상적 $1/4$(메타 제외).
+
+Forward:
+
+$$
+y=x\widetilde W_0^\top+\frac{\alpha}{r}(xA^\top)B^\top
+$$
+
+$\partial L/\partial W_0^{(q)}=0$, $\partial L/\partial A,\partial L/\partial B$만 학습.
+
+손계산: $N=7\cdot10^9$ FP16≈14GB 가중치 감각 → 4-bit≈3.5GB 감각(설명용).  
+LoRA $r=8,C=4096,N_{\mathrm{layer}}=32$ on $W_q,W_v$ → trainable ≈ $4.2\cdot10^6$.
+
+NF4: 블록 스케일 $s$와 코드북 인덱스 $q_i$, $\hat w_i=s\cdot q_i$.
+
+학습 양자화 ≠ 추론 양자화. Merge 후 BF16 서빙 가능.
+
+
+## 워크드 예제 — 비트·trainable·함정
+
+### 비트 산수
+
+| 표현 | bytes/param |
+|---|---:|
+| FP32 | 4 |
+| FP16 | 2 |
+| 8-bit | 1 |
+| 4-bit | 0.5 |
+
+$N=7\times10^9$: FP16 가중치 $\approx14$GB 감각, 4-bit $\approx3.5$GB 감각.  
+학습 VRAM ≠ 이 숫자(activation·LoRA·fragmentation).
+
+### Trainable 세기
+
+$C=4096$, $r=16$, layers $32$, modules $\{q,v,o\}$:
+
+$$
+\#=32\cdot3\cdot16\cdot(4096+4096)=12{,}582{,}912
+$$
+
+Base $7$B 대비 $\sim0.18\%$.
+
+### 흔한 함정
+
+1. 베이스 unfreeze → QLoRA가 아님  
+2. loss에 프롬프트 포함 → 지시 복사  
+3. “VRAM이 항상 N GB” 단정  
+4. 학습 4-bit = 서빙 4-bit로 동일시
+
+Fact: 저장 비트↓. Explanation: 같은 GPU에서 큰 베이스 SFT가 쉬워질 **수** 있음.
+
+
+## 추가 연습 — 메모리 시나리오
+
+시나리오 A: 가중치 지배 → 4-bit 효과가 큼.  
+시나리오 B: $B,T$ 커 activation 지배 → QLoRA해도 OOM 가능.
+
+식으로:
+
+$$
+M_{\mathrm{act}}\propto B\cdot T\cdot C\cdot N_{\mathrm{layers(stored)}}
+$$
+
+gradient checkpointing은 $M_{\mathrm{act}}$를 줄이는 **별 축**.
+
+QLoRA = Quantize($W_0$ freeze) + LoRA($A,B$ train).  
+속도(throughput) 이득은 커널 의존 — 저장 이득과 분리해 말할 것.
 
 ## LLM에서는 어디에 사용될까?
 

@@ -253,6 +253,92 @@ print(out_s)
 학습 전에는 출력이 의미 없다. 배선 확인용이다.  
 Mini Pretraining(제68강) 이후에는 같은 함수로 “흉내 문장”을 본다.
 
+## 수식 보강 — Greedy · Temperature · Top-k
+
+logits $\mathbf{z}\in\mathbb{R}^{V}$에서
+
+$$
+\text{Greedy: }\hat{y}=\arg\max_k z_k
+$$
+
+Temperature $\tau>0$:
+
+$$
+p_k = \frac{e^{z_k/\tau}}{\sum_j e^{z_j/\tau}}
+$$
+
+$\tau\to 0$이면 greedy에 가깝고, $\tau$가 크면 분포가 평평해집니다.
+
+Top-$k$는 확률 상위 $k$개만 남기고 재정규화합니다. Top-$p$(nucleus)는 누적확률 $\ge p$가 되는 최소 집합을 남깁니다.
+
+## 수식·정량 보강 — 디코딩 정책
+
+Greedy: $x_t=\arg\max_v z_{t,v}$.
+
+Sampling: $x_t\sim\mathrm{Categorical}(\mathrm{softmax}(z_t))$.
+
+Temperature(제59강 예고): $p=\mathrm{softmax}(z/\tau)$.
+
+### 워크드 예
+
+$z=(3,2,0.5,-1)$, $\mathrm{softmax}\approx(0.644,0.237,0.053,0.012)$.
+
+| 정책 | 결과 |
+|---|---|
+| Greedy | 항상 0 |
+| Sample | 0 자주 |
+| Top-$k=2$ 후 | $p'=(0.731,0.269,0,0)$ |
+
+### 경로 확률이 보여주는 비최적성
+
+두 스텝 장난감에서 첫 토큰 mode가 전체 곱 최대를 보장하지 않을 수 있음 → 빔 서치 동기.
+
+엔트로피 $H(p)=-\sum p\log p$가 큰 위치에서 sampling 다양성↑.
+
+경로:
+
+$$
+P(x_{t_0+1:t_0+K}\mid x_{1:t_0})=\prod_{k}P(x_{t_0+k}\mid x_{<t_0+k})
+$$
+
+
+## 워크드 예제 — 루프·시드·EOS
+
+의사코드 한 바퀴:
+
+1. `idx_cond = idx[:, -L:]` ($L=\mathrm{block\_size}$)
+2. `logits = model(idx_cond)` → `[B,T',V]`
+3. `z = logits[:, -1, :]`
+4. greedy: `next = z.argmax(-1)` / sample: `Categorical(softmax(z))`
+5. `idx = cat(idx, next)`
+6. `next==EOS`면 해당 배치 종료
+
+### 같은 $p$에서 5번 샘플
+
+$p=(0.05,0.80,0.15)$이면 기댓값적으로 id1이 4번 안팎, id2가 가끔.  
+`torch.manual_seed(0)`으로 재현 가능한지 확인하는 것이 디버깅 기본이다.
+
+### Greedy 반복 병
+
+모드만 고르면 $P(\text{same}|\text{same})$가 큰 토큰(마침표·줄바꿈·특수)에서 루프가 생기기 쉽다.  
+Sampling·temperature·top-p는 그 **병의 출구**이지, 모델 가중치를 바꾸지는 않는다.
+
+
+## 추가 연습 — 정책 비교표 채우기
+
+$z=(0,3,1)$, $p=\mathrm{softmax}(z)\approx(0.042,0.865,0.093)$.
+
+| trial | greedy | sample(시드마다) |
+|---|---|---|
+| 1 | 1 | ? |
+| 2 | 1 | ? |
+| 3 | 1 | ? |
+
+Greedy 열은 모두 1. Sample 열은 1이 많되 0/2가 간헐.
+
+`max_new_tokens=5`, EOS 없음 → 길이 정확히 +5.  
+EOS가 중간이 나오면 조기 종료 설계를 검증.
+
 ## LLM에서는 어디에 사용될까?
 제품 챗봇은 드물게 순수 greedy만 쓴다. 보통:
 
@@ -307,6 +393,29 @@ torch.manual_seed(0)
 
 6. **EOS를 디코더만의 문제로 착각**  
    데이터에 EOS가 거의 없으면 모델이 끝내는 법을 못 배운다(제60~61강 연결).
+
+
+## 수식 카드 — Decoding
+
+$$
+x_t^{\mathrm{greedy}}=\arg\max_v z_{t,v},\quad
+x_t^{\mathrm{sample}}\sim\mathrm{Categorical}(\mathrm{softmax}(z_t))
+$$
+
+$$
+P(x_{t_0+1:t_0+K}\mid x_{1:t_0})=\prod_k P(x_{t_0+k}\mid x_{<t_0+k})
+$$
+
+
+## 연결 복습 — logits에서 문장으로
+
+학습은 $\mathbb{E}[-\log p(x_t\mid x_{<t})]$를 줄인다.  
+생성은 같은 $p$에서 $\pi$로 샘플/argmax한다.
+
+제59강에서 $\pi$를 temperature·top-k·top-p로 바꾼다.  
+오늘은 $\pi\in\{\arg\max,\ \mathrm{Cat}(p)\}$만.
+
+실습 한 줄: 동일 체크포인트에서 greedy 1회 vs sample 5회 문장 길이·반복을 비교 기록.
 
 ## 핵심 요약
 - 생성은 같은 GPT forward의 마지막 logit에 **디코딩 규칙**을 적용한 루프다

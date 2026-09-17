@@ -288,6 +288,22 @@ if __name__ == "__main__":
 이 파일이 “학습기”는 아니다.  
 **이름이 가리키는 책임이 다르다**는 것만 확인하면 된다.
 
+## 수식 보강 — Alignment 파이프라인
+
+개념적으로
+
+$$
+\pi_{\mathrm{SFT}} \xrightarrow{\text{RM/Preference}} \pi_{\mathrm{aligned}}
+$$
+
+이며, RLHF는 보상 $r_\phi$ 아래
+
+$$
+\max_\pi\ \mathbb{E}[r_\phi(x,y)] - \beta\,\mathrm{KL}(\pi\|\pi_{\mathrm{ref}})
+$$
+
+를 추구합니다. DPO는 이 목표의 특정 재매개화입니다.
+
 ## LLM에서는 어디에 사용될까?
 산업·오픈 모델 문서에서 자주 보이는 패턴:
 

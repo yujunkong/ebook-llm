@@ -229,6 +229,16 @@ print("difference:", context - rnn_like)
 요점: Attention의 출력은 본질적으로 **문맥 벡터 = 가중 평균**이다.  
 가중치를 **데이터에 맞게 학습·계산**하는 장치가 Q/K/V다.
 
+## 수식 보강 — Attention이 필요한 이유(복잡도 대비)
+
+토큰 $i$가 $j$를 참조하는 가중치 $\alpha_{ij}$로 값을 섞습니다.
+
+$$
+h_i=\sum_j \alpha_{ij} v_j,\quad \alpha_{ij}\ge 0,\ \sum_j\alpha_{ij}=1
+$$
+
+고정 윈도우 RNN/CNN과 달리, $\alpha_{ij}$가 입력에 따라 바뀌어 **가변적 장거리 의존**을 표현합니다.
+
 ## LLM에서는 어디에 사용될까?
 ### 9.1 Transformer 블록의 중심
 

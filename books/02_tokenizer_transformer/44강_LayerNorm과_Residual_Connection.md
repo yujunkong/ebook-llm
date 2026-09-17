@@ -354,6 +354,85 @@ class PreLNResidual(nn.Module):
 
 RMSNorm을 쓰려면 `nn.LayerNorm` 대신 커스텀 모듈을 넣으면 된다.
 
+## 수식 보강 — LayerNorm · Residual
+
+Residual:
+
+$$
+y = x + F(x)
+$$
+
+LayerNorm(특징 차원 $d$ 위):
+
+$$
+\hat{x}_i=\frac{x_i-\mu}{\sqrt{\sigma^2+\varepsilon}},\quad
+\mathrm{LN}(x)=\gamma\odot\hat{x}+\beta
+$$
+
+$$
+\mu=\frac{1}{d}\sum_i x_i,\quad
+\sigma^2=\frac{1}{d}\sum_i (x_i-\mu)^2
+$$
+
+### 역전파 스케치 — Residual의 “+1”
+
+$$
+
+\frac{\partial L}{\partial x}
+=
+\frac{\partial L}{\partial y}
++
+\frac{\partial L}{\partial y}\frac{\partial F}{\partial x}
+
+$$
+
+첫 항은 **우회 경로**다. $F$의 야코비안이 작아도 그라디언트가 통째로 사라지기 어렵다.
+
+### Pre-LN 한 블록
+
+$$
+
+\begin{aligned}
+x &\leftarrow x + \mathrm{Attn}(\mathrm{LN}(x)) \\
+x &\leftarrow x + \mathrm{FFN}(\mathrm{LN}(x))
+\end{aligned}
+
+$$
+
+Post-LN은 덧셈 **뒤**에 LN이 온다. 깊은 스택에서는 Pre-LN이 초기화·워밍업에 덜 민감한 경우가 많다는 **경험적** 이야기가 있다(단정 금지).
+
+### 손계산 — LN 후 평균·분산
+
+$x=(1,3,5)$, $\epsilon=0$으로 근사:
+
+$$
+
+\mu=3,\quad
+\sigma^2=\frac{(1-3)^2+(3-3)^2+(5-3)^2}{3}=\frac{8}{3},\quad
+\sigma=\sqrt{8/3}\approx 1.633
+
+$$
+
+$$
+
+\hat{x}\approx(-1.225,\ 0,\ 1.225)
+$$
+
+$\gamma=1,\beta=0$이면 출력이 $\hat{x}$. 평균 0, 분산 1로 맞춰진 것을 확인한다.
+
+$\gamma=(2,2,2)$면 분산이 4배로 다시 커질 수 있다. **정규화 후에도 $\gamma$가 스케일을 복원**한다.
+
+### RMSNorm과 같은 $x$
+
+$$
+
+\mathrm{RMS}=\sqrt{(1+9+25)/3}=\sqrt{35/3}\approx 3.416,\quad
+x/\mathrm{RMS}\approx(0.293,\ 0.878,\ 1.463)
+
+$$
+
+평균을 빼지 않았으므로 합이 0이 아니다. LayerNorm과 수치가 다르다.
+
 ## LLM에서는 어디에 사용될까?
 사실:
 

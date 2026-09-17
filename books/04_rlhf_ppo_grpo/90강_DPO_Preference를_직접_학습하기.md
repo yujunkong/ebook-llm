@@ -72,7 +72,7 @@ $$
 
 $$
 
-\pi_r(y\mid x)=\frac{1}{Z(x)}\,\pi_{\mathrm{ref}}(y\mid x)\,\exp\Big(\frac{1}{\beta}r(x,y)\Big)
+\pi_r(y\mid x)=\frac{1}{Z(x)}\,\pi_{\mathrm{ref}}(y\mid x)\,\exp\left(\frac{1}{\beta}r(x,y)\right)
 
 $$
 
@@ -111,10 +111,10 @@ BT에 넣으면
 $$
 
 p^\star(y_w\succ y_l\mid x)
-=\sigma\Big(
+=\sigma\left(
 \beta\log\frac{\pi^\star(y_w\mid x)}{\pi_{\mathrm{ref}}(y_w\mid x)}
 -\beta\log\frac{\pi^\star(y_l\mid x)}{\pi_{\mathrm{ref}}(y_l\mid x)}
-\Big)
+\right)
 
 $$
 
@@ -123,12 +123,12 @@ $$
 $$
 
 \mathcal{L}_{\mathrm{DPO}}(\theta)
-=-\mathbb{E}_{(x,y_w,y_l)}\Big[
-\log\sigma\Big(
+=-\mathbb{E}_{(x,y_w,y_l)}\left[
+\log\sigma\left(
 \beta\log\frac{\pi_\theta(y_w\mid x)}{\pi_{\mathrm{ref}}(y_w\mid x)}
 -\beta\log\frac{\pi_\theta(y_l\mid x)}{\pi_{\mathrm{ref}}(y_l\mid x)}
-\Big)
-\Big]
+\right)
+\right]
 
 $$
 
@@ -474,7 +474,7 @@ $$
 r_w-r_l
 =\beta\log\frac{\pi_r(y_w)}{\pi_{\mathrm{ref}}(y_w)}+\beta\log Z
 -\beta\log\frac{\pi_r(y_l)}{\pi_{\mathrm{ref}}(y_l)}-\beta\log Z
-=\beta\Big(\Delta_w-\Delta_l\Big)
+=\beta\left(\Delta_w-\Delta_l\right)
 
 $$
 

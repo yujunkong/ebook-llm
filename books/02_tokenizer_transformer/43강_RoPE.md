@@ -469,6 +469,19 @@ x → Wq,Wk,Wv → split heads
 Positional Encoding을 Embedding에 더하는 코드를 쓰던 모델은, RoPE 모델에서 그 add를 **제거**하는 경우가 많다.  
 위치를 두 방식으로 중복 주입하지 않는 것이 일반적이다(모델별 예외 가능).
 
+## 수식 보강 — RoPE 회전
+
+2D 부분공간에서 위치 $m$ 회전:
+
+$$
+\begin{pmatrix}x'\\y'\end{pmatrix}
+=
+\begin{pmatrix}\cos m\theta & -\sin m\theta\\ \sin m\theta & \cos m\theta\end{pmatrix}
+\begin{pmatrix}x\\y\end{pmatrix}
+$$
+
+상대 위치 $m-n$이 내적에 인코딩됩니다.
+
 ## LLM에서는 어디에 사용될까?
 ### 9.1 사실
 

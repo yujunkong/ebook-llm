@@ -307,9 +307,118 @@ Weight tying, dropout 위치, bias 유무 같은 세부 선택은 제56강에서
 5. **규모 숫자를 사실처럼 암기**  
    토큰 수·파라미터 수는 출처·시점에 따라 다르다. 이 책은 원리를 우선한다.
 
+## 수식 보강 — GPT의 확률 모델
+
+GPT는 decoder-only Transformer로 next-token 분포를 냅니다.
+
+$$
+p_\theta(x_t\mid x_{<t}) = \mathrm{softmax}\left(W_U\, h_t\right)_{x_t}
+$$
+
+$h_t\in\mathbb{R}^{d}$는 $t$번째 위치의 은닉상태, $W_U\in\mathbb{R}^{V\times d}$는 LM Head입니다. 학습 목표는
+
+$$
+\min_\theta\;\mathbb{E}_{\mathbf{x}\sim\mathcal{D}}\left[-\sum_t \log p_\theta(x_t\mid x_{<t})\right]
+$$
+
+입니다.
+
+## 수식·정량 보강 — GPT를 확률 모델로
+
+$$
+p_\theta(x_t\mid x_{<t})=\mathrm{softmax}(W_U h_t)_{x_t}
+$$
+
+$$
+\min_\theta\ \mathbb{E}_{x\sim\mathcal{D}}\Big[-\sum_t\log p_\theta(x_t\mid x_{<t})\Big]
+$$
+
+체인:
+
+$$
+e_t=W_e[x_t]+p_t,\ 
+h^{(0)}=e,\ 
+h^{(\ell)}=\mathrm{Block}^{(\ell)}(h^{(\ell-1)}),\ 
+z_t=W_U\,\mathrm{LN}(h^{(N)}_t)
+$$
+
+손계산: $z=(2,1,0)$ → $p\approx(0.665,0.245,0.090)$, 정답 0이면 NLL $-\log0.665\approx0.408$.
+
+파라미터 감각: $\#\mathrm{params}\sim N\cdot12C^2+VC$ (벤치·상용 수치 단정 금지).
+
+Pretraining vs SFT는 같은 CE 껍질, **데이터·마스크**가 다름.
+
+
+## 워크드 예제 — 한 스텝 생성과 NLL
+
+프롬프트 토큰 3개, vocab $V=5$, 마지막 logit
+
+$$
+z=(-1.0,\ 2.0,\ 0.5,\ 0.0,\ -2.0)
+$$
+
+$\mathrm{softmax}$ 근사:
+
+```text
+e^z ≈ (0.37, 7.39, 1.65, 1.00, 0.14), 합≈10.55
+p   ≈ (0.035, 0.701, 0.156, 0.095, 0.013)
+```
+
+Greedy 다음 토큰 = id 1.  
+정답이 id 1이면 NLL $-\log0.701\approx0.355$.  
+정답이 id 2면 $-\log0.156\approx1.86$ — 같은 forward라도 타깃에 따라 손실이 달라진다.
+
+이것이 Pretraining 한 스텝의 전부다. “검색”이 아니라 **분포 맞추기**다.
+
+규모 감각(단정 금지): $C=768,N=12$ → $12\cdot12\cdot768^2\approx8.5\times10^7$에 $VC$를 더하면 $10^8$ 자릿수.
+
+
+## 추가 연습 — 정의 고정
+
+빈칸:
+
+> GPT(이 책) = (Decoder-only) + (Causal LM 목표) + (Pretraining on text) + (선택적 SFT)
+
+아닌 것: 특정 제품명, Encoder-Decoder 번역기, “진실 DB”.
+
+수식 한 장:
+
+$$
+P(x)=\prod_t P_\theta(x_t\mid x_{<t}),\quad
+h_t=f_\theta(x_{\le t}),\quad
+P_\theta(\cdot\mid x_{<t})=\mathrm{softmax}(W_U h_t)
+$$
+
 ## LLM에서는 어디에 사용될까?
 
 이번 55강에서 배운 개념은 이후 Transformer · GPT · 서빙 강의에서 반복해서 등장합니다. 각 수식·코드 블록을 “실제 모델의 어느 단계인가”와 연결해 다시 읽어 보세요.
+
+
+## 수식 카드 — GPT
+
+$$
+p_\theta(x_t\mid x_{<t})=\mathrm{softmax}(W_U h_t)_{x_t}
+$$
+
+Decoder-only Causal LM + Pretraining (+ optional SFT).  
+제품명 ≠ 아키텍처.
+
+
+## 연결 복습 — 2권에서 3권으로
+
+```text
+Tokenizer → Embed → (RoPE/PE) → Block×N → LM Head → logits
+                 ↑ Causal mask in Attn
+```
+
+이 forward가 GPT 본체. 제56강에서 클래스로 고정하고, 제57강에서 CE, 제58강에서 generate.
+
+세대별 옵션(Norm, GQA, SwiGLU)은 제53강 지도 — 초반은 고전 골격으로 충분.
+
+
+### 한 줄 요약 수식
+
+$$\mathrm{GPT\ (book)}=\mathrm{Decoder\text{-}only\ Causal\ LM}+\mathrm{Pretrain}(+\mathrm{SFT}).$$
 
 ## 핵심 요약
 - GPT는 이 책에서 **Decoder-only Causal LM + (대규모) Pretraining** 계열을 가리킨다.

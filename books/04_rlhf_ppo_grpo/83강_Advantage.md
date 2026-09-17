@@ -420,6 +420,64 @@ $Q=[5,1,1]$, $\pi=[0.2,0.4,0.4]$일 때 $V$와 각 $A$를 구하시오. 가중�
 6. **Advantage만으로 reward hacking이 사라진다 믿음**  
    → RM 목표 자체가 잘못된 경우 $A$도 잘못을 증폭한다.
 
+## 수식 보강 — Advantage 정의
+
+$$
+A(s,a)=Q(s,a)-V(s)
+$$
+
+또는 실무에서 GAE 등으로 추정합니다. 정책경사는 $\nabla\log\pi\cdot A$ 형태로 분산을 줄입니다.
+
+## 정량 스케치 — Advantage 분산·GAE
+
+$$
+
+A^\pi(s,a)=Q^\pi(s,a)-V^\pi(s),\qquad
+\mathbb{E}_{a\sim\pi}[A]=0
+$$
+
+몬테카를로: $\hat A_t=G_t-V(s_t)$.
+
+TD 잔차:
+
+$$
+
+\delta_t=r_t+\gamma V(s_{t+1})-V(s_t)
+$$
+
+$$
+
+\hat A_t^{\mathrm{GAE}(\gamma,\lambda)}=\sum_{l\ge0}(\gamma\lambda)^l\delta_{t+l}
+$$
+
+- $\lambda\to0$: 저분산·고편향  
+- $\lambda\to1$: MC에 가까움  
+
+LLM outcome 단순화: $\hat A(x,y)=R-V(x)$ 또는 배치/그룹 상대화 후 토큰에 방송.
+
+### 숫자 예
+
+$R\in\{10,10,10,0\}$, $\bar R=7.5$ → $R-\bar R\in\{2.5,2.5,2.5,-7.5\}$ (평균 0 상대 신호).
+
+$V=1$, $Q(a_1)=1.5$, $Q(a_2)=0.2$ → $A=(0.5,-0.8)$.
+
+Whitening:
+
+$$
+
+\hat A\leftarrow(\hat A-\mathrm{mean})/(\mathrm{std}+\varepsilon)
+$$
+
+스케일이 바뀌면 PPO lr·clip 체감이 달라진다.
+
+
+## PPO·GRPO로 넘기는 한 줄
+
+PPO: $\mathbb{E}[\min(\rho\hat A,\mathrm{clip}(\rho)\hat A)]$ — $\hat A$는 GAE/value.  
+GRPO: 같은 clip 골격, $\hat A$는 그룹 상대 $r$.  
+공통 뿌리: $\nabla\log\pi\cdot A$ (제82강).
+
+
 ## LLM에서는 어디에 사용될까?
 
 이번 83강에서 배운 개념은 이후 Transformer · GPT · 서빙 강의에서 반복해서 등장합니다. 각 수식·코드 블록을 “실제 모델의 어느 단계인가”와 연결해 다시 읽어 보세요.

@@ -32,9 +32,9 @@ DPO는 수식은 짧지만 구현에서 실수 포인트가 많다.
 ## 손실을 코드 변수로 번역
 $$
 
-\mathcal{L}=-\log\sigma\Big(
+\mathcal{L}=-\log\sigma\left(
 \beta\big(\Delta_w-\Delta_l\big)
-\Big),\quad
+\right),\quad
 \Delta=\log\pi_\theta(y\mid x)-\log\pi_{\mathrm{ref}}(y\mid x)
 
 $$
@@ -363,6 +363,68 @@ backward 후:
 - [ ] ref 파라미터 `requires_grad=False`
 - [ ] response mask에 프롬프트가 섞이지 않음
 - [ ] chat template이 SFT와 동일
+
+## 수식 보강 — DPO 손실
+
+선호 쌍 $(y_w,y_l)$ (win/lose)와 참조정책 $\pi_{\mathrm{ref}}$에 대해
+
+$$
+L_{\mathrm{DPO}}(\theta)= -\log\sigma\left(\beta\log\frac{\pi_\theta(y_w\mid x)}{\pi_{\mathrm{ref}}(y_w\mid x)}-\beta\log\frac{\pi_\theta(y_l\mid x)}{\pi_{\mathrm{ref}}(y_l\mid x)}\right)
+$$
+
+보상 모델을 따로 두지 않고, 선호 데이터로 정책을 직접 업데이트합니다.
+
+## 정량 스케치 — DPO 손실 곡면
+
+$$
+
+\mathcal{L}_{\mathrm{DPO}}
+=
+-\mathbb{E}\Big[
+\log\sigma\Big(
+\beta\big(
+\log\frac{\pi_\theta(y_w\mid x)}{\pi_{\mathrm{ref}}(y_w\mid x)}
+-
+\log\frac{\pi_\theta(y_l\mid x)}{\pi_{\mathrm{ref}}(y_l\mid x)}
+\big)
+\Big)
+\Big]
+$$
+
+암묵 보상 $\hat r=\beta\log(\pi_\theta/\pi_{\mathrm{ref}})$이면 BT와 동형.
+
+$m=\Delta_w-\Delta_l$, $z=\beta m$, $\mathcal{L}=-\log\sigma(z)$.
+
+손계산: $\beta=0.1$, $m=2$ → $z=0.2$, $-\log\sigma\approx0.599$.  
+$m=-2$ → 손실 $\approx0.799$ (선호 역전).
+
+길이 편향: 합 로그확률은 $|y|$에 민감 → 정규화·매칭 검토.
+
+비용: 배치당 policy≈$2B$, ref≈$2B$(no grad) forward.
+
+
+## 구현 체크 — 네 로그확률 계약
+
+학습 전 단위 테스트로 고정할 불변조건:
+
+1. `lp_w_pi`, `lp_l_pi`만 `requires_grad=True` 경로
+2. ref 네 갈래는 `no_grad` (또는 캐시 텐서)
+3. mask는 응답 토큰만 1, 프롬프트·패딩 0
+4. shift: logits `[:, :-1]`, labels `[:, 1:]` 정렬
+5. `loss = -logsigmoid(β·m).mean()` 부호
+
+가짜 배치에서 $m>0$이면 chosen 쪽 grad가 로그확률을 **키우는** 방향인지 한 번 확인한다.
+
+### β 스위프 감각（처방 아님）
+
+| $\beta$ | 체감 |
+|---:|---|
+| 너무 작음 | 마진 압박 약함, ref에 가까움 |
+| 중간 | 선호 반영과 안정 사이 |
+| 너무 큼 | 과적합·퇴행·길이 왜곡 위험 |
+
+값은 데이터·모델마다 다시 고른다. 이 표는 방향만.
+
 
 ## LLM에서는 어디에 사용될까?
 

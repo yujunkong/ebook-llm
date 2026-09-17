@@ -349,7 +349,7 @@ class GPT(nn.Module):
 
 $$
 
-\#\approx V C + T_{\max} C + N\bigl(4C^2 + 2C\cdot 4C\bigr) + C V
+\#\approx V C + T_{\max} C + N\left(4C^2 + 2C\cdot 4C\right) + C V
 
 $$
 
@@ -423,6 +423,14 @@ assert logits.shape == (B, T, V)
 ```
 
 Attention 내부를 NumPy로 다시 칠 필요는 없다. 이미 2권에서 했다.
+
+## 수식 보강 — GPT 블록 스택
+
+$$
+h \leftarrow \mathrm{Block}_1\circ\cdots\circ\mathrm{Block}_L(h)
+$$
+
+각 Block은 (대략) LN → MHA → Residual → LN → FFN → Residual입니다.
 
 ## LLM에서는 어디에 사용될까?
 대규모 구현과의 대응:

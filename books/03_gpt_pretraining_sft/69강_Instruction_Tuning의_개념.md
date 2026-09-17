@@ -212,6 +212,122 @@ SFT는 이런 쌍을 많이 보여 주어, “지시 뒤에 응답이 온다”�
 - 안전·거부·미묘한 선호는 SFT만으로 불완전한 경우가 많음 → 4권
 - Pretraining이 약하면 SFT로 “지식 구멍”을 다 메우기 어려움
 
+## 수식 보강 — SFT 목적함수
+
+Instruction Tuning(SFT)은 prompt $c$와 응답 $y$에 대해
+
+$$
+L_{\mathrm{SFT}}(\theta)= -\sum_{t\in y}\log p_\theta(y_t\mid c, y_{<t})
+$$
+
+처럼 **응답 토큰만** 손실에 넣는 경우가 많습니다(프롬프트 마스킹). Pretraining의 무조건부 언어모델링과 같은 CE이지만, 데이터 분포가 “지시→응답”으로 바뀝니다.
+
+### 정량 스케치 — 데이터 효율(설명용)
+
+모범 응답이 $N$건, 평균 응답 길이 $\bar{L}_r$이면 모델이 보는 응답 토큰 총량은 대략 $N\bar{L}_r$이다.  
+Pretraining 토큰 $T_{\mathrm{PT}}$와 비교하면 보통 $N\bar{L}_r \ll T_{\mathrm{PT}}$이므로, SFT는 **적은 토큰으로 형식·톤·과제 분포를 크게 옮기는** 단계로 이해하는 편이 안전하다.
+
+### 마스크 손계산
+
+지시 12토큰 + 응답 4토큰. 타깃 시프트 후 CE 항:
+
+| 방식 | 항 수 | 비고 |
+|---|---:|---|
+| 전부 평균 | 15 | 프롬프트 예측 포함 |
+| 응답만 | 4 | `ignore_index` on prompt |
+
+평균을 항 수로 나누는 구현이면, 응답만 쓸 때 스텝당 손실 스케일이 달라진다. 로그에 찍히는 loss 숫자를 Pretraining과 직접 비교하지 말 것.
+
+### 지시 따르기 평가의 스케치 지표
+
+벤치마크 점수를 만들지 않는다. 대신 **제약 만족율** 개념만:
+
+$$
+
+\mathrm{Sat}
+=
+\frac{1}{M}\sum_{m=1}^{M}
+\mathbf{1}\{\text{응답}_m\text{이 제약}_m\text{을 만족}\}
+$$
+
+예: “불릿 3개”면 줄 수·마커를 규칙으로 검사. PPL과 별개인 **행동 지표**다(제75강).
+
+## 수식·정량 보강 — Instruction / SFT
+
+$$
+\mathcal{L}_{\mathrm{SFT}}=-\sum_{t\in\mathcal{T}_{\mathrm{resp}}}\log p_\theta(x_t\mid x_{<t})
+$$
+
+$$
+p_\theta(a\mid u)=\prod_{t\in a}p_\theta(x_t\mid x_{<t})
+$$
+
+$$
+\theta\leftarrow\arg\min_\theta\mathbb{E}_{(u,a^*)}\big[-\log p_\theta(a^*\mid u)\big]
+$$
+
+프롬프트 $L_p$, 응답 $L_r$: 전체 CE 항 $L_p+L_r$ vs 응답만 $L_r$.
+
+데이터 효율(설명): 응답 토큰 $N\bar L_r\ll T_{\mathrm{PT}}$인 경우가 많아, SFT는 **형식 이동**에 가깝다.
+
+제약 만족율 스케치(벤치 금지):
+
+$$
+\mathrm{Sat}=\frac1M\sum_m\mathbf{1}\{\text{응답}_m\text{이 제약}_m\text{만족}\}
+$$
+
+
+## 워크드 예제 — 마스크와 제약 분해
+
+샘플 토큰화(가상 id):
+
+```text
+[U1 U2 U3 U4 | A1 A2 A3]
+ prompt(4)      resp(3)
+```
+
+SFT 마스크: prompt 위치 `ignore`, 응답 3토큰만 CE.
+
+평균을 응답 길이로 나누면 배치 내 “짧은 답”이 상대적으로 크게 보일 수 있다.
+
+### 제약 분해 연습
+
+지시: `한국어로, 불릿 3개, 코드 없이, 초등 설명: CPU vs GPU`
+
+| 제약 | 검사 아이디어 |
+|---|---|
+| 언어 | 한글 비율/언어 탐지 |
+| 개수 | 줄 머리 `-`/`*` 3개 |
+| 금지 | ` ``` ` 또는 `def ` 부재 |
+| 청중 | 전문 용어 밀도(휴리스틱) |
+
+$\mathrm{Sat}$는 이런 지시자 평균이다. PPL과 독립.
+
+### Base vs SFT 한 줄
+
+Base: $p(x_t\mid x_{<t})$ on documents.  
+SFT: $p(a_t\mid u,a_{<t})$ on instruction pairs.
+
+
+## 추가 연습 — 파이프라인·마스크
+
+```text
+Pretraining --(base)--> SFT/Instruct --(policy0)--> RLHF/DPO
+```
+
+데이터 한 건을 messages로 쓰고, 어느 역할 토큰이 $\mathcal{T}_{\mathrm{resp}}$인지 표시하라.
+
+잘못된 정답 1건이 있으면 SFT는 그 오답을 **자신 있게** 모방할 수 있다.  
+이것이 데이터 품질이 곧 정렬 품질인 이유다.
+
+비교:
+
+| | PT | SFT |
+|---|---|---|
+| 목표 | 문서 이어쓰기 | 지시→응답 |
+| 마스크 | 거의 전 토큰 | 응답 |
+| 평가 | PPL 등 | 지시 준수·과제 성공 |
+
 ## LLM에서는 어디에 사용될까?
 공개·산업 파이프라인에서 흔히 관찰되는 패턴:
 
@@ -264,6 +380,42 @@ Pretraining → (  ①  ) → (  ②  preference  )
 
 5. **Pretraining을 건너뛰고 작은 모델에 SFT만**  
    미니 실험은 가능하지만, “지식”과 “형식”을 혼동하지 말 것.
+
+
+## 수식 카드 — SFT
+
+$$
+\mathcal{L}_{\mathrm{SFT}}=-\sum_{t\in\mathcal{T}_{\mathrm{resp}}}\log p_\theta(x_t\mid x_{<t})
+$$
+
+$$
+p(a\mid u)=\prod_{t\in a}p(x_t\mid x_{<t})
+$$
+
+응답 토큰만 손실. 형식 전환이 1차 목표.
+
+
+## 연결 복습 — SFT 다음 단계
+
+제70강: 데이터 스키마(Alpaca/messages).  
+제71강: response-only loss 구현.  
+제73~74강: LoRA/QLoRA로 같은 손실을 작은 파라미터에.  
+4권: preference로 $a$의 순위를 추가 학습.
+
+지금 외울 문장: **SFT는 모범 응답 모방이지, 선호 최적화 전체가 아니다.**
+
+
+### 한 줄 요약 수식
+
+$$\mathcal{L}_{\mathrm{SFT}}=-\sum_{t\in\mathrm{resp}}\log p_\theta(x_t\mid x_{<t}).$$
+
+
+> Base는 문서 이어쓰기, SFT는 지시→응답 조건부.
+
+
+### 파이프라인 한 줄
+
+`Pretrain → SFT(Instruction) → Preference(RLHF/DPO)` — 지금 자리는 가운데.
 
 ## 핵심 요약
 - Base LM은 문서 이어쓰기에 강하고, Assistant는 지시 수행에 맞춰 추가 학습된다.
@@ -345,3 +497,4 @@ Pretraining(base) 단계의 미니 산출물이다. 제70강에서는 Instructio
 - **다음 강:** [70강. Instruction Dataset 형식](70강_Instruction_Dataset_형식.md)
 
 <!-- /LECTURE_NAV -->
+

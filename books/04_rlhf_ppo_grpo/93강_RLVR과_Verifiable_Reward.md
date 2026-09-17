@@ -275,6 +275,209 @@ A. 가중합·다단계 필터가 가능하다. 가중 튜닝이 새 하이퍼�
 **Q. GRPO 없이 PPO+verifier만으로도 RLVR인가?**  
 A. 이 책의 설명용 정의에서는 그렇다. 핵심은 보상의 출처다.
 
+## 수학적으로 이해하기 — 목적과 그래디언트
+
+### 5b.1 RLVR 목적（설명용）
+
+$$
+
+J(\theta)=\mathbb{E}_{x\sim\mathcal{D},\, y\sim\pi_\theta(\cdot\mid x)}\big[r_v(x,y)\big]
+-\beta\,\mathbb{E}\big[\mathrm{KL}(\pi_\theta\Vert\pi_{\mathrm{ref}})\big]
+
+$$
+
+$r_v$는 검증기 보상이다. KL 항은 89강과 같은 **언어 닻**이다.
+
+### 5b.2 Policy Gradient 연결
+
+제82강 골격 그대로:
+
+$$
+
+\nabla_\theta J \approx \mathbb{E}\big[\nabla_\theta\log\pi_\theta(y\mid x)\, \hat A(x,y)\big]
+
+$$
+
+이진 outcome이면 단순 MC는 $\hat A\approx r_v-\bar r$ 또는 GRPO 그룹 z-score다.
+
+### 5b.3 Exact match 보상
+
+추출 함수 $\mathrm{ex}(y)$, 정답 집합 $\mathcal{A}(x)$:
+
+$$
+
+r_v(x,y)=\mathbf{1}\big[\mathrm{ex}(y)\in\mathcal{A}(x)\big]
+$$
+
+포맷 실패 시 $\mathrm{ex}(y)=\bot$ → 보통 0.
+
+### 5b.4 테스트 통과율
+
+테스트 집합 $\mathcal{T}(x)=\{t_1,\ldots,t_m\}$:
+
+$$
+
+r_v(x,y)=\frac{1}{m}\sum_{j=1}^{m}\mathbf{1}\big[\mathrm{pass}(y,t_j)\big]
+$$
+
+또는 pass@all:
+
+$$
+
+r_v=\prod_{j=1}^{m}\mathbf{1}[\mathrm{pass}(y,t_j)]
+$$
+
+부분 점수 vs 전부 통과는 **탐색 밀도 vs 엄격성** 트레이드오프다.
+
+### 5b.5 형식 제약 가산
+
+$$
+
+r = r_{\mathrm{task}} + \lambda_{\mathrm{fmt}} r_{\mathrm{fmt}} + \lambda_{\mathrm{len}} r_{\mathrm{len}}
+$$
+
+$r_{\mathrm{fmt}}\in\{0,1\}$, 길이 항은 상한 초과 시 음수 등. 가중치는 제품 요구에 따른다.
+
+## 정량 스케치 — 그룹·희소 신호
+
+### 6b.1 성공 확률과 그룹 혼합
+
+프롬프트 $x$에서 현재 정책의 성공률을 $p$라 하자(설명용).  
+$G$개 독립 샘플에서 “전부 0” 또는 “전부 1”이 아닐 확률:
+
+$$
+
+1-p^G-(1-p)^G
+$$
+
+이 값이 커야 GRPO 상대 신호가 **자주** 산다.
+
+| $p$ | $G=4$ | $G=8$ |
+|---:|---:|---:|
+| 0.1 | $1-0.1^4-0.9^4\approx0.34$ | $\approx0.57$ |
+| 0.5 | $1-2\cdot0.5^4=0.875$ | $0.992$ |
+| 0.9 | $\approx0.34$ | $\approx0.57$ |
+
+**해석:** 너무 쉽거나 너무 어려운 문제만 있으면 그룹 신호가 죽는다. 커리큘럼이 수학적으로도 필요하다.
+
+### 6b.2 pass@k 스케치
+
+동일 $p$ 가정(독립, 설명용):
+
+$$
+
+\mathrm{pass@}k = 1-(1-p)^k
+$$
+
+$p=0.2$, $k=5$ → $1-0.8^5\approx0.67$.  
+**사실:** 실제 추정은 중복·비독립·평가 프로토콜에 민감하다. 식은 직관용이다.
+
+### 6b.3 샘플 비용
+
+배치 $B$, 그룹 $G$, 평균 생성 길이 $L$:
+
+$$
+
+N_{\mathrm{tokens}}\approx B\cdot G\cdot L
+$$
+
+verifier 비용이 토큰당이 아니라 **실행/파서당**이면,
+
+$$
+
+N_{\mathrm{verify}}\approx B\cdot G
+$$
+
+코드 샌드박스 한도가 $N_{\mathrm{verify}}$를 병목으로 만든다. GPU만 보고 계획을 세우지 말 것.
+
+## Outcome vs Process — 수식 대비
+
+Outcome:
+
+$$
+
+r=\mathbf{1}[\mathrm{final}(y)=\mathrm{gold}]
+$$
+
+Process(이상화):
+
+$$
+
+r=\sum_{s=1}^{S} w_s\cdot \mathbf{1}[\mathrm{step}_s\text{ valid}]
+$$
+
+또는 밀도 있는 부분 점수.  
+과정 주석 비용이 $S$에 비례해 커지므로, 기본선은 outcome + 튼튼한 verifier다.
+
+## 합성 보상과 KL — 한 줄 구현
+
+```python
+def total_reward(r_ver, r_fmt, kl_hat, lam_v=1.0, lam_f=0.2, beta=0.01):
+    return lam_v * r_ver + lam_f * r_fmt - beta * kl_hat
+```
+
+$\hat{\mathrm{KL}}$ 추정은 89강. 부호·평균 위치를 팀 규약으로 고정한다.
+
+## 파서 거짓음성 확률（사고실험）
+
+모델이 맞출 확률 $p_{\mathrm{corr}}$, 파서가 정답을 인식할 확률 $p_{\mathrm{parse}}$(정답 조건부)라 하면, 관측 보상 기댓값 감각:
+
+$$
+
+\mathbb{E}[r]\approx p_{\mathrm{corr}}\cdot p_{\mathrm{parse}}
+$$
+
+$p_{\mathrm{parse}}=0.7$이면 진짜 실력의 30%가 **보상에서 사라진다**.  
+RL 전에 verifier 단위 테스트로 $p_{\mathrm{parse}}$를 올리는 편이 모델 lr 튜닝보다 우선일 수 있다.
+
+## 커리큘럼을 확률로 보기
+
+스테이지 $s$의 목표: 배치에서 혼합 그룹 비율이 일정 이상이 되도록 $p$를 구간 $[p_{\min},p_{\max}]$에 둔다.
+
+```text
+너무 많은 전부0 → 문제 쉽게 / 온도↑ / G↑ / 힌트 SFT
+너무 많은 전부1 → 문제 어렵게 / 숨은 테스트 / 온도↓
+```
+
+수치 목표는 과제마다 다르다. **로그에 frac_mixed_groups**를 남긴다.
+
+## 평가 수식 — maj@k
+
+$k$개 샘플의 추출 답 다수결:
+
+$$
+
+\hat a=\mathrm{mode}\{\mathrm{ex}(y_1),\ldots,\mathrm{ex}(y_k)\}
+$$
+
+$$
+
+\mathrm{maj@}k=\mathbf{1}[\hat a\in\mathcal{A}(x)]
+$$
+
+pass@k와 달리 “한 번이라도”가 아니라 **합의**를 본다. 보고 시 두 지표를 섞어 쓰지 말 것.
+
+## FAQ 보충
+
+**Q. 보상을 0/1이 아니라 logits RM처럼 연속으로 만들면?**  
+A. 가능하나 “verifiable”의 장점(재현·감사)이 약해질 수 있다. 규칙 점수를 세분화하는 편이 감사에 유리하다.
+
+**Q. KL β=0이 가능한가?**  
+A. 단기간 점수만 보면 오를 수 있으나 형식 붕괴·해킹 위험이 커진다. 모니터링 없이 0으로 두지 말 것.
+
+**Q. 단위 테스트가 flaky하면?**  
+A. 보상이 노이즈가 되어 advantage 분산이 폭발한다. 비결정 테스트를 먼저 제거한다.
+
+## 체크리스트 — RLVR 실험 전
+
+1. holdout 문제 분리
+2. 파서 golden set 정확도
+3. 샌드박스 쿼터·결정성
+4. $G$, 온도, β 초기값 기록
+5. frac_mixed_groups, pass@1, format rate 로그
+6. 안전 필터가 필요한 과제인지 확인
+
+
 ## LLM에서는 어디에 사용될까?
 
 이번 93강에서 배운 개념은 이후 Transformer · GPT · 서빙 강의에서 반복해서 등장합니다. 각 수식·코드 블록을 “실제 모델의 어느 단계인가”와 연결해 다시 읽어 보세요.

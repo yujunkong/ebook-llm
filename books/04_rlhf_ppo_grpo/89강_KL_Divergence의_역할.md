@@ -338,14 +338,14 @@ def total_reward(r_rm, logp_pi, logp_ref, beta):
 $$
 
 \mathrm{KL}(\pi\Vert\pi_{\mathrm{ref}})
-=\mathbb{E}_{y\sim\pi}\Big[\log\pi(y)-\log\pi_{\mathrm{ref}}(y)\Big]
+=\mathbb{E}_{y\sim\pi}\left[\log\pi(y)-\log\pi_{\mathrm{ref}}(y)\right]
 
 $$
 
 $$
 
 \mathrm{KL}(\pi_{\mathrm{ref}}\Vert\pi)
-=\mathbb{E}_{y\sim\pi_{\mathrm{ref}}}\Big[\log\pi_{\mathrm{ref}}(y)-\log\pi(y)\Big]
+=\mathbb{E}_{y\sim\pi_{\mathrm{ref}}}\left[\log\pi_{\mathrm{ref}}(y)-\log\pi(y)\right]
 
 $$
 
@@ -467,6 +467,14 @@ A. 연구·실무에 변형이 있다. 초보 과정에서는 고정 참조로 �
 
 **Q. DPO를 쓰면 이 강의는 쓸모없는가?**  
 A. 아니다. DPO의 $\beta\log(\pi/\pi_{\mathrm{ref}})$가 바로 이 KL-제약 최적성의 재매개다. 89강은 90강의 해석 열쇠다.
+
+## 수식 보강 — KL 페널티
+
+$$
+\max_\pi\ \mathbb{E}[r]-\beta\,\mathrm{KL}(\pi\|\pi_{\mathrm{ref}})
+$$
+
+$\beta$가 크면 참조정책에 가깝게 묶입니다.
 
 ## LLM에서는 어디에 사용될까?
 

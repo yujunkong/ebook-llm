@@ -21,6 +21,11 @@ $$
 
 점수를 손으로 한 칸씩 채워 본 사람만, 이후 Causal Mask(40강)와 Multi-Head(41강)를 안전하게 다룬다.
 
+> **핵심**
+>
+> Dot-Product Attention의 점수는 $S = QK^\top / \sqrt{d_k}$입니다.  
+> $\sqrt{d_k}$는 Softmax 포화을 완화하는 분산 스케일입니다.
+
 ## 선수 개념
 - 내적·행렬곱 (1권 10강)
 - Q, K, V 투영 (36강)
@@ -183,6 +188,11 @@ $$
 Multi-Head면 보통 `(B, h, T, d_k)` (41강).
 
 ## 작은 숫자로 직접 계산하기
+
+> **핵심**
+>
+> $QK^\top$의 한 칸이 $\mathbf{q}_i\cdot\mathbf{k}_j$임을 작은 행렬로 끝까지 계산합니다.
+
 ### 6.1 설정 A — 토큰 2개, $d_k=2$
 
 토큰: `나`(0), `책`(1)
@@ -389,6 +399,14 @@ if __name__ == "__main__":
 
 `torch.nn.functional.scaled_dot_product_attention`은 Softmax·V·마스크까지 한 번에 처리하는 API다.  
 학습 목적이므로 지금은 점수만 분리한다.
+
+## 수식 보강 — Scaled Dot-Product
+
+$$
+\mathrm{Attention}(Q,K,V)=\mathrm{softmax}\Big(\frac{QK^\top}{\sqrt{d_k}}\Big)V
+$$
+
+스케일 $\sqrt{d_k}$는 내적 분산이 $d_k$에 비례해 커지는 것을 완화합니다.
 
 ## LLM에서는 어디에 사용될까?
 ### 9.1 매 Attention 층의 핵심 GEMM
@@ -672,6 +690,45 @@ K (T, d_k) --transpose--> K^T (d_k, T)
 4. Softmax는 오늘 필수인가?
 
 답: 1) Query 위치의 점수 목록 2) 내적 점수 나눗셈 3) 2 4) 아니오(38강).
+
+
+---
+
+## 부록. 분산 스케일 유도 (스케치)
+
+성분이 평균 0·분산 1로 독립이면
+
+$$
+
+\mathrm{Var}(\mathbf{q}\cdot\mathbf{k}) \approx d_k,\qquad
+\mathrm{Var}\!\left(\frac{\mathbf{q}\cdot\mathbf{k}}{\sqrt{d_k}}\right) \approx 1
+
+$$
+
+> ⚠️ **주의**
+>
+> 스케일은 기본 처방이지 만능 해결이 아닙니다.
+
+## 부록. $T=3$ 점수 행렬 손계산
+
+$$
+
+Q=\begin{bmatrix}1&0\\0&1\\1&1\end{bmatrix},\ 
+K=\begin{bmatrix}1&0\\0&1\\1&0\end{bmatrix}
+
+$$
+
+$$
+
+QK^\top=\begin{bmatrix}1&0&1\\0&1&0\\1&1&1\end{bmatrix},\quad
+S=\frac{QK^\top}{\sqrt{2}}
+\approx
+\begin{bmatrix}0.707&0&0.707\\0&0.707&0\\0.707&0.707&0.707\end{bmatrix}
+
+$$
+
+Shape: $Q,K\in\mathbb{R}^{B\times T\times d_k}$ → $S\in\mathbb{R}^{B\times T\times T}$.
+
 
 <!-- LECTURE_NAV -->
 

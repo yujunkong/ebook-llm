@@ -411,6 +411,14 @@ if __name__ == "__main__":
 
 진짜 Transformer가 아니어도, **API 계약**(ids in → logits out → next id)은 LLM과 같다.
 
+## 수식 보강 — 다음 토큰 예측
+
+$$
+p(x_t\mid x_{<t})=\mathrm{softmax}(W_U h_t)_{x_t}
+$$
+
+학습은 $-\sum_t\log p(x_t\mid x_{<t})$를 최소화합니다.
+
 ## LLM에서는 어디에 사용될까?
 ### 9.1 Pretraining
 

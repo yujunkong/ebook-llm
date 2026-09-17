@@ -407,6 +407,42 @@ def demo():
 
 실행 결과는 시드·환경에 따라 달라진다. **특정 숫자를 SOTA처럼 인용하지 말 것.**
 
+## 수식 보강 — PPO clip 목적
+
+확률비 $r_t(\theta)=\pi_\theta(a_t\mid s_t)/\pi_{\theta_{\mathrm{old}}}(a_t\mid s_t)$에 대해
+
+$$
+L^{\mathrm{CLIP}}(\theta)=\mathbb{E}_t\left[\min\big(r_t(\theta)A_t,\ \mathrm{clip}(r_t(\theta),1-\varepsilon,1+\varepsilon)A_t\big)\right]
+$$
+
+$A_t$는 advantage, $\varepsilon$는 클립 폭입니다. 정책이 한 번에 너무 크게 바뀌지 않게 막는 장치입니다.
+
+## 정량 스케치 — clip 메트릭
+
+$$
+
+L^{\mathrm{CLIP}}=\mathbb{E}_t\Big[\min\big(\rho_t\hat A_t,\ \mathrm{clip}(\rho_t,1-\varepsilon,1+\varepsilon)\hat A_t\big)\Big]
+$$
+
+$$
+
+\rho_t=\exp(\log\pi_\theta-\log\pi_{\mathrm{old}})
+$$
+
+$$
+
+\mathrm{clip\_frac}=\mathbb{E}[\mathbf{1}(|\rho-1|>\varepsilon)]
+$$
+
+예: $A=1$, $\varepsilon=0.2$, $\rho=1.8$ → $\min(1.8,1.2)=1.2$ (보수화).
+
+$A=-1$, $\rho=0.5$ → $\min(-0.5,-0.8)=-0.8$ (과억제 스텝 절단).
+
+Approx KL 감각: $\widehat{\mathrm{KL}}\approx\mathbb{E}[\log\pi_\theta-\log\pi_{\mathrm{old}}]$.
+
+롤아웃 예산 $N\approx B\cdot L_{\mathrm{gen}}$, 재사용 epoch $K$↑면 clip_frac↑ 경향.
+
+
 ## LLM에서는 어디에 사용될까?
 Full stack 대응표:
 

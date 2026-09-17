@@ -147,13 +147,13 @@ Decode 국면 비유:
 $$
 
 s = \frac{x_{\max}-x_{\min}}{q_{\max}-q_{\min}},\quad
-z = \mathrm{round}\Big(q_{\min} - \frac{x_{\min}}{s}\Big)
+z = \mathrm{round}\left(q_{\min} - \frac{x_{\min}}{s}\right)
 
 $$
 
 $$
 
-q = \mathrm{clamp}\Big(\mathrm{round}\big(\frac{x}{s}+z\big), q_{\min}, q_{\max}\Big)
+q = \mathrm{clamp}\left(\mathrm{round}\big(\frac{x}{s}+z\big), q_{\min}, q_{\max}\right)
 
 $$
 
@@ -292,6 +292,17 @@ print((x - y).abs().mean().item())
 ```
 
 학습 그래프에 넣을 때는 STE（straight-through estimator）등이 필요하나, 서빙 PTQ 이야기에서는 “오차를 시뮬”하는 용도로 충분하다.
+
+## 수식 보강 — 양자화 스케일
+
+균등 양자화 스케치:
+
+$$
+q = \mathrm{clip}\left(\mathrm{round}\big(\frac{x}{s}\big)+z\right),\quad
+\hat{x}=s(q-z)
+$$
+
+$s$는 스케일, $z$는 zero-point입니다. INT8/INT4/FP8은 표현 범위·오차 트레이드오프가 다릅니다.
 
 ## LLM에서는 어디에 사용될까?
 ### 8.1 엔진에서의 위치

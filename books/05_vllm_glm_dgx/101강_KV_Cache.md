@@ -458,6 +458,33 @@ $$
 7. **요청 종료 후 KV 미반환**  
    서빙에서는 누수 = 곧 OOM.
 
+## 수식 보강 — KV Cache 용량
+
+층 $L$, 헤드 구성상 키/값 채널 합이 $d$에 해당하고, 정밀도 $b$바이트, 시퀀스 $T$, 배치 $B$이면 대략
+
+$$
+\mathrm{Mem}_{\mathrm{KV}} \approx 2 \cdot B \cdot L \cdot T \cdot d \cdot b
+$$
+
+입니다(구현·GQA에 따라 계수는 달라짐). $T$가 길수록 메모리가 선형으로 늘고, 이게 긴 컨텍스트 서빙의 병목이 됩니다.
+
+## 정량 스케치 — $2\cdot L\cdot H\cdot d\cdot T\cdot b$
+
+$$
+
+\mathrm{Bytes}_{\mathrm{KV}}\approx 2\cdot L\cdot H_{kv}\cdot d\cdot T\cdot b
+$$
+
+동시 요청: $\sum_i 2 L H_{kv} d T_i b \approx B\cdot 2 L H_{kv} d \bar T b$.
+
+배수 레버: $T$×2, $B$×2, $b$↓(양자화), $H_{kv}$↓(GQA/MQA).
+
+가정 워크스루: $L=40$, $H_{kv}=8$, $d=128$, $T=8192$, $b=2$, $B=8$  
+→ 원소 $\approx5.37\times10^9$, 바이트 $\approx10.7\,\mathrm{GB}$ (이상화; 블록·여유 추가).
+
+공유 접두 $S_0$: $\mathrm{Bytes}_{\mathrm{shared}}\approx 2 L H_{kv} d S_0 b$ (엔진 지원 시).
+
+
 ## LLM에서는 어디에 사용될까?
 
 이번 101강에서 배운 개념은 이후 Transformer · GPT · 서빙 강의에서 반복해서 등장합니다. 각 수식·코드 블록을 “실제 모델의 어느 단계인가”와 연결해 다시 읽어 보세요.

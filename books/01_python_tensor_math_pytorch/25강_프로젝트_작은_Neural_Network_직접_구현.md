@@ -162,10 +162,10 @@ BCE:
 
 $$
 
-L = -\frac{1}{N}\sum_{i=1}^{N}\Big[
+L = -\frac{1}{N}\sum_{i=1}^{N}\left[
   y_i\log(\hat{p}_i+\varepsilon)
   +(1-y_i)\log(1-\hat{p}_i+\varepsilon)
-\Big]
+\right]
 
 $$
 
@@ -622,6 +622,16 @@ NumPy에서 학습 시 마스크를 직접 만들고, 평가 시 끈다. PyTorch
 ```
 
 “한 배치 암기 테스트”는 구현 버그를 찾는 강력한 방법이다. 충분히 큰 모델이 배치 16개를 암기조차 못 하면 backward/update에 버그가 있을 확률이 높다.
+
+## 수식 보강 — 작은 네트의 완전 학습 목표
+
+입력 $x$, 정답 $y$, 모델 $f_\theta$에 대해
+
+$$
+\min_\theta\ \frac{1}{N}\sum_{i=1}^N \ell\left(f_\theta(x_i), y_i\right)
+$$
+
+을 SGD/Adam으로 푸는 것이 미니 프로젝트의 수학적 뼈대입니다. 이후 LLM도 같은 뼈대에 데이터·모델 규모만 키운 것입니다.
 
 ## LLM에서는 어디에 사용될까?
 

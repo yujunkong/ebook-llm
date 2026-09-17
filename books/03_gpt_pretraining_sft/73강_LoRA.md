@@ -266,9 +266,156 @@ LoRA는 **손실 함수를 바꾸지 않는다**. SFT와 동일하게
 4. **모든 모듈에 큰 $r$** → 데이터가 작을 때 style collapse（제75강）
 5. **merge 후 어댑터 파일 삭제** → 재학습·A/B 실험 불가
 
+## 수식 보강 — LoRA 업데이트
+
+사전학습 가중치 $W_0\in\mathbb{R}^{d\times k}$를 고정하고 저랭크 적응항만 학습합니다.
+
+$$
+W = W_0 + \Delta W,\quad \Delta W = BA
+$$
+
+$$
+B\in\mathbb{R}^{d\times r},\ A\in\mathbb{R}^{r\times k},\quad r\ll \min(d,k)
+$$
+
+순전파:
+
+$$
+h = W_0 x + B(Ax)
+$$
+
+학습 파라미터 수는 대략 $r(d+k)$로, 전체 $dk$보다 훨씬 작습니다.
+
+작은 예: $d=4,k=4,r=1$, $A=[1,0,0,0]$, $B=[0.5,0,0,0]^\top$이면 $\Delta W$의 $(0,0)$만 $0.5$입니다.
+
+### 스케일 $\alpha/r$까지
+
+$$
+
+\Delta W = \frac{\alpha}{r} BA
+$$
+
+$r$을 키울 때 $\alpha$를 고정하면 실효 스케일이 작아진다. $\alpha=r$로 두면 초기 실효 스케일을 맞추기 쉽다.
+
+### 옵티마이저 상태 비교 (설명용)
+
+파라미터 수 $P_{\mathrm{full}}=dk$, $P_{\mathrm{lora}}=r(d+k)$.  
+Adam이 파라미터당 2개 모멘트를 FP32(4바이트)로 두면:
+
+$$
+
+M_{\mathrm{opt,full}} \approx 8 P_{\mathrm{full}},\qquad
+M_{\mathrm{opt,lora}} \approx 8 P_{\mathrm{lora}}
+
+$$
+
+$d=k=4096$, $r=8$이면 $P_{\mathrm{lora}}/P_{\mathrm{full}}\approx 0.39\%$(한 층). 옵티마이저 메모리도 같은 비율로 줄어든다(그 층 기준).
+
+### 그라디언트 경로
+
+$W_0$ freeze면
+
+$$
+
+\frac{\partial L}{\partial W_0}=0,\quad
+\frac{\partial L}{\partial A},\frac{\partial L}{\partial B}\neq 0
+$$
+
+(일반적으로). 체크포인트에 저장할 것도 $A,B$(+설정)면 충분하다.
+
+## 수식·정량 보강 — LoRA 심화
+
+$$
+\Delta W=\frac{\alpha}{r}BA,\quad
+\mathrm{rank}(BA)\le r,\quad
+\#\mathrm{params}=r(d_{\mathrm{in}}+d_{\mathrm{out}})
+$$
+
+$d=k=4096,r=8$ → LoRA $65536$ vs full $16{,}777{,}216$ ≈ $0.39\%$(한 층).
+
+$W_q,W_v$만 $N$층: $\approx 4NrC$, full attn 투영 대비 비율 $r/C$.
+
+Merge: $W\leftarrow W_0+\frac{\alpha}{r}BA$.  
+미merge 추론 추가비용 $O(r(d_{\mathrm{in}}+d_{\mathrm{out}}))$.
+
+Adam 상태도 $P_{\mathrm{lora}}$에만 비례해 축소.
+
+$B=0$ 초기화 ⇒ 시작 시 $\Delta W=0$ ⇒ 사전학습 forward 유지.
+
+
+## 워크드 예제 — BA 곱·비율·merge
+
+$d_{\mathrm{out}}=3,d_{\mathrm{in}}=4,r=1$,
+
+$$
+B=\begin{bmatrix}0.5\\-1\\2\end{bmatrix},
+A=\begin{bmatrix}1&0&-1&2\end{bmatrix}
+$$
+
+$$
+BA=\begin{bmatrix}
+0.5&0&-0.5&1\\
+-1&0&1&-2\\
+2&0&-2&4
+\end{bmatrix}
+$$
+
+자유도 $7$ vs full $12$. 모든 행이 $A$의 배수 → rank 1.
+
+$\alpha=r=8$이면 스케일 1.  
+$x=(1,1,1,1)$일 때 $(xA)B = (2)\cdot B^\top$ 관례에 맞춰 forward를 한 줄로 검증하라.
+
+Merge 후 단일 $W$로 추론하면 추가 matmul 없음.
+
+과적합 경고: 데이터 500건에 attn+FFN 전부 $r=64$ → 자유도 과다 위험(제75강).
+
+
+## 추가 연습 — r 스윕 사고실험
+
+동일 SFT 데이터 1k건.
+
+| $r$ | 표현력 | 과적합 위험 | 저장 |
+|---|---|---|---|
+| 4 | 낮음 | 낮음 | 최소 |
+| 16 | 중간 | 중간 | 소형 |
+| 64 | 높음 | 높음 | 커짐 |
+
+권장 시작: $W_q,W_v$, $r=8$, $\alpha=16$.  
+지표는 loss만이 아니라 held-out 지시 준수(제75강).
+
+SVD 해석(설명): $\Delta W$의 상위 특잇값 방향만 연다 — 학습이 진짜 SVD라는 뜻은 아님.
+
 ## LLM에서는 어디에 사용될까?
 
 이번 73강에서 배운 개념은 이후 Transformer · GPT · 서빙 강의에서 반복해서 등장합니다. 각 수식·코드 블록을 “실제 모델의 어느 단계인가”와 연결해 다시 읽어 보세요.
+
+
+## 수식 카드 — LoRA
+
+$$
+W=W_0+\frac{\alpha}{r}BA,\quad
+\#=r(d_{\mathrm{in}}+d_{\mathrm{out}}),\quad
+\mathrm{rank}(BA)\le r
+$$
+
+Freeze $W_0$, train $A,B$, merge for inference.
+
+
+## 연결 복습 — LoRA에서 QLoRA로
+
+LoRA가 줄이는 것: trainable·optimizer.  
+줄이지 않는 것: 베이스 가중치를 GPU에 올리는 비용(정밀도 그대로일 때).
+
+제74강은 베이스를 4-bit로 두어 $M_W$를 깎는다.  
+수식은 동일: $y=x\widetilde W_0^\top+\frac{\alpha}{r}(xA^\top)B^\top$.
+
+
+### 한 줄 요약 수식
+
+$$\Delta W=\frac{\alpha}{r}BA,\quad W\leftarrow W_0+\Delta W\ (\mathrm{merge}).$$
+
+
+> 시작 시 $B=0$이면 $\Delta W=0$으로 사전학습 동작 유지.
 
 ## 핵심 요약
 - LoRA는 $\Delta W \approx BA$（또는 $\frac{\alpha}{r}BA$）로 저랭크 갱신만 학습한다.

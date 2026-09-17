@@ -14,7 +14,9 @@
 | Markdown 스타일 가이드 | 완료 (Apple Books 기준) |
 | Apple Books 가이드 | **완료** (`docs/APPLE_BOOKS_GUIDE.md`) |
 | 120강 구조 일괄 반영 | **완료** (`# N강` · 배우는 내용 · 왜 중요한가 · LLM 연결 · 핵심 요약 · 용어 사전 · 연습문제) |
-| 10·11강 내용 보강 | **완료** (도식·예제·실습·LLM 연결 심화) |
+| 10·11강 내용 보강 | **완료** |
+| 12~15강 수식·예제 보강 | **완료** (∇L/GD, MSE/CE, Chain Rule, NN Affine+Activation) |
+| 나머지 강의 수식·내용 보강 | **진행 중** (`cursor/enrich-remaining-lectures-90e1`, 다수 강에 수식 보강 섹션·핵심 공식 추가) |
 
 ## 작성 순서
 

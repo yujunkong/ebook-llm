@@ -21,6 +21,11 @@ $$
 
 오늘은 공식을 **역할**로 분해한다.
 
+> **핵심**
+>
+> Query는 “무엇을 찾을지”, Key는 “어떻게 찾아질지”, Value는 “무엇을 건네줄지”입니다.  
+> 세 역할이 갈라져야 Multi-Head·KV cache·Cross-Attention이 설명이 됩니다.
+
 ## 선수 개념
 - Embedding / 토큰 벡터 (31강)
 - 행렬곱·내적 (1권 10강)
@@ -228,6 +233,11 @@ $$
 배치가 있으면 앞에 $B$가 붙는다: $(B,T,d)$.
 
 ## 작은 숫자로 직접 계산하기
+
+> **핵심**
+>
+> 아래 장난 숫자 예제는 “투영이 바뀌면 누가 누구를 보는지가 바뀐다”를 손으로 확인하기 위한 것입니다.
+
 설정을 극단적으로 작게 잡는다.
 
 - $T=2$ 토큰: `나`, `책`
@@ -429,6 +439,14 @@ if __name__ == "__main__":
 
 실무에서는 Multi-Head를 위해 $d_k=d_{\mathrm{model}}/h$로 나누고,  
 때로는 `W` 하나를 크게 만든 뒤 `chunk`로 Q/K/V를 쪼개기도 한다. 원리는 같다.
+
+## 수식 보강 — QKV 투영
+
+$$
+Q=XW_Q,\ K=XW_K,\ V=XW_V
+$$
+
+$X\in\mathbb{R}^{T\times d}$, $W_Q\in\mathbb{R}^{d\times d_k}$ 등. 점수는 $QK^\top/\sqrt{d_k}$ (37강).
 
 ## LLM에서는 어디에 사용될까?
 ### 9.1 모든 Self-Attention 층의 입구
@@ -691,6 +709,62 @@ X
 
 오늘은 왼쪽 가지(Q/K/V 생성)까지.  
 37강은 가운데 점수, 38강은 Softmax와 $O$, 39강은 모듈 구현, 40강은 마스크다.
+
+
+---
+
+## 부록 L. 배치 Shape 전개
+
+$$
+
+X \in \mathbb{R}^{B \times T \times d},\quad
+W_Q \in \mathbb{R}^{d \times d_k}
+\Rightarrow
+Q = X W_Q \in \mathbb{R}^{B \times T \times d_k}
+
+$$
+
+예: $B=2$, $T=4$, $d=8$, $d_k=8$이면 $Q$는 `(2,4,8)`입니다.
+
+## 부록 M. 내적 점수 행렬의 원소
+
+$$
+
+(QK^\top)_{ij} = \sum_{u=1}^{d_k} Q_{iu} K_{ju} = \mathbf{q}_i \cdot \mathbf{k}_j
+
+$$
+
+$$
+
+QK^\top \in \mathbb{R}^{T \times T}
+\quad(\text{배치이면 } B\times T\times T)
+
+$$
+
+> ⚠️ **주의**
+>
+> $K^\top$는 마지막 두 축 전치입니다. `(B,T,d_k)` → `(B,d_k,T)` 후 `Q @ K^T`.
+
+## 부록 N. 3토큰 × 2차원 추가 예제
+
+$$
+
+X=\begin{bmatrix}1&0\\1&1\\0&1\end{bmatrix},\ 
+W_Q=W_K=I,\ 
+W_V=\begin{bmatrix}1&0\\0&2\end{bmatrix}
+
+$$
+
+$$
+
+Q=K=X,\quad
+V=\begin{bmatrix}1&0\\1&2\\0&2\end{bmatrix},\quad
+QK^\top=\begin{bmatrix}1&1&0\\1&2&1\\0&1&1\end{bmatrix}
+
+$$
+
+행1 점수는 `[1,2,1]`로 자기 자신이 가장 큽니다. 37~38강에서 스케일·Softmax를 얹습니다.
+
 
 <!-- LECTURE_NAV -->
 

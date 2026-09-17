@@ -379,6 +379,19 @@ def summarize(stream_metrics):
 
 를 미리 정한다. 정하지 않으면 Throughput이 **낙관적으로 부풀거나** 반대로 과도하게 낮아진다. SLO 대시보드와 벤치 하네스의 정의를 맞출 것.
 
+## 수식 보강 — TTFT · TPOT
+
+- TTFT: 첫 토큰까지 시간 (주로 Prefill)
+- TPOT: 출력 토큰당 평균 시간 (Decode)
+
+대략
+
+$$
+T_{\mathrm{total}} \approx \mathrm{TTFT} + (T_{\mathrm{out}}-1)\cdot \mathrm{TPOT}
+$$
+
+입니다. Throughput은 초당 생성 토큰 수 등으로 정의합니다.
+
 ## LLM에서는 어디에 사용될까?
 
 이번 107강에서 배운 개념은 이후 Transformer · GPT · 서빙 강의에서 반복해서 등장합니다. 각 수식·코드 블록을 “실제 모델의 어느 단계인가”와 연결해 다시 읽어 보세요.
