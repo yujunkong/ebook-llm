@@ -497,6 +497,55 @@ User Guide/주문 SKU/실제 `lsblk` 등 장치 실측으로 확인한다.
 
 제116강은 vLLM(또는 스케치)으로 모델을 띄우고, TTFT/TPOT 템플릿으로 병목을 해석한다. 제117강은 그 측정을 GPU 최적화 실험으로 확장한다.
 
+<!-- enrich-115-depth -->
+## 2노드 구성을 용량 식으로
+
+노드당 GPU 메모리 $M$, 모델 가중치 $W$, KV 여유 $K$라 하면 대략
+
+$$
+W + K_{\mathrm{reserve}} + M_{\mathrm{runtime}}
+\le
+M
+$$
+
+텐서병렬 차수 $t_p$로 가중치를 나누면
+
+$$
+W_{\mathrm{perGPU}}
+\approx
+\frac{W}{t_p}
+$$
+
+대신 통신 $t_{\mathrm{comm}}$이 늘어난다.
+
+### 네트워크·스토리지 체크
+
+```text
+1) 노드 내 NVLink/NVSwitch 경로
+2) 노드 간 RoCE/IB 대역·지연
+3) 체크포인트 로딩 대역（콜드스타트 TTFT에 영향）
+4) 시각·NTP·컨테이너 런타임 일치
+```
+
+동시성 $C$에서 KV:
+
+$$
+K(C)
+\approx
+c\cdot \bar{T}_{\mathrm{in+out}}\cdot C
+$$
+
+$K(C)+W>M$이면 OOM 또는 preempt 폭증이 난다. 제116강 서빙 프로젝트의 용량 계획과 맞춘다.
+
+### 스모크 테스트 최소셋
+
+1. 단노드 1요청 TTFT/TPOT
+2. 단노드 동시성 스위프
+3. 2노드 TP 스모크（동일 프롬프트）
+4. NCCL 대역 마이크로벤치 기록
+
+통과 전에 “클러스터 준비 완료”라고 쓰지 않는다.
+
 <!-- LECTURE_NAV -->
 
 ---

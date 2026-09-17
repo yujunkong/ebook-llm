@@ -494,6 +494,66 @@ vLLM（또는 Inference Engine / Serving）, GPU（또는 DGX Spark / 하드웨�
 
 여기까지가 《밑바닥부터 LLM》 120강의 좌표다.
 
+<!-- enrich-120-depth -->
+## 5권 핵심 식을 한 장에
+
+Prefill / Decode:
+
+$$
+T_{\mathrm{total}}\approx\mathrm{TTFT}+(N_{\mathrm{out}}-1)\mathrm{TPOT}
+$$
+
+KV:
+
+$$
+M_{\mathrm{KV}}\approx 2\cdot L\cdot n_{\mathrm{kv}}\cdot d_h\cdot T\cdot b
+$$
+
+Continuous Batching 효율:
+
+$$
+\eta=\frac{\sum\ell_i}{B\cdot\ell_{\max}}
+$$
+
+스케줄러:
+
+$$
+\max \mathrm{tok/s}\ \mathrm{s.t.}\ \mathrm{Mem}\le M,\ \mathrm{SLO}
+$$
+
+통신:
+
+$$
+t_{\mathrm{tok}}\approx t_{\mathrm{compute}}+t_{\mathrm{comm}}
+$$
+
+### 전권 연결（1→5）
+
+```text
+텐서·미분（1）
+ → 토크나이저·Transformer（2）
+ → Pretrain·SFT（3）
+ → RLHF/DPO（4）
+ → Prefill/KV/Batching/Serving（5）
+```
+
+학습이 $\theta$를 바꾸고, 서빙은 고정 $\theta$로 **시간·메모리·통신**을 줄인다.
+
+### 졸업 체크 10
+
+1. TTFT/TPOT/Throughput 정의
+2. KV 메모리 식의 각 기호
+3. Continuous Batching이 $\eta$를 올리는 이유
+4. PagedAttention이 스케줄러와 한 쌍인 이유
+5. 스케줄러 제약 세 가지
+6. 양자화가 대역·품질에 미치는 정성 효과
+7. 스펙큘레이티브 $\alpha$와 speedup
+8. NCCL allreduce 시간 모형
+9. 리포트에 P99를 넣는 이유
+10. 장애 런북 5단계
+
+10개면 5권 지도가 손에서 그려진다.
+
 <!-- LECTURE_NAV -->
 
 ---

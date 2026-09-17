@@ -495,6 +495,53 @@ RoCE는 RDMA 경로를 목표로 하고, TCP 경로는 소켓·CPU 개입이 커
 
 제115강에서는 GB10 / DGX Spark의 공개 하드웨어 맥락, QSFP·ConnectX-7 토폴로지, 듀얼 노드에서 멀티 GPU(노드) 서빙을 올리는 서사를 다룬다.
 
+<!-- enrich-114-depth -->
+## 집합통신 시간과 대역폭 추정
+
+메시지 크기 $S$바이트, 실효 대역폭 $B_{\mathrm{eff}}$일 때 단순 모형:
+
+$$
+T_{\mathrm{comm}}
+\approx
+T_0 + \frac{S}{B_{\mathrm{eff}}}
+$$
+
+AllReduce（링, 대략）:
+
+$$
+T_{\mathrm{AR}}
+\approx
+2\frac{n-1}{n}\Big(T_0+\frac{S}{B_{\mathrm{eff}}}\Big)
+$$
+
+텐서병렬 한 층의 통신량이 커지면 decode 토큰 시간이
+
+$$
+t_{\mathrm{tok}}
+\approx
+t_{\mathrm{compute}}+t_{\mathrm{comm}}
+$$
+
+로 분해된다. $t_{\mathrm{comm}}$이 지배하면 GPU FLOPs를 더 사도 안 빨라진다.
+
+### RoCE 체크（정성）
+
+- PFC/ECN·손실 설정이 맞는가
+- nic·numa 배치가 크로스 트래픽을 키우는가
+- NCCL 알고요/버전이 벤치와 동일한가
+
+$$
+B_{\mathrm{eff}}=\frac{S}{T_{\mathrm{meas}}-T_0}
+$$
+
+로 실측 대역폭을 남겨 이론 링크 속도와 비교한다.
+
+
+<!-- enrich-114-extra -->
+## 한 줄 복습
+
+링크 속도 ≠ $B_{\mathrm{eff}}$. 측정·토폴로지·메시지 크기를 같이 적는다.
+
 <!-- LECTURE_NAV -->
 
 ---
