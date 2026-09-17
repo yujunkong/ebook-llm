@@ -409,6 +409,9 @@ $$
 
 $$\mathcal{L}_{\mathrm{SFT}}=-\sum_{t\in\mathrm{resp}}\log p_\theta(x_t\mid x_{<t}).$$
 
+
+> Base는 문서 이어쓰기, SFT는 지시→응답 조건부.
+
 ## 핵심 요약
 - Base LM은 문서 이어쓰기에 강하고, Assistant는 지시 수행에 맞춰 추가 학습된다.
 - Instruction Tuning(주로 SFT)은 “(지시→응답)” 분포를 가르친다.

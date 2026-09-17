@@ -414,6 +414,9 @@ LoRA가 줄이는 것: trainable·optimizer.
 
 $$\Delta W=\frac{\alpha}{r}BA,\quad W\leftarrow W_0+\Delta W\ (\mathrm{merge}).$$
 
+
+> 시작 시 $B=0$이면 $\Delta W=0$으로 사전학습 동작 유지.
+
 ## 핵심 요약
 - LoRA는 $\Delta W \approx BA$（또는 $\frac{\alpha}{r}BA$）로 저랭크 갱신만 학습한다.
 - 파라미터 수는 대략 $r(d_{\mathrm{in}}+d_{\mathrm{out}})$이며, full 대비 크게 줄어든다.

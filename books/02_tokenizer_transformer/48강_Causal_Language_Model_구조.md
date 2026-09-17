@@ -418,6 +418,9 @@ RoPE를 쓰면 PE 가산 대신 Attn 내부에서 $Q,K$ 회전(제43강).
 
 $$\mathrm{CLM}=\mathrm{Embed}+\sum_{\ell=1}^{N}\mathrm{Block}_\ell+\mathrm{LMHead},\quad \mathrm{causal\ mask\ in\ Attn}.$$
 
+
+> Shape 관례 `[B,T,C]→[B,T,V]`, 타깃은 한 칸 시프트.
+
 ## 핵심 요약
 - Causal LM은 token embed (+pos) → $N$ Transformer blocks → lm_head로 구성된 Decoder-only 언어 모델이다.
 - 주 shape 관례는 `[B, T, C]`이며, logit은 `[B, T, V]`다.
