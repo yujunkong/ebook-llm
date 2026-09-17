@@ -423,6 +423,25 @@ clip_frac, approx_kl, unique_answers, format_rate
 
 `frac_zero_A≈1`이면 학습이 멈춘 것과 같다.
 
+<!-- visual-example-92 -->
+## 숫자로 따라가기 — GRPO Advantage
+
+![그림 92-1](images/fig92-01.png)
+
+같은 프롬프트에 $G=4$개 샘플, 보상 $r=[1,3,5,7]$.
+
+$$
+\hat A_i=\frac{r_i-\mathrm{mean}(r)}{\mathrm{std}(r)+\varepsilon}
+$$
+
+| $i$ | $r_i$ | $\hat A_i$ (대략) |
+|---|---|---|
+| 1 | 1 | $-1.16$ |
+| 2 | 3 | $-0.39$ |
+| 3 | 5 | $+0.39$ |
+| 4 | 7 | $+1.16$ |
+
+mean$=4$, std$\approx 2.58$. Critic 없이 **그룹 안 상대 점수**로 Advantage를 만듭니다.
 
 ## LLM에서는 어디에 사용될까?
 

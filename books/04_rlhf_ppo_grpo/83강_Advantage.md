@@ -482,6 +482,8 @@ GRPO: 같은 clip 골격, $\hat A$는 그룹 상대 $r$.
 <!-- visual-example-83 -->
 ## 숫자로 따라가기 — Advantage
 
+![그림 83-1](images/fig83-01.png)
+
 같은 상태에서 행동 A 보상 5, 평균(가치) 3이면
 
 $$

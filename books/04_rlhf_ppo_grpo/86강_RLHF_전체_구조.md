@@ -472,6 +472,26 @@ $$
 
 RLHF 전체 구조의 핵은 “$r_\phi$로 $A$를 만들고, KL로 묶고, clip으로 한 걸음을 제한”이다.
 
+<!-- visual-example-86 -->
+## 숫자로 따라가기 — RLHF 보상
+
+![그림 86-1](images/fig86-01.png)
+
+RM 점수 $r_\phi=1.2$, $\beta=0.1$, $\log(\pi_\theta/\pi_{\mathrm{ref}})=0.8$.
+
+$$
+R(x,y)=r_\phi(x,y)-\beta\log\frac{\pi_\theta(y\mid x)}{\pi_{\mathrm{ref}}(y\mid x)}
+=1.2-0.1\cdot 0.8=1.12
+$$
+
+| 기호 | 값 | 역할 |
+|---|---|---|
+| $r_\phi$ | $1.2$ | 선호 맞춤 점수 |
+| $\beta\cdot\mathrm{KL}$ | $0.08$ | 참조 이탈 페널티 |
+| $R$ | $1.12$ | PPO가 추적하는 총보상 |
+
+RLHF의 핵은 **RM으로 끌어올리고 KL로 묶는 것**입니다.
+
 ## LLM에서는 어디에 사용될까?
 연구·제품에서 보이는 변형:
 

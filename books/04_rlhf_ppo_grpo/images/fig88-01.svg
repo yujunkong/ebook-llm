@@ -1,0 +1,15 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<svg xmlns="http://www.w3.org/2000/svg" width="1200" height="680" viewBox="0 0 1200 680" role="img">
+  <rect width="1200" height="680" fill="#f7f4ef"/>
+  <text x="60" y="56" font-family="Georgia, serif" font-size="28" fill="#1a1a1a">Fig 88-1. PPO ratio ρ 계산</text>
+  <text x="60" y="96" font-size="18" fill="#555">logπ_new=-0.5, logπ_old=-1.0 → ρ≈1.65, ε=0.2 → clip=1.2</text>
+  <rect x="100" y="180" width="450" height="160" rx="8" fill="#fff" stroke="#1d4e89" stroke-width="2"/>
+  <text x="130" y="240" font-size="20">ρ = exp(−0.5 − (−1.0))</text>
+  <text x="130" y="290" font-size="22" font-family="Georgia, serif">= e^0.5 ≈ 1.649</text>
+  <rect x="620" y="180" width="450" height="160" rx="8" fill="#fff" stroke="#0b6e4f" stroke-width="2"/>
+  <text x="650" y="240" font-size="20">clip(ρ, 0.8, 1.2)</text>
+  <text x="650" y="290" font-size="22" font-family="Georgia, serif">→ 1.2</text>
+  <rect x="80" y="400" width="1040" height="200" rx="8" fill="#fff" stroke="#d0cbc3"/>
+  <text x="110" y="460" font-size="20">Â=+1이면 unclipped: ρÂ≈1.65 / clipped: 1.2</text>
+  <text x="110" y="520" font-size="18" fill="#555">구현은 mean(min(ρA, clip(ρ)A)) 형태로 한 스텝을 제한</text>
+</svg>

@@ -1,0 +1,15 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<svg xmlns="http://www.w3.org/2000/svg" width="1200" height="680" viewBox="0 0 1200 680" role="img">
+  <rect width="1200" height="680" fill="#f7f4ef"/>
+  <text x="60" y="56" font-family="Georgia, serif" font-size="28" fill="#1a1a1a">Fig 84-1. Preference pair와 BT 확률</text>
+  <text x="60" y="96" font-size="18" fill="#555">r_w=2.0, r_l=0.5 → Δ=1.5 → σ(Δ)≈0.82</text>
+  <rect x="120" y="180" width="360" height="140" rx="8" fill="#0b6e4f"/>
+  <text x="180" y="240" fill="#fff" font-size="22">y_w  (chosen)</text>
+  <text x="200" y="280" fill="#e8f5f0" font-size="18">r=2.0</text>
+  <rect x="620" y="180" width="360" height="140" rx="8" fill="#b35c00"/>
+  <text x="680" y="240" fill="#fff" font-size="22">y_l  (rejected)</text>
+  <text x="710" y="280" fill="#fff" font-size="18">r=0.5</text>
+  <rect x="80" y="400" width="1040" height="200" rx="8" fill="#fff" stroke="#d0cbc3"/>
+  <text x="110" y="460" font-size="20">P(y_w ≻ y_l) = σ(r_w − r_l) = 1/(1+e^(−1.5)) ≈ 0.82</text>
+  <text x="110" y="520" font-size="18" fill="#555">데이터 한 줄 = “이 답이 저 답보다 낫다”는 사건</text>
+</svg>

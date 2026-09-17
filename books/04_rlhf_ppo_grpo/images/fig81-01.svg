@@ -1,0 +1,16 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<svg xmlns="http://www.w3.org/2000/svg" width="1200" height="680" viewBox="0 0 1200 680" role="img">
+  <rect width="1200" height="680" fill="#f7f4ef"/>
+  <text x="60" y="56" font-family="Georgia, serif" font-size="28" fill="#1a1a1a">Fig 81-1. Policy π와 Value V</text>
+  <rect x="100" y="160" width="420" height="200" rx="8" fill="#fff" stroke="#1d4e89" stroke-width="2"/>
+  <text x="140" y="220" font-size="22" font-family="Georgia, serif">π(a|s)</text>
+  <text x="140" y="270" font-size="18">예: [0.6, 0.3, 0.1]</text>
+  <text x="140" y="320" font-size="16" fill="#555">어떤 토큰을 고를지</text>
+  <rect x="620" y="160" width="420" height="200" rx="8" fill="#fff" stroke="#0b6e4f" stroke-width="2"/>
+  <text x="660" y="220" font-size="22" font-family="Georgia, serif">V(s)</text>
+  <text x="660" y="270" font-size="18">예: V=3.2</text>
+  <text x="660" y="320" font-size="16" fill="#555">이 상태에서 기대 리턴</text>
+  <rect x="80" y="420" width="1040" height="180" rx="8" fill="#fff" stroke="#d0cbc3"/>
+  <text x="110" y="480" font-size="20">같은 LM 몸통에 head 두 개: 토큰 logit + 스칼라 value</text>
+  <text x="110" y="540" font-size="18" fill="#555">PPO는 π로 샘플·업데이트, V로 baseline(Advantage)을 잡는다</text>
+</svg>

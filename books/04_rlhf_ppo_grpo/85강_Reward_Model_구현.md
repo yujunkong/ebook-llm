@@ -472,6 +472,24 @@ $\Delta$가 크면 그래디언트↓(쉬운 쌍). 어려운 쌍이 학습을 �
 
 RLHF로 넘길 때 $R=r_\phi-\beta\,\mathrm{KL}$ — RM 스케일이 PPO 하이퍼와 결합한다.
 
+<!-- visual-example-85 -->
+## 숫자로 따라가기 — RM Loss
+
+![그림 85-1](images/fig85-01.png)
+
+모델이 $r_w=2.0$, $r_l=0.5$를 냈다면 $\Delta=1.5$.
+
+$$
+\mathcal{L}_{\mathrm{RM}}=-\log\sigma(\Delta)=\log(1+e^{-\Delta})\approx 0.201
+$$
+
+| $\Delta$ | $\sigma(\Delta)$ | Loss |
+|---|---|---|
+| $0$ | $0.50$ | $0.693$ |
+| $1.5$ | $0.82$ | $0.201$ |
+| $3.0$ | $0.95$ | $0.049$ |
+
+$\Delta$가 커질수록 Loss↓ — **chosen을 rejected보다 확실히 높게** 점수 매기입니다.
 
 ## LLM에서는 어디에 사용될까?
 표준 RLHF 스택에서의 RM:

@@ -1,0 +1,15 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<svg xmlns="http://www.w3.org/2000/svg" width="1200" height="680" viewBox="0 0 1200 680" role="img">
+  <rect width="1200" height="680" fill="#f7f4ef"/>
+  <text x="60" y="56" font-family="Georgia, serif" font-size="28" fill="#1a1a1a">Fig 89-1. KL(p∥q) 작은 예</text>
+  <text x="60" y="96" font-size="18" fill="#555">p=[0.7,0.3], q=[0.5,0.5] → KL≈0.082</text>
+  <rect x="120" y="180" width="400" height="160" rx="8" fill="#fff" stroke="#1d4e89" stroke-width="2"/>
+  <text x="160" y="250" font-size="20">p = [0.7, 0.3]</text>
+  <text x="160" y="300" font-size="16" fill="#555">현재 정책</text>
+  <rect x="620" y="180" width="400" height="160" rx="8" fill="#fff" stroke="#0b6e4f" stroke-width="2"/>
+  <text x="660" y="250" font-size="20">q = [0.5, 0.5]</text>
+  <text x="660" y="300" font-size="16" fill="#555">참조 정책</text>
+  <rect x="80" y="400" width="1040" height="200" rx="8" fill="#fff" stroke="#d0cbc3"/>
+  <text x="110" y="460" font-size="20">KL = 0.7 log(0.7/0.5) + 0.3 log(0.3/0.5) ≈ 0.082</text>
+  <text x="110" y="530" font-size="18" fill="#555">β·KL 항 = “참조에서 너무 멀리 가지 마” 브레이크</text>
+</svg>

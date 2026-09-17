@@ -442,6 +442,24 @@ Approx KL 감각: $\widehat{\mathrm{KL}}\approx\mathbb{E}[\log\pi_\theta-\log\pi
 
 롤아웃 예산 $N\approx B\cdot L_{\mathrm{gen}}$, 재사용 epoch $K$↑면 clip_frac↑ 경향.
 
+<!-- visual-example-88 -->
+## 숫자로 따라가기 — PPO ρ clip
+
+![그림 88-1](images/fig88-01.png)
+
+$\log\pi_\theta=-0.5$, $\log\pi_{\mathrm{old}}=-1.0$, $\varepsilon=0.2$, $\hat A=+1$.
+
+$$
+\rho=\exp(\log\pi_\theta-\log\pi_{\mathrm{old}})=e^{0.5}\approx 1.649
+$$
+
+| 항목 | 값 |
+|---|---|
+| $\rho$ | $\approx 1.649$ |
+| $\mathrm{clip}(\rho,0.8,1.2)$ | $1.2$ |
+| $\min(\rho \hat A,\ \mathrm{clip}\cdot\hat A)$ | $1.2$ |
+
+한 업데이트에서 확률 비를 **너무 키우지 못하게** 잘라 안정화합니다.
 
 ## LLM에서는 어디에 사용될까?
 Full stack 대응표:

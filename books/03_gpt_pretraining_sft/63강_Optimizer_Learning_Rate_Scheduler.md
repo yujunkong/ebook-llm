@@ -508,7 +508,7 @@ $$
 $\eta_{\mathrm{base}}=3\times 10^{-4}$, 워밍업 $T_w=1000$ 스텝.
 
 $$
-t &lt; T_w:\quad \eta(t)=\eta_{\mathrm{base}}\cdot\frac{t}{T_w}
+t < T_w:\quad \eta(t)=\eta_{\mathrm{base}}\cdot\frac{t}{T_w}
 $$
 
 | $t$ | $\eta(t)$ |
