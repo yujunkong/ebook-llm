@@ -398,6 +398,21 @@ $$
 
 Shape: `[B,T]→[B,T,C]→[B,T,V]`.
 
+
+## 연결 복습 — Block에서 CLM까지
+
+제46강 Pre-LN 블록:
+
+$$
+x\leftarrow x+\mathrm{Attn}(\mathrm{LN}(x)),\quad
+x\leftarrow x+\mathrm{FFN}(\mathrm{LN}(x))
+$$
+
+이를 $N$번 쌓고 양끝에 Embedding·LM Head를 붙이면 Causal LM이다.  
+RoPE를 쓰면 PE 가산 대신 Attn 내부에서 $Q,K$ 회전(제43강).
+
+손계산 체크: $B=1,T=4,C=8,V=20$ → logits `[1,4,20]`, CE 항(시프트 후) 3개.
+
 ## 핵심 요약
 - Causal LM은 token embed (+pos) → $N$ Transformer blocks → lm_head로 구성된 Decoder-only 언어 모델이다.
 - 주 shape 관례는 `[B, T, C]`이며, logit은 `[B, T, V]`다.

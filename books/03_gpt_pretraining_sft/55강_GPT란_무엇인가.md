@@ -403,6 +403,18 @@ $$
 Decoder-only Causal LM + Pretraining (+ optional SFT).  
 제품명 ≠ 아키텍처.
 
+
+## 연결 복습 — 2권에서 3권으로
+
+```text
+Tokenizer → Embed → (RoPE/PE) → Block×N → LM Head → logits
+                 ↑ Causal mask in Attn
+```
+
+이 forward가 GPT 본체. 제56강에서 클래스로 고정하고, 제57강에서 CE, 제58강에서 generate.
+
+세대별 옵션(Norm, GQA, SwiGLU)은 제53강 지도 — 초반은 고전 골격으로 충분.
+
 ## 핵심 요약
 - GPT는 이 책에서 **Decoder-only Causal LM + (대규모) Pretraining** 계열을 가리킨다.
 - 본체 배선은 2권의 Causal LM과 동일하다: embed → Block×N → lm_head.

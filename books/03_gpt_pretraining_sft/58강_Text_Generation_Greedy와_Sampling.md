@@ -406,6 +406,17 @@ $$
 P(x_{t_0+1:t_0+K}\mid x_{1:t_0})=\prod_k P(x_{t_0+k}\mid x_{<t_0+k})
 $$
 
+
+## 연결 복습 — logits에서 문장으로
+
+학습은 $\mathbb{E}[-\log p(x_t\mid x_{<t})]$를 줄인다.  
+생성은 같은 $p$에서 $\pi$로 샘플/argmax한다.
+
+제59강에서 $\pi$를 temperature·top-k·top-p로 바꾼다.  
+오늘은 $\pi\in\{\arg\max,\ \mathrm{Cat}(p)\}$만.
+
+실습 한 줄: 동일 체크포인트에서 greedy 1회 vs sample 5회 문장 길이·반복을 비교 기록.
+
 ## 핵심 요약
 - 생성은 같은 GPT forward의 마지막 logit에 **디코딩 규칙**을 적용한 루프다
 - Greedy는 argmax, Sampling은 Categorical 제비뽑기다

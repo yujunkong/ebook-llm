@@ -394,6 +394,16 @@ $$
 
 응답 토큰만 손실. 형식 전환이 1차 목표.
 
+
+## 연결 복습 — SFT 다음 단계
+
+제70강: 데이터 스키마(Alpaca/messages).  
+제71강: response-only loss 구현.  
+제73~74강: LoRA/QLoRA로 같은 손실을 작은 파라미터에.  
+4권: preference로 $a$의 순위를 추가 학습.
+
+지금 외울 문장: **SFT는 모범 응답 모방이지, 선호 최적화 전체가 아니다.**
+
 ## 핵심 요약
 - Base LM은 문서 이어쓰기에 강하고, Assistant는 지시 수행에 맞춰 추가 학습된다.
 - Instruction Tuning(주로 SFT)은 “(지시→응답)” 분포를 가르친다.
