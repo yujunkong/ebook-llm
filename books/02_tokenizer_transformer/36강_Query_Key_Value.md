@@ -245,7 +245,7 @@ $$
 
 $$
 
-X = \begin{bmatrix} 1 & 0 \ 0 & 1 \end{bmatrix}
+X = \begin{bmatrix} 1 & 0 \\ 0 & 1 \end{bmatrix}
 
 $$
 
@@ -255,9 +255,9 @@ $$
 
 $$
 
-W_Q = \begin{bmatrix} 1 & 0 \ 0 & 1 \end{bmatrix},\quad
-W_K = \begin{bmatrix} 1 & 0 \ 0 & 1 \end{bmatrix},\quad
-W_V = \begin{bmatrix} 2 & 0 \ 0 & 3 \end{bmatrix}
+W_Q = \begin{bmatrix} 1 & 0 \\ 0 & 1 \end{bmatrix},\quad
+W_K = \begin{bmatrix} 1 & 0 \\ 0 & 1 \end{bmatrix},\quad
+W_V = \begin{bmatrix} 2 & 0 \\ 0 & 3 \end{bmatrix}
 
 $$
 
@@ -267,14 +267,14 @@ $$
 
 $$
 
-Q = XW_Q = \begin{bmatrix} 1 & 0 \ 0 & 1 \end{bmatrix},\quad
-K = XW_K = \begin{bmatrix} 1 & 0 \ 0 & 1 \end{bmatrix}
+Q = XW_Q = \begin{bmatrix} 1 & 0 \\ 0 & 1 \end{bmatrix},\quad
+K = XW_K = \begin{bmatrix} 1 & 0 \\ 0 & 1 \end{bmatrix}
 
 $$
 
 $$
 
-V = XW_V = \begin{bmatrix} 2 & 0 \ 0 & 3 \end{bmatrix}
+V = XW_V = \begin{bmatrix} 2 & 0 \\ 0 & 3 \end{bmatrix}
 
 $$
 
@@ -288,7 +288,7 @@ $$
 
 $$
 
-QK^\top = \begin{bmatrix} 1 & 0 \ 0 & 1 \end{bmatrix}\begin{bmatrix} 1 & 0 \ 0 & 1 \end{bmatrix} = \begin{bmatrix} 1 & 0 \ 0 & 1 \end{bmatrix}
+QK^\top = \begin{bmatrix} 1 & 0 \\ 0 & 1 \end{bmatrix}\begin{bmatrix} 1 & 0 \\ 0 & 1 \end{bmatrix} = \begin{bmatrix} 1 & 0 \\ 0 & 1 \end{bmatrix}
 
 $$
 
@@ -302,19 +302,19 @@ $W_Q, W_K$를 바꾸면 교차 점수가 생긴다 (아래 7.5).
 
 $$
 
-W_Q' = \begin{bmatrix} 0 & 1 \ 1 & 0 \end{bmatrix}
+W_Q' = \begin{bmatrix} 0 & 1 \\ 1 & 0 \end{bmatrix}
 
 $$
 
 $$
 
-Q' = XW_Q' = \begin{bmatrix} 0 & 1 \ 1 & 0 \end{bmatrix}
+Q' = XW_Q' = \begin{bmatrix} 0 & 1 \\ 1 & 0 \end{bmatrix}
 
 $$
 
 $$
 
-Q'K^\top = \begin{bmatrix} 0 & 1 \ 1 & 0 \end{bmatrix}\begin{bmatrix} 1 & 0 \ 0 & 1 \end{bmatrix} = \begin{bmatrix} 0 & 1 \ 1 & 0 \end{bmatrix}
+Q'K^\top = \begin{bmatrix} 0 & 1 \\ 1 & 0 \end{bmatrix}\begin{bmatrix} 1 & 0 \\ 0 & 1 \end{bmatrix} = \begin{bmatrix} 0 & 1 \\ 1 & 0 \end{bmatrix}
 
 $$
 
@@ -327,7 +327,7 @@ $$
 
 $$
 
-O = \alpha V = \begin{bmatrix} 0 & 1 \ 1 & 0 \end{bmatrix}\begin{bmatrix} 2 & 0 \ 0 & 3 \end{bmatrix} = \begin{bmatrix} 0 & 3 \ 2 & 0 \end{bmatrix}
+O = \alpha V = \begin{bmatrix} 0 & 1 \\ 1 & 0 \end{bmatrix}\begin{bmatrix} 2 & 0 \\ 0 & 3 \end{bmatrix} = \begin{bmatrix} 0 & 3 \\ 2 & 0 \end{bmatrix}
 
 $$
 
@@ -342,13 +342,13 @@ $T=3$, $d=2$, 단순화해 $Q=K=X$, $V=X$라고 두자.
 
 $$
 
-X=\begin{bmatrix}1&0\0&1\1&1\end{bmatrix}
+X=\begin{bmatrix}1&0\\0&1\\1&1\end{bmatrix}
 
 $$
 
 $$
 
-QK^\top = XX^\top = \begin{bmatrix}1&0&1\0&1&1\1&1&2\end{bmatrix}
+QK^\top = XX^\top = \begin{bmatrix}1&0&1\\0&1&1\\1&1&2\end{bmatrix}
 
 $$
 
@@ -474,8 +474,8 @@ $T=5,\ d_{\mathrm{model}}=16,\ d_k=8,\ d_v=8$일 때 $Q,K,V,QK^\top$ Shape를 �
 
 $$
 
-X=\begin{bmatrix}1&2\3&4\end{bmatrix},\ 
-W_Q=\begin{bmatrix}1&0\0&1\end{bmatrix}
+X=\begin{bmatrix}1&2\\3&4\end{bmatrix},\ 
+W_Q=\begin{bmatrix}1&0\\0&1\end{bmatrix}
 
 $$
 

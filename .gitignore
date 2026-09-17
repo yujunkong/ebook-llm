@@ -2,3 +2,4 @@
 epub/preview/
 # optional: uncomment to ignore built EPUBs too
 # epub/*.epub
+scripts/__pycache__/
