@@ -1,23 +1,14 @@
-# 4권. RLHF · PPO · GRPO
+# 제79강. Post-Training 지도
 
-## 제79강. Post-Training 지도
+> **학습 목표**
+> - Post-Training이 SFT 다음에 오는 이유
+> - SFT → Reward Model → RLHF/PPO → DPO/GRPO → RLVR의 위치
+> - 각 단계가 무엇을 최적화하는지（목적함수의 종류）
+> - “정렬(alignment)”이 한 알고리즘이 아니라 단계 묶음이라는 점
+> - 제80강부터 쓰는 State / Action / Reward 기호가 어디에 꽂힐지
 
-### 1. 이번 강의에서 배울 것
-
-3권에서 Pretraining과 SFT로 **지시 추종 가능한 정책의 지도적 초기값**을 만들었다.  
-4권의 첫 강의는 새 최적화를 구현하지 않는다. **Post-Training(포스트 트레이닝)** 이라는 이름 아래에 어떤 단계가 어떤 순서로 얹히는지를 **한 장의 지도**로 고정한다.
-
-이 강의를 마치면 다음을 말할 수 있어야 한다.
-
-- Post-Training이 SFT **다음**에 오는 이유
-- SFT → Reward Model → RLHF/PPO → DPO/GRPO → RLVR의 위치
-- 각 단계가 **무엇을 최적화**하는지（목적함수의 종류）
-- “정렬(alignment)”이 한 알고리즘이 아니라 **단계 묶음**이라는 점
-- 제80강부터 쓰는 State / Action / Reward 기호가 어디에 꽂힐지
-
-세부 수식·PPO 클립·DPO loss는 이후 강의다. 오늘은 **좌표**다.
-
-### 2. 왜 이것을 배우는가
+---
+## 1. 왜 이것을 배우는가
 
 커뮤니티·논문·제품 문서에는 이름이 섞여 나온다.
 
@@ -36,7 +27,7 @@
 4권: 선호 · 보상 · 정책 업데이트 · (검증 가능) 보상
 ```
 
-### 3. 먼저 알아야 할 개념
+## 2. 먼저 알아야 할 개념
 
 - **Pretraining(사전학습)**: 대규모 next-token으로 언어 분포를 학습（3권 55~68）
 - **SFT(Supervised Fine-Tuning, 지도 미세조정)**: instruction–response에 대한 조건부 CE（3권 69~77）
@@ -48,9 +39,9 @@
 > 단일（소수）reference CE는 “동등하게 좋은 여러 답”의 선호를 가리지 못한다.  
 > 탐색·보상 루프가 없다. “무난한 평균 문체”로 붕괴하기 쉽다.
 
-### 4. 핵심 개념 설명
+## 3. 핵심 개념 설명
 
-#### 4.1 Post-Training이란
+### 3.1 Post-Training이란
 
 **Post-Training(포스트 트레이닝)**은 Pretraining（그리고 보통 SFT）**이후**에, 모델의 행동 분포를 **선호·보상·검증 신호**로 다시 쓰는 단계 묶음이다.
 
@@ -65,7 +56,7 @@ SFT로 만든 π_SFT
 
 즉 **“이미 말을 할 줄 아는 정책”을 “무엇이 더 나은가”에 맞게 재조정**하는 층이다.
 
-#### 4.2 전체 파이프라인 지도
+### 3.2 전체 파이프라인 지도
 
 ```text
 [3권]
@@ -85,7 +76,7 @@ Corpus → Pretrain → SFT (π_SFT) → Eval
 실제 제품은 (C)만, (D)만, (C)+(F) 조합 등 **경로가 갈라진다**.  
 지도는 “반드시 이 순서”가 아니라 **역할이 다른 부품들의 위치**다.
 
-#### 4.3 각 단계가 최적화하는 것
+### 3.3 각 단계가 최적화하는 것
 
 | 단계 | 입력 신호 | 최적화하는 것（한 줄） | 대표 실패 |
 |---|---|---|---|
@@ -105,7 +96,7 @@ Corpus → Pretrain → SFT (π_SFT) → Eval
 
 달라지는 것은 **데이터가 “정답 한 줄”이 아니라 “비교·점수·검증”**이라는 점이다.
 
-#### 4.4 Alignment(정렬)를 한 단어로 쓰지 않기
+### 3.4 Alignment(정렬)를 한 단어로 쓰지 않기
 
 **Alignment(얼라인먼트, 정렬)**는 모델 출력을 인간·제품·안전 기준에 맞게 맞추려는 **목표 묶음**이다.  
 알고리즘 이름이 아니다.
@@ -119,9 +110,9 @@ Corpus → Pretrain → SFT (π_SFT) → Eval
 
 “정렬했다”고 말할 때는 **어느 층까지**인지 항상 덧붙인다.
 
-### 5. 직관적으로 이해하기
+## 4. 직관적으로 이해하기
 
-#### 5.1 요리 비유
+### 4.1 요리 비유
 
 - **Pretrain**: 재료·불·칼질을 배운다（세상 텍스트）
 - **SFT**: 레시피대로 한 접시를 만든다（지시–응답）
@@ -132,7 +123,7 @@ Corpus → Pretrain → SFT (π_SFT) → Eval
 
 비유가 완벽한 대응은 아니다. 그러나 “SFT만으로 시식 선호까지 끝”이 아니라는 감각은 남는다.
 
-#### 5.2 왜 SFT 다음인가
+### 4.2 왜 SFT 다음인가
 
 SFT 정책 $\pi_{\mathrm{SFT}}$가 없으면:
 
@@ -148,7 +139,7 @@ SFT 정책 $\pi_{\mathrm{SFT}}$가 없으면:
 
 이다. 4권은 이 순서를 전제로 한다.
 
-#### 5.3 두 갈래: “보상 모델 경로” vs “직접 선호 경로”
+### 4.3 두 갈래: “보상 모델 경로” vs “직접 선호 경로”
 
 ```text
 경로 C (고전 RLHF):
@@ -161,53 +152,61 @@ SFT 정책 $\pi_{\mathrm{SFT}}$가 없으면:
 둘 다 “선호”를 쓰지만, **중간 점수 함수 $r_\phi$를 명시적으로 두느냐**가 갈린다.  
 제86~91강에서 수식으로 다시 만난다.
 
-### 6. 수학적으로 이해하기（지도 수준）
+## 5. 수학적으로 이해하기（지도 수준）
 
 아직 유도하지 않는다. **기호가 어디에 쓰이는지**만 고정한다.
 
-#### 6.1 SFT（복습）
+### 5.1 SFT（복습）
 
 $$
+
 L_{\mathrm{SFT}}(\theta)
 =
 -\mathbb{E}_{(x,y)\sim\mathcal{D}_{\mathrm{SFT}}}
 \sum_{t\in y}\log\pi_\theta(y_t\mid x,y_{<t})
+
 $$
 
-#### 6.2 Reward Model（미리보기）
+### 5.2 Reward Model（미리보기）
 
 선호 $y_w \succ y_l \mid x$ 가 주어질 때, 점수는 대략:
 
 $$
+
 P(y_w \succ y_l \mid x)
 =
 \sigma\!\big(r_\phi(x,y_w)-r_\phi(x,y_l)\big)
+
 $$
 
 $r_\phi$를 학습한 뒤, 정책은（이상적으로）
 
 $$
+
 \max_\theta\ \mathbb{E}_{x,\,y\sim\pi_\theta}\big[r_\phi(x,y)\big]
 -\beta\,\mathrm{KL}\big(\pi_\theta\|\pi_{\mathrm{ref}}\big)
+
 $$
 
 같은 목적에 가깝게 움직인다（세부: 제86~89강）.
 
-#### 6.3 DPO（미리보기）
+### 5.3 DPO（미리보기）
 
 보상 모델을 따로 두지 않고, 선호 데이터로 정책 비율을 직접 맞춘다（제90강）.
 
-#### 6.4 RLVR（미리보기）
+### 5.4 RLVR（미리보기）
 
 정답·단위 테스트·규칙 검증기 $v(x,y)\in\{0,1\}$ 또는 실수 보상이 있으면:
 
 $$
+
 \max_\theta\ \mathbb{E}_{y\sim\pi_\theta(\cdot\mid x)}\big[v(x,y)\big]
+
 $$
 
 “취향”이 아니라 **검증 가능(verifiable)** 신호다（제93강）.
 
-### 7. 작은 숫자로 직접 보기
+## 6. 작은 숫자로 직접 보기
 
 같은 질문 $x$에 답 두 개:
 
@@ -231,7 +230,7 @@ Post-Training은 후자（또는 검증 점수）를 학습 신호로 올린다.
 | PPO | $\pi_\theta$（+ 종종 value head） |
 | DPO | $\pi_\theta$（RM 없이） |
 
-### 8. 코드로 스케치하기
+## 7. 코드로 스케치하기
 
 아직 학습 루프를 완성하지 않는다. **단계가 다른 함수**임을 이름만으로 구분한다.
 
@@ -242,23 +241,19 @@ Post-Training은 후자（또는 검증 점수）를 학습 신호로 올린다.
 from dataclasses import dataclass
 from typing import Callable, List, Tuple
 
-
 @dataclass
 class PreferencePair:
     prompt: str
     chosen: str   # y_w: 선호된 응답
     rejected: str # y_l: 거부된 응답
 
-
 def sft_loss(logprobs_on_response) -> float:
     """지도: 응답 토큰 NLL. 3권과 동일 계열."""
     return -float(sum(logprobs_on_response) / max(len(logprobs_on_response), 1))
 
-
 def reward_model_score(rm: Callable[[str, str], float], prompt: str, answer: str) -> float:
     """RM: (prompt, answer) → 스칼라 점수."""
     return float(rm(prompt, answer))
-
 
 def rlhf_surrogate(reward: float, kl_to_ref: float, beta: float = 0.1) -> float:
     """
@@ -267,7 +262,6 @@ def rlhf_surrogate(reward: float, kl_to_ref: float, beta: float = 0.1) -> float:
     """
     return reward - beta * kl_to_ref
 
-
 def dpo_direction(log_ratio_w: float, log_ratio_l: float) -> str:
     """
     DPO 직관: chosen의 (정책/참조) 로그비를 rejected보다 키운다.
@@ -275,11 +269,9 @@ def dpo_direction(log_ratio_w: float, log_ratio_l: float) -> str:
     """
     return "increase_chosen_vs_rejected" if log_ratio_w > log_ratio_l else "need_update"
 
-
 def verifiable_reward(checker: Callable[[str, str], bool], prompt: str, answer: str) -> float:
     """RLVR: 규칙/정답 검증 → 0/1 보상."""
     return 1.0 if checker(prompt, answer) else 0.0
-
 
 def demo_pipeline():
     pairs: List[PreferencePair] = [
@@ -297,7 +289,6 @@ def demo_pipeline():
         v = verifiable_reward(checker, pair.prompt, pair.chosen)
         print(pair.prompt, "RM gap", r_w - r_l, "VR", v)
 
-
 if __name__ == "__main__":
     demo_pipeline()
 ```
@@ -305,7 +296,7 @@ if __name__ == "__main__":
 이 파일이 “학습기”는 아니다.  
 **이름이 가리키는 책임이 다르다**는 것만 확인하면 된다.
 
-### 9. 실제 LLM에서는 어떻게 사용하는가
+## 8. 실제 LLM에서는 어떻게 사용하는가
 
 산업·오픈 모델 문서에서 자주 보이는 패턴:
 
@@ -322,9 +313,9 @@ if __name__ == "__main__":
 
 4권 실습（제95강）은 미니 스케일로 경로를 하나 골라 끝까지 통과하는 것이 목표다.
 
-### 10. 실습
+## 9. 실습
 
-#### 실습 A — 파이프라인 빈칸
+### 실습 A — 파이프라인 빈칸
 
 다음을 노트에 손으로 채운다.
 
@@ -334,7 +325,7 @@ if __name__ == "__main__":
          ↘ (과제형) (5) RLVR
 ```
 
-#### 실습 B — 제품 문장 해부
+### 실습 B — 제품 문장 해부
 
 임의의 “우리 모델은 RLHF로 정렬되었습니다” 문장을 고른다.  
 아래를 추정·조사한다（모르면 “불명”）.
@@ -344,12 +335,12 @@ if __name__ == "__main__":
 - PPO vs DPO
 - KL / 참조 정책 언급 여부
 
-#### 실습 C — SFT 한계 한 줄
+### 실습 C — SFT 한계 한 줄
 
 제77~78강 내용을 한 문장으로 다시 쓴다.  
 “CE만으로는 ______ 를 직접 최적화하지 못한다.”
 
-### 11. 자주 하는 실수
+## 10. 자주 하는 실수
 
 1. **SFT = RLHF**로 부르는 것  
    → 지도 CE와 보상/선호 최적화는 다르다.
@@ -366,7 +357,7 @@ if __name__ == "__main__":
 5. **모든 과제에 RLVR**  
    → 검증기가 없는 주관적 품질（문체·공손）에는 선호/RM이 더 자연스럽다.
 
-### 12. 핵심 정리
+## 11. 핵심 정리
 
 - Post-Training은 SFT 이후, **선호·보상·검증**으로 정책을 재조정하는 단계 묶음이다.
 - 고전 경로: Preference → RM → RLHF/PPO（+KL）.
@@ -376,7 +367,7 @@ if __name__ == "__main__":
 - Alignment는 목표 묶음이고, 알고리즘 이름이 아니다.
 - 다음 강의부터는 이 지도를 **강화학습 기호**로 다시 그린다.
 
-### 13. 핵심 용어
+## 12. 핵심 용어
 
 | 용어 | 한 줄 의미 |
 |---|---|
@@ -391,26 +382,25 @@ if __name__ == "__main__":
 | RLVR | Verifiable（규칙/정답）보상으로 하는 RL |
 | $\pi_{\mathrm{ref}}$ | KL 제약의 참조 정책（보통 $\pi_{\mathrm{SFT}}$） |
 
-### 14. 복습 문제
-
-#### 문제 1
+## 13. 연습 문제
+### 문제 1
 
 Post-Training이 보통 SFT **다음**에 오는 이유를 두 가지 쓰시오.
 
-#### 문제 2
+### 문제 2
 
 다음 중 “명시적 Reward Model”이 **필수가 아닌** 쪽에 가까운 것은?  
 (a) 고전 RLHF/PPO 경로 (b) DPO 경로
 
-#### 문제 3
+### 문제 3
 
 SFT loss와 RLHF가 최적화하는 신호의 차이를 한 문장으로 쓰시오.
 
-#### 문제 4
+### 문제 4
 
 RLVR의 “V”가 가리키는 성질은 무엇인가? Preference와의 차이를 한 줄로.
 
-#### 문제 5
+### 문제 5
 
 제78강 → 제79강 → 제80강으로 이어지는 한 줄을 완성하시오.
 
@@ -420,29 +410,29 @@ SFT 한계 정리 → Post-Training (    ) → RL 기호 (State/Action/Reward)
 
 ---
 
-### 정답 및 해설
+## 정답 및 해설
 
-#### 문제 1
+### 문제 1
 
 예: (1) 선호/보상을 줄 후보 응답의 품질·형식이 SFT 뒤에 안정적이다. (2) RL의 초기 정책으로 $\pi_{\mathrm{SFT}}$가 필요하다.
 
-#### 문제 2
+### 문제 2
 
 (b) DPO 경로.
 
-#### 문제 3
+### 문제 3
 
 SFT는（대개）단일/소수 응답에 대한 토큰 CE이고, RLHF는 보상（선호 근사）의 기댓값을 올리며 보통 KL로 참조정책에 묶는다.
 
-#### 문제 4
+### 문제 4
 
 Verifiable — 규칙·정답 등으로 **자동 검증 가능한** 보상. Preference는 주관적/비교 라벨에 가깝다.
 
-#### 문제 5
+### 문제 5
 
 `지도`（또는 좌표 / 파이프라인）.
 
-### 15. 다음 강의와 연결
+## 14. 다음 강의와 연결
 
 지도가 생겼다.  
 다음 **제80강. 강화학습 기초 — State, Action, Reward**에서는 LLM 생성 한 줄을 MDP에 가깝게 올려 본다.

@@ -1,22 +1,14 @@
-# 4권. RLHF · PPO · GRPO
+# 제94강. Reasoning Training
 
-## 제94강. Reasoning Training
+> **학습 목표**
+> - Chain-of-thought 스타일 학습 신호가 무엇인지（프롬프트 트릭이 아니라 학습 신호로）
+> - 과정（process）보상과 결과（outcome）보상의 차이
+> - outcome-only RLVR이 왜 추론 흔적을 간접적으로 키우는지
+> - 선호 정렬（DPO/RLHF）과 reasoning RL이 같은 “정렬”이라도 신호의 종류가 다른 이유
+> - 제95강 미니 프로젝트로 넘어가기 전, 무엇을 장난감으로 줄일지
 
-### 1. 이번 강의에서 배울 것
-
-제93강에서 **RLVR（Reinforcement Learning with Verifiable Rewards）** 과 검증 가능한 보상의 뼈대를 잡았다. 이번 강의는 그 신호를 **추론（reasoning）을 드러내는 생성**에 어떻게 붙이는지 정리한다.
-
-이 강의를 마치면 다음을 말할 수 있어야 한다.
-
-- Chain-of-thought 스타일 학습 신호가 무엇인지（프롬프트 트릭이 아니라 학습 신호로）
-- **과정（process）보상**과 **결과（outcome）보상**의 차이
-- outcome-only RLVR이 왜 추론 흔적을 간접적으로 키우는지
-- 선호 정렬（DPO/RLHF）과 reasoning RL이 같은 “정렬”이라도 **신호의 종류**가 다른 이유
-- 제95강 미니 프로젝트로 넘어가기 전, 무엇을 장난감으로 줄일지
-
-벤치마크 점수를 외우거나 “어느 모델이 최고”를 선언하는 강의가 아니다. **신호 → 정책 업데이트**의 좌표를 고정한다.
-
-### 2. 왜 Reasoning Training이 따로 필요한가
+---
+## 1. 왜 Reasoning Training이 따로 필요한가
 
 SFT·선호 학습이 잘 되면 모델은 “그럴듯한 답”을 더 잘 낸다. 그런데 수학·코딩·논리처럼 **중간 단계가 틀리면 답이 틀리는** 과제에서는, 최종 문장만 예쁘게 만드는 신호가 부족하다.
 
@@ -27,14 +19,16 @@ SFT·선호 학습이 잘 되면 모델은 “그럴듯한 답”을 더 잘 낸
 
 둘 다 post-training이지만, **보상（또는 선호）이 어디서 오는지**가 다르다. 제84~91강의 인간/모델 선호와, 제93강의 검증기（verifier）는 같은 파이프라인 상자 안에 있어도 내용물이 다르다.
 
-### 3. Chain-of-thought를 “학습 신호”로 보기
+## 2. Chain-of-thought를 “학습 신호”로 보기
 
-#### 3.1 추론 흔적이란
+### 2.1 추론 흔적이란
 
 생성 시퀀스를 대략 다음처럼 나눈다.
 
 $$
+
 y = (z, a)
+
 $$
 
 - $z$: 중간 추론（scratchpad, 단계적 설명, 코드 초안 등）
@@ -49,7 +43,7 @@ $$
 | Outcome RL | $z$는 자유 변수 | $a$만 검증 → 스칼라 보상 |
 | Process RL | 단계마다 점수 | $z$의 부분 구간에 보상 |
 
-#### 3.2 SFT-CoT의 한계（역할만）
+### 2.2 SFT-CoT의 한계（역할만）
 
 정답 풀이 데이터에 CE를 걸면 모델은 **그 스타일의 $z$** 를 흉내 낸다. 좋은 시작점이지만,
 
@@ -59,14 +53,16 @@ $$
 
 그래서 많은 실무 흐름은 **SFT로 형식·기본 풀이 습관을 심은 뒤**, 검증 가능한 보상으로 RL（또는 유사 목표）을 얹는다. 이 문장은 **자주 보이는 설계 패턴**이지, 모든 논문이 동일한 순서를 썼다는 역사적 단정이 아니다（제97강）.
 
-### 4. Outcome reward vs Process reward
+## 3. Outcome reward vs Process reward
 
-#### 4.1 Outcome（결과）보상
+### 3.1 Outcome（결과）보상
 
 최종 답 $a$만 본다.
 
 $$
+
 r_{\mathrm{out}}(x, y) = V(x, a),\quad y=(z,a)
+
 $$
 
 여기서 $V$는 규칙·유닛테스트·수식 동치 검사·컴파일러 등 **검증기**다. 제93강 RLVR의 핵심 형태다.
@@ -83,14 +79,16 @@ $$
 - 틀린 과정 + 운 좋은 정답, 또는 정답 복사 후 허위 설명이 남을 수 있다
 - credit assignment가 어렵다（policy gradient의 분산↑）
 
-#### 4.2 Process（과정）보상
+### 3.2 Process（과정）보상
 
 추론을 단계 $z_1,\ldots,z_K$로 나누고 단계 점수를 준다.
 
 $$
+
 r_{\mathrm{proc}}(x,y) = \sum_{k=1}^{K} r_k(x, z_{\le k})
 \quad\text{또는}\quad
 \text{단계별 advantage}
+
 $$
 
 $r_k$의 출처 예:
@@ -110,7 +108,7 @@ $r_k$의 출처 예:
 - PRM 자체가 reward hacking의 새 표적이 된다（제96강）
 - “단계” 정의가 도메인마다 달라 파이프라인이 무겁다
 
-#### 4.3 한 장 비교
+### 3.3 한 장 비교
 
 | | Outcome | Process |
 |---|---|---|
@@ -122,19 +120,21 @@ $r_k$의 출처 예:
 
 실무에서는 **outcome을 기본 축**으로 두고, 도메인이 허용할 때만 process를 얹는 경우가 많다. 이것 역시 관찰된 경향이며, process가 항상 우월하다는 주장이 아니다.
 
-### 5. Outcome RL이 CoT를 “키우는” 메커니즘（직관）
+## 4. Outcome RL이 CoT를 “키우는” 메커니즘（직관）
 
 검증기가 $a$만 본다면, 왜 $z$가 길어지거나 정교해질까?
 
 정책 경사의 스케치（제82~83강）:
 
 $$
+
 \nabla_\theta\, J(\theta)
 \;\propto\;
 \mathbb{E}\big[
 \,(r - b)\,
 \nabla_\theta \log \pi_\theta(y\mid x)
 \big]
+
 $$
 
 $y=(z,a)$ 전체의 로그확률에 같은 스칼라 $(r-b)$가 곱해진다. 정답을 자주 만드는 **궤적**（특정 길이·구조의 $z$ 포함）의 확률이 올라간다.
@@ -153,7 +153,7 @@ $y=(z,a)$ 전체의 로그확률에 같은 스칼라 $(r-b)$가 곱해진다. �
 
 GRPO류（제92강）처럼 **같은 프롬프트에 여러 샘플**을 뽑아 상대 비교하면, outcome 신호만으로도 분산을 줄이는 설계가 된다. reasoning 특화 “마법”이라기보다, **그룹 내 baseline**으로 credit을 안정화하는 쪽에 가깝다.
 
-### 6. 학습 신호의 스펙트럼（4권 좌표）
+## 5. 학습 신호의 스펙트럼（4권 좌표）
 
 Reasoning training을 고립시키지 말고, 4권 신호 축 위에 올린다.
 
@@ -183,7 +183,7 @@ Reasoning training을 고립시키지 말고, 4권 신호 축 위에 올린다.
 **사실:** 최종 토큰 분포 $\pi_\theta(y\mid x)$를 바꾸는 최적화라는 점은 공통이다.  
 **해석:** “reasoning 모델”이라는 제품 이름은 보통 **긴 $z$ + 검증 과제 + RL 단계**가 강조된 결과물을 가리키는 마케팅·분류 라벨에 가깝다.
 
-### 7. 데이터·프롬프트·검증기 설계 체크
+## 6. 데이터·프롬프트·검증기 설계 체크
 
 Reasoning RL을 돌리기 전에 고정할 계약:
 
@@ -196,7 +196,7 @@ Reasoning RL을 돌리기 전에 고정할 계약:
 
 미니 스케일（제95강）에서는 3~4번을 극단적으로 단순화한다. 예: 덧셈/짝홀 판정 + `#### <answer>` 규약 + $r\in\{0,1\}$.
 
-### 8. 숫자로 보는 credit assignment（장난감）
+## 7. 숫자로 보는 credit assignment（장난감）
 
 문제: `2+3=?`. 두 궤적:
 
@@ -210,7 +210,7 @@ Outcome만 보면 A와 B가 **같은 보상**이다. 한 번의 업데이트로�
 
 Process 신호가 “산술 단계가 맞는가”를 보면 B는 중간에서 감점된다. 이것이 process의 존재 이유이지, 자동으로 만능 해결책은 아니다.
 
-### 9. 구현 스케치（개념 코드）
+## 8. 구현 스케치（개념 코드）
 
 대규모 프레임워크 전체가 아니라, **신호 위치**만 드러낸다.
 
@@ -223,14 +223,11 @@ from __future__ import annotations
 import re
 from dataclasses import dataclass
 
-
 ANS_RE = re.compile(r"####\s*(.+)\s*$", re.MULTILINE)
-
 
 def extract_answer(text: str) -> str | None:
     m = ANS_RE.search(text)
     return m.group(1).strip() if m else None
-
 
 def outcome_reward(prompt: str, completion: str, gold: str) -> float:
     pred = extract_answer(completion)
@@ -238,14 +235,12 @@ def outcome_reward(prompt: str, completion: str, gold: str) -> float:
         return 0.0
     return 1.0 if pred == gold.strip() else 0.0
 
-
 @dataclass
 class Rollout:
     prompt: str
     completion: str
     logprob_sum: float  # Σ log π(y_t | ·) for tokens in completion
     reward: float
-
 
 def reinforce_loss(rollouts: list[Rollout], baseline: float = 0.0) -> float:
     """Scalar surrogate: -E[(r - b) * logπ(y|x)]. Caller backprops through logprob_sum."""
@@ -266,7 +261,7 @@ def process_rewards(steps: list[str], step_ok: list[bool]) -> list[float]:
     return [1.0 if ok else 0.0 for ok in step_ok]
 ```
 
-### 10. Reasoning Training에서 자주 하는 설계 선택
+## 9. Reasoning Training에서 자주 하는 설계 선택
 
 | 선택 | 흔히 쓰는 이유 | 주의 |
 |---|---|---|
@@ -278,7 +273,7 @@ def process_rewards(steps: list[str], step_ok: list[bool]) -> list[float]:
 
 “추론이 늘었다”를 **토큰 길이만으로** 선언하지 않는다. 길이↑는 부산물일 수 있다. 가능하면 **검증 통과율**, 형식 준수율,（있다면）과정 오류율을 함께 본다. 구체 수치는 데이터·모델에 따라 달라지므로 이 책에서 임의로 박지 않는다.
 
-### 11. 제93강 RLVR과의 연결（한 줄 다리）
+## 10. 제93강 RLVR과의 연결（한 줄 다리）
 
 ```text
 RLVR:     검증 가능한 r = V(·) 로 정책을 갱신한다
@@ -288,7 +283,7 @@ RLVR:     검증 가능한 r = V(·) 로 정책을 갱신한다
 
 RLVR이 “보상 출처”의 이름이고, Reasoning Training은 **그 보상을 추론 궤적에 적용하는 설계 문제**다. 동치어처럼 쓰이기도 하나, 이 책에서는 위처럼 층을 나눈다.
 
-### 12. 핵심 정리
+## 11. 핵심 정리
 
 - CoT는 프롬프트 기법만이 아니라, $y=(z,a)$에 걸리는 **학습 신호의 배치** 문제다.
 - Outcome 보상은 최종 답 검증에 강하고 희소하며, Process 보상은 단계 밀도에 강하고 라벨·해킹 비용이 있다.
@@ -296,7 +291,7 @@ RLVR이 “보상 출처”의 이름이고, Reasoning Training은 **그 보상�
 - 선호 정렬과 reasoning RL은 같은 post-training 상자 안의 **다른 신호**다.
 - 제95강은 선호 쪽 미니 파이프라인으로, 신호→손실→업데이트 루프를 코드로 닫는다.
 
-### 13. 핵심 용어
+## 12. 핵심 용어
 
 | 용어 | 한 줄 의미 |
 |---|---|
@@ -308,53 +303,52 @@ RLVR이 “보상 출처”의 이름이고, Reasoning Training은 **그 보상�
 | Credit assignment | 어느 토큰·단계가 $r$에 기여했는지 배분 |
 | GRPO（연결） | 그룹 샘플 상대 비교로 baseline을 잡는 흐름 |
 
-### 14. 복습 문제
-
-#### 문제 1
+## 13. 연습 문제
+### 문제 1
 
 $y=(z,a)$에서 outcome reward가 직접 보는 것은 $z$인가 $a$인가?
 
-#### 문제 2
+### 문제 2
 
 같은 $r=1$인 두 궤적 중 하나가 허위 근거여도 outcome-only에서 동시에 강화될 수 있는 이유를 한 문장으로 쓰시오.
 
-#### 문제 3
+### 문제 3
 
 Process reward의 대표적인 비용을 두 가지 쓰시오.
 
-#### 문제 4
+### 문제 4
 
 RLVR과 Reasoning Training을 이 책이 나누는 기준을 한 줄로 쓰시오.
 
-#### 문제 5
+### 문제 5
 
 제95강 미니 프로젝트에서 reasoning outcome RL 대신 **preference** 쪽을 먼저 실습하는 이유를, 신호의 관점에서 추측해 쓰시오.
 
 ---
 
-### 정답 및 해설
+## 정답 및 해설
 
-#### 문제 1
+### 문제 1
 
 $a$（최종 답）.
 
-#### 문제 2
+### 문제 2
 
 보상이 시퀀스 전체에 같은 스칼라로 곱해지므로, $a$만 맞으면 $z$의 질과 무관하게 로그확률이 같은 방향으로 갱신될 수 있다.
 
-#### 문제 3
+### 문제 3
 
 예: 단계 분할·라벨 비용, PRM/판정자 해킹（또는 판정 편향）.
 
-#### 문제 4
+### 문제 4
 
 RLVR은 검증 가능 보상이라는 신호 출처, Reasoning Training은 그 신호를 추론 궤적 $(z,a)$에 거는 설계.
 
-#### 문제 5
+### 문제 5
 
 선호 쌍→DPO/RM은 검증기 없이도 닫히는 루프라, 4권 전반（84~91）과 연결해 “신호→손실”을 먼저 손에 익히기 좋다. Reasoning RL은 93~94의 확장으로 이어진다.
 
-### 15. 다음 강의와 연결
+## 14. 다음 강의와 연결
 **제95강. 프로젝트 — Preference / RL 실습**에서 초소형 선호 데이터로 DPO 또는 RM+REINFORCE 미니 파이프라인을 끝까지 돌린다.
 
 <!-- LECTURE_NAV -->

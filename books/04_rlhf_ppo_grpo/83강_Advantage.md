@@ -1,36 +1,15 @@
-# 4권. RLHF · PPO · GRPO
+# 제83강. Advantage
 
-## 제83강. Advantage
+> **학습 목표**
+> - Advantage의 정의와 직관（“평균보다 얼마나 나은가”）
+> - Baseline / $V$를 빼도 기댓값 기울기가 보존되는 이유
+> - 왜 분산 감소가 LLM RL에 치명적인지
+> - 작은 숫자로 $A$를 계산
+> - PPO·GRPO가 Advantage（또는 그룹 상대값）를 쓰는 위치
+> - 제84강 Preference Dataset으로 넘어가기 전 RL 기초 매듭
 
-### 1. 이번 강의에서 배울 것
-
-제82강 REINFORCE는 $\nabla\log\pi\cdot G$（또는 $R$）로 정책을 민다.  
-맞는 방향이지만 **분산이 크다**. 같은 프롬프트라도 점수가 들쭉날쭉하면 학습이 요동한다.
-
-이번 강의의 중심 기호는 **Advantage(어드밴티지, 우세 함수)**다.
-
-$$
-A^\pi(s,a)=Q^\pi(s,a)-V^\pi(s)
-$$
-
-샘플 추정으로는 종종:
-
-$$
-\hat{A}_t = G_t - V_\psi(s_t)
-\quad\text{또는}\quad
-\hat{A}_t = r_t + \gamma V(s_{t+1}) - V(s_t)
-$$
-
-이 강의를 마치면 다음을 말할 수 있어야 한다.
-
-- Advantage의 정의와 직관（“평균보다 얼마나 나은가”）
-- Baseline / $V$를 빼도 기댓값 기울기가 보존되는 이유
-- 왜 분산 감소가 LLM RL에 치명적인지
-- 작은 숫자로 $A$를 계산
-- PPO·GRPO가 Advantage（또는 그룹 상대값）를 쓰는 위치
-- 제84강 Preference Dataset으로 넘어가기 전 RL 기초 매듭
-
-### 2. 왜 이것을 배우는가
+---
+## 1. 왜 이것을 배우는가
 
 LLM 롤아웃의 현실:
 
@@ -49,12 +28,14 @@ Advantage는 이렇게 말한다.
 PPO 논문·구현의 core update는 사실상
 
 $$
+
 \mathbb{E}_t\big[\nabla\log\pi_\theta(a_t\mid s_t)\,\hat{A}_t\big]
+
 $$
 
 이고, GRPO는 그룹 내 상대 점수로 비슷한 **상대화**를 수행한다.
 
-### 3. 먼저 알아야 할 개념
+## 2. 먼저 알아야 할 개념
 
 - $V^\pi$, $Q^\pi$（제81강）
 - REINFORCE · $\nabla\log\pi\cdot G$（제82강）
@@ -64,21 +45,25 @@ $$
 GAE(Generalized Advantage Estimation) 전체 유도는 PPO 강에서 이어서 다룬다.  
 오늘은 정의·동기·최소 추정.
 
-### 4. 핵심 개념 설명
+## 3. 핵심 개념 설명
 
-#### 4.1 Advantage란
+### 3.1 Advantage란
 
 **Advantage(어드밴티지)** $A^\pi(s,a)$는 상태 $s$에서 행동 $a$를 택하는 것이  
 정책의 **평균적 가치**보다 얼마나 이득（또는 손해）인지를 나타낸다.
 
 $$
+
 A^\pi(s,a)=Q^\pi(s,a)-V^\pi(s)
+
 $$
 
 성질:
 
 $$
+
 \mathbb{E}_{a\sim\pi(\cdot\mid s)}\big[A^\pi(s,a)\big]=0
+
 $$
 
 평균적으로는 0 — “상대 점수”이기 때문이다.
@@ -91,60 +76,70 @@ $$
 | $<0$ | 평균보다 나쁨 | $\pi(a\mid s)$ ↓ |
 | $\approx0$ | 평이 | 거의 변화 없음 |
 
-#### 4.2 Return − baseline 형태
+### 3.2 Return − baseline 형태
 
 $Q$를 모를 때 몬테카를로 반환 $G_t$로 대체:
 
 $$
+
 \hat{A}_t^{\mathrm{MC}} = G_t - b(s_t)
+
 $$
 
 $b=0$이면 고전 REINFORCE.  
 $b(s_t)=V_\psi(s_t)$이면 **value baseline**.
 
 $$
+
 \hat{A}_t = G_t - V_\psi(s_t)
+
 $$
 
-#### 4.3 TD 잔차 형태
+### 3.3 TD 잔차 형태
 
 한 스텝 bootstrap:
 
 $$
+
 \delta_t = r_t + \gamma V(s_{t+1}) - V(s_t)
+
 $$
 
 $\delta_t$ 자체가 Advantage의 한 추정이다.  
 GAE는 $\delta_t$의 지수 가중 합으로 bias–variance를 조절한다（제87~88강）.
 
-#### 4.4 Policy Gradient with Advantage
+### 3.4 Policy Gradient with Advantage
 
 $$
+
 \nabla_\theta J(\theta)
 =
 \mathbb{E}\big[
 \nabla_\theta\log\pi_\theta(a_t\mid s_t)\,
 A^\pi(s_t,a_t)
 \big]
+
 $$
 
 $A$ 대신 $Q$, $G$, $G-V$를 넣어도（적절한 조건에서）기댓값은 같은 계열이다.  
 실무는 **분산이 작은 $A$ 추정**을 고른다.
 
-#### 4.5 정규화된 Advantage
+### 3.5 정규화된 Advantage
 
 배치·그룹 안에서:
 
 $$
+
 \hat{A}\leftarrow \frac{\hat{A}-\mathrm{mean}(\hat{A})}{\mathrm{std}(\hat{A})+\epsilon}
+
 $$
 
 를 자주 적용한다.  
 GRPO는 같은 프롬프트에 대한 **여러 샘플 점수**를 평균·표준편차로 상대화해 Advantage 대용 신호를 만든다（제92강）.
 
-### 5. 직관적으로 이해하기
+## 4. 직관적으로 이해하기
 
-#### 5.1 시험 곡선과 편차
+### 4.1 시험 곡선과 편차
 
 반 평균이 60점일 때 70점은 “잘함”,  
 반 평균이 90점일 때 70점은 “못함”.
@@ -152,7 +147,7 @@ GRPO는 같은 프롬프트에 대한 **여러 샘플 점수**를 평균·표준
 절대 점수 70만 보면 정책을 잘못 민다.  
 Advantage는 **반 평균（$V$）을 뺀 편차**다.
 
-#### 5.2 쉬운 프롬프트 / 어려운 프롬프트
+### 4.2 쉬운 프롬프트 / 어려운 프롬프트
 
 | 프롬프트 | $V(s)$ | 실제 $R$ | $A\approx R-V$ |
 |---|---|---|---|
@@ -164,19 +159,20 @@ Advantage는 **반 평균（$V$）을 뺀 편차**다.
 
 반대로 쉬운 문제를 틀린 경우 $R=0$, $V=0.95$ → $A\approx-0.95$로 강하게 억제한다.
 
-#### 5.3 “칭찬 인플레이션” 방지
+### 4.3 “칭찬 인플레이션” 방지
 
 RM이 전반적으로 점수를 $+3$만큼 올려 캘리브레이션이 밀려도,  
 $V$가 같이 따라가면 $A=R-V$는 상대적으로 안정적일 수 있다.  
 （완벽하진 않다. RM 해킹은 별 문제 — 제96강.）
 
-### 6. 수학적으로 이해하기
+## 5. 수학적으로 이해하기
 
-#### 6.1 Baseline이 기댓값을 보존
+### 5.1 Baseline이 기댓값을 보존
 
 고정 $s$에서:
 
 $$
+
 \begin{aligned}
 &\mathbb{E}_{a\sim\pi(\cdot\mid s)}
 \big[\nabla_\theta\log\pi_\theta(a\mid s)\,b(s)\big]\\
@@ -188,21 +184,24 @@ b(s)\nabla_\theta\sum_a\pi_\theta(a\mid s)
 b(s)\nabla_\theta 1
 =0
 \end{aligned}
+
 $$
 
 따라서
 
 $$
+
 \mathbb{E}[\nabla\log\pi\cdot Q]
 =
 \mathbb{E}[\nabla\log\pi\cdot(Q-V)]
 =
 \mathbb{E}[\nabla\log\pi\cdot A]
+
 $$
 
 **편향 없이**（이 항등 의미에서）분산만 줄일 여지가 생긴다.
 
-#### 6.2 분산이 줄어드는 직관
+### 5.2 분산이 줄어드는 직관
 
 $G$의 스케일이 크고 상태마다 평균이 다르면 $\mathrm{Var}(G)$가 크다.  
 $G-V(s)$는 상태별 평균을 빼 **중심화**하므로, 이상적으로 분산이 감소한다.
@@ -210,7 +209,7 @@ $G-V(s)$는 상태별 평균을 빼 **중심화**하므로, 이상적으로 분�
 주의: 잘못된 $V$（편향 큰 근사）는 분산↓ 대신 **잘못된 방향**을 만들 수 있다.  
 그래서 value learning이 PPO의 반쪽이다.
 
-#### 6.3 Advantage와 “상대 선호”
+### 5.3 Advantage와 “상대 선호”
 
 Preference $y_w\succ y_l$는 응답 단위의 상대 비교다.  
 Advantage는 **상태–행동（토큰/스텝）단위의 상대 가치**다.
@@ -218,9 +217,9 @@ Advantage는 **상태–행동（토큰/스텝）단위의 상대 가치**다.
 층위는 다르지만 “절대 점수보다 상대”라는 철학이 맞닿아 있다.  
 제84강 데이터가 RM을 만들고, RM 점수가 다시 $G$/$A$로 정책에 흐른다.
 
-### 7. 작은 숫자로 직접 계산하기
+## 6. 작은 숫자로 직접 계산하기
 
-#### 7.1 표로 구하는 $A$
+### 6.1 표로 구하는 $A$
 
 상태 $s$, 행동 $\{a_1,a_2,a_3\}$:
 
@@ -231,7 +230,9 @@ Advantage는 **상태–행동（토큰/스텝）단위의 상대 가치**다.
 | $a_3$ | 0.0 | 0.2 |
 
 $$
+
 V=0.5\cdot2+0.3\cdot1+0.2\cdot0=1.3
+
 $$
 
 | $a$ | $A=Q-V$ |
@@ -242,7 +243,7 @@ $$
 
 확인: $0.5\cdot0.7+0.3\cdot(-0.3)+0.2\cdot(-1.3)=0$.
 
-#### 7.2 MC Advantage
+### 6.2 MC Advantage
 
 세 번 롤아웃, 같은 $s_0$:
 
@@ -255,7 +256,7 @@ $$
 $b=0$이면 가중치가 $1.5,0.2,1.1$로 흩어지고,  
 $V$를 빼면 $+0.5,-0.8,+0.1$로 **상대 패턴**이 남는다.
 
-#### 7.3 토큰 단위（sparse $R$）
+### 6.3 토큰 단위（sparse $R$）
 
 길이 3, 끝 보상 $R=2$, $\gamma=1$, 중간 $r=0$.  
 $V(s_0)=1.2,\;V(s_1)=1.5,\;V(s_2)=1.8$ （예시）
@@ -263,22 +264,23 @@ $V(s_0)=1.2,\;V(s_1)=1.5,\;V(s_2)=1.8$ （예시）
 MC: $G_0=G_1=G_2=2$
 
 $$
+
 \hat{A}_0=2-1.2=0.8,\;
 \hat{A}_1=2-1.5=0.5,\;
 \hat{A}_2=2-1.8=0.2
+
 $$
 
 앞쪽 토큰에 더 큰 Advantage가 갈 수 있다 — $V$가 진행되며 올라간다고 믿기 때문.  
 （실제 추정은 데이터·GAE에 따라 달라진다.）
 
-### 8. 코드로 구현하기
+## 7. 코드로 구현하기
 
 ```python
 # advantage_basic.py
 from __future__ import annotations
 
 from typing import List, Sequence
-
 
 def mc_returns(rewards: Sequence[float], gamma: float = 1.0) -> List[float]:
     G = 0.0
@@ -289,11 +291,9 @@ def mc_returns(rewards: Sequence[float], gamma: float = 1.0) -> List[float]:
     out.reverse()
     return out
 
-
 def advantage_mc(rewards: Sequence[float], values: Sequence[float], gamma: float = 1.0) -> List[float]:
     G = mc_returns(rewards, gamma)
     return [g - v for g, v in zip(G, values)]
-
 
 def advantage_td(
     rewards: Sequence[float],
@@ -308,13 +308,11 @@ def advantage_td(
         adv.append(r + gamma * v_next - v)
     return adv
 
-
 def normalize(xs: List[float], eps: float = 1e-8) -> List[float]:
     mean = sum(xs) / len(xs)
     var = sum((x - mean) ** 2 for x in xs) / len(xs)
     std = var ** 0.5
     return [(x - mean) / (std + eps) for x in xs]
-
 
 if __name__ == "__main__":
     rewards = [0.0, 0.0, 2.0]
@@ -324,13 +322,12 @@ if __name__ == "__main__":
     print("norm", normalize(advantage_mc(rewards, values)))
 ```
 
-### 9. PyTorch — Advantage 가중 Policy loss
+## 8. PyTorch — Advantage 가중 Policy loss
 
 ```python
 # advantage_policy_loss.py
 import torch
 import torch.nn.functional as F
-
 
 def policy_loss_from_advantage(
     logits: torch.Tensor,  # (B, T, V)
@@ -343,7 +340,6 @@ def policy_loss_from_advantage(
     # maximize E[A logπ] → loss = - mean(A logπ)
     weighted = -advantages.detach() * logp * mask
     return weighted.sum() / mask.sum().clamp_min(1.0)
-
 
 if __name__ == "__main__":
     torch.manual_seed(0)
@@ -360,9 +356,9 @@ if __name__ == "__main__":
 `advantages.detach()` — $A$ 추정 경로로 정책 그라디언트가 새지 않게 하는 관례가 많다.  
 Value는 별도 MSE로 학습한다.
 
-### 10. 실제 LLM · 알고리즘과의 연결
+## 9. 실제 LLM · 알고리즘과의 연결
 
-#### 10.1 PPO
+### 9.1 PPO
 
 - 롤아웃 → reward（RM − $\beta$ KL 등）→ GAE로 $\hat{A}_t$
 - surrogate: $\mathrm{clip}(r_t(\theta),1-\epsilon,1+\epsilon)\hat{A}_t$
@@ -370,23 +366,25 @@ Value는 별도 MSE로 학습한다.
 
 Advantage가 빠지면 PPO는 “클리핑된 REINFORCE”에 가깝지 않고 목표가 붕괴한다.
 
-#### 10.2 GRPO
+### 9.2 GRPO
 
 동일 프롬프트에 $K$개 응답을 샘플하고 점수 $\{R_i\}$를 집단다.
 
 $$
+
 \hat{A}_i = \frac{R_i - \mathrm{mean}(R)}{\mathrm{std}(R)+\epsilon}
+
 $$
 
 형태가 흔하다.  
 명시적 $V$ 네트워크 대신 **그룹 통계가 baseline** 역할을 한다.
 
-#### 10.3 DPO
+### 9.3 DPO
 
 명시 Advantage 대신, 선호 쌍의 로그비로 정책을 직접 민다.  
 “상대 신호”라는 큰 그림은 공유하나, 토큰 Advantage 추정 루프는 없다.
 
-#### 10.4 RLHF 파이프라인에서의 위치
+### 9.4 RLHF 파이프라인에서의 위치
 
 ```text
 Preference (84) → RM (85) → r(x,y)
@@ -396,25 +394,25 @@ Preference (84) → RM (85) → r(x,y)
 
 오늘은 그 중 **상대화 모듈**을 닫는다.
 
-### 11. 실습
+## 10. 실습
 
-#### 실습 A
+### 실습 A
 
 $Q=[5,1,1]$, $\pi=[0.2,0.4,0.4]$일 때 $V$와 각 $A$를 구하시오. 가중합이 0인지 확인.
 
-#### 실습 B
+### 실습 B
 
 `advantage_basic.py`에서 $\gamma=0.9$로 바꾸고 MC·TD 차이를 서술하시오.
 
-#### 실습 C
+### 실습 C
 
 배치 Advantage를 정규화하지 않을 때와 할 때, `policy_loss_from_advantage`의 스케일이 어떻게 달라지는지 실험하시오.
 
-#### 실습 D
+### 실습 D
 
 제79강 지도에서 “KL로 참조정책에 묶는다”와 Advantage가 **서로 다른 축**임을 한 문장으로 구분하시오.
 
-### 12. 자주 하는 실수
+## 11. 자주 하는 실수
 
 1. **$A=R$라고 부름**  
    → $A$는 상대값. 절대 보상과 혼동 금지.
@@ -434,7 +432,7 @@ $Q=[5,1,1]$, $\pi=[0.2,0.4,0.4]$일 때 $V$와 각 $A$를 구하시오. 가중�
 6. **Advantage만으로 reward hacking이 사라진다 믿음**  
    → RM 목표 자체가 잘못된 경우 $A$도 잘못을 증폭한다.
 
-### 13. 핵심 정리
+## 12. 핵심 정리
 
 - Advantage $A=Q-V$는 “평균 대비 초과 가치”다.
 - Policy Gradient에 $A$를 넣어도（적정 baseline 하）기댓값 방향은 보존되고 분산을 줄일 여지가 있다.
@@ -442,7 +440,7 @@ $Q=[5,1,1]$, $\pi=[0.2,0.4,0.4]$일 때 $V$와 각 $A$를 구하시오. 가중�
 - PPO의 중심 가중치가 $\hat{A}_t$다.
 - RL 기초（80~83）를 닫고, 다음 강의부터 Preference 데이터로 들어간다.
 
-### 14. 핵심 용어
+## 13. 핵심 용어
 
 | 용어 | 한 줄 의미 |
 |---|---|
@@ -454,25 +452,24 @@ $Q=[5,1,1]$, $\pi=[0.2,0.4,0.4]$일 때 $V$와 각 $A$를 구하시오. 가중�
 | Advantage normalization | 배치/그룹 표준화 |
 | Variance reduction | 추정 흔들림을 줄이는 기법 전반 |
 
-### 15. 복습 문제
-
-#### 문제 1
+## 14. 연습 문제
+### 문제 1
 
 $A^\pi(s,a)$의 정의와 $\mathbb{E}_{a\sim\pi}[A]=0$이 성립하는 이유를 쓰시오.
 
-#### 문제 2
+### 문제 2
 
 REINFORCE에 $V(s)$를 빼도 $\nabla J$의 기댓값이 남는 항등을 스케치하시오.
 
-#### 문제 3
+### 문제 3
 
 쉬운 문제 $V=0.9$, $R=1$과 어려운 문제 $V=0.1$, $R=1$의 Advantage를 비교하시오.
 
-#### 문제 4
+### 문제 4
 
 PPO와 GRPO가 Advantage（유사 신호）를 만드는 방식의 차이를 한 줄씩.
 
-#### 문제 5
+### 문제 5
 
 제84강으로 가기 전, 제79~83강 한 줄 요약을 완성하시오.
 
@@ -482,30 +479,30 @@ PPO와 GRPO가 Advantage（유사 신호）를 만드는 방식의 차이를 한
 
 ---
 
-### 정답 및 해설
+## 정답 및 해설
 
-#### 문제 1
+### 문제 1
 
 $A=Q-V$. $V=\mathbb{E}_{a\sim\pi}[Q]$이므로 평균 편차는 0.
 
-#### 문제 2
+### 문제 2
 
 $\mathbb{E}[\nabla\log\pi\cdot b(s)]=b(s)\nabla\sum\pi=0$이므로 $G$와 $G-b$의 기댓값 기울기가 같다.
 
-#### 문제 3
+### 문제 3
 
 각각 대략 $+0.1$, $+0.9$ — 어려운 쪽 성공이 더 큰 양의 신호.
 
-#### 문제 4
+### 문제 4
 
 PPO: 학습된 $V$·GAE 등으로 $\hat{A}_t$.  
 GRPO: 동일 프롬프트 그룹 점수 평균/표준편차로 상대화（전형적 패턴）.
 
-#### 문제 5
+### 문제 5
 
 `Advantage`.
 
-### 16. 다음 강의와 연결
+## 15. 다음 강의와 연결
 
 RL 기호의 기초 사슬이 끝났다.
 

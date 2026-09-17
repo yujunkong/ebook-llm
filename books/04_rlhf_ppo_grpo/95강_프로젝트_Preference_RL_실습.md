@@ -1,23 +1,13 @@
-# 4권. RLHF · PPO · GRPO
+# 제95강. 프로젝트 — Preference / RL 실습
 
-## 제95강. 프로젝트 — Preference / RL 실습
+> **학습 목표**
+> - `ch95_preference_rl/`에 선호 데이터·토이 LM·DPO 경로·（선택）RM+REINFORCE 경로를 둔다
+> - 초소형 preference JSONL로 chosen이 rejected보다 높은  implicit reward（DPO）또는 RM 점수를 확인한다
+> - 학습 전·후 메트릭을 `artifacts/`에 남긴다
+> - 제96강에서 다룰 실패 모드를 미니 스케일에서 일부러 관찰할 여지를 남긴다
 
-### 1. 이번 강의에서 배울 것
-
-제84~91강에서 Preference · Reward Model · DPO를, 제82~88강에서 policy gradient·PPO 직관을 쌓았다. 이번 프로젝트는 그 조각을 **아주 작은 완결 루프**로 잇는다.
-
-이 강의를 마치면 다음을 할 수 있어야 한다.
-
-- `ch95_preference_rl/`에 선호 데이터·토이 LM·DPO 경로·（선택）RM+REINFORCE 경로를 둔다
-- 초소형 preference JSONL로 **chosen이 rejected보다 높은  implicit reward**（DPO）또는 RM 점수를 확인한다
-- 학습 전·후 메트릭을 `artifacts/`에 남긴다
-- 제96강에서 다룰 실패 모드를 **미니 스케일에서 일부러** 관찰할 여지를 남긴다
-
-목표가 아니다: 실제 LLM 정렬, 벤치마크 SOTA, 챗봇 데모.
-
-목표가 맞다: **“선호 신호 → 손실 → 파라미터 업데이트 → 측정”** 이 코드로 한 바퀴 돈다는 증거.
-
-### 2. 왜 이것을 배우는가
+---
+## 1. 왜 이것을 배우는가
 
 문서의 DPO 수식과 PPO 다이어그램은 매끄럽다. 손구현은 지저분하다.
 
@@ -30,7 +20,7 @@
 
 제76강 Mini SFT가 “response mask”를 몸에 익혔듯, 이번 강은 **preference margin**을 몸에 익힌다.
 
-### 3. 두 경로（하나만 완료해도 성공）
+## 2. 두 경로（하나만 완료해도 성공）
 
 ```text
 경로 A（권장 기본）:  Preference JSONL → DPO loss → before/after margin
@@ -46,9 +36,9 @@
 
 성공 기준은 **경로 A 완료**다. 경로 B는 시간이 남으면 켠다.
 
-### 4. 프로젝트 목표와 성공 기준
+## 3. 프로젝트 목표와 성공 기준
 
-#### 4.1 목표
+### 3.1 목표
 
 1. 장난감 preference 20~40쌍 작성（train/eval 분리）
 2. 초소형 Causal LM（임베딩+GRU 또는 tiny Transformer）준비
@@ -56,7 +46,7 @@
 4. DPO 학습 루프 + 평가 스크립트
 5. `artifacts/report.md`에 숫자·해석 기록
 
-#### 4.2 성공 기준
+### 3.2 성공 기준
 
 - [ ] `python train_dpo.py`가 에러 없이 끝난다
 - [ ] train에서 DPO loss가 전반적으로 감소하는 로그가 있다
@@ -66,7 +56,7 @@
 
 “문장이 유창하다”는 필수 기준이 아니다. toy vocab에서는 유창성보다 **선호 방향**이 우선이다.
 
-### 5. 권장 디렉터리
+## 4. 권장 디렉터리
 
 ```text
 ch95_preference_rl/
@@ -94,9 +84,9 @@ ch95_preference_rl/
 
 외부 거대 체크포인트는 쓰지 않는다. CPU에서 수분 안에 끝나도록 규모를  фикси한다.
 
-### 6. 초소형 Preference 데이터
+## 5. 초소형 Preference 데이터
 
-#### 6.1 형식
+### 5.1 형식
 
 한 줄 JSON:
 
@@ -113,7 +103,7 @@ ch95_preference_rl/
 3. train과 eval은 paraphrase（동일 문장 복사 금지）
 4. 위험·혐오 문장은 넣지 않는다
 
-#### 6.2 샘플 `pref_train.jsonl`（발췌）
+### 5.2 샘플 `pref_train.jsonl`（발췌）
 
 실습 시 파일에 20줄 이상 넣는다. 아래는 패턴 예시 8쌍이다.
 
@@ -130,12 +120,11 @@ ch95_preference_rl/
 
 eval은 숫자·색·예아니오·번역을 **다른 표면 문장**으로 4~8쌍.
 
-### 7. `config.py`
+## 6. `config.py`
 
 ```python
 # ch95_preference_rl/config.py
 from dataclasses import dataclass
-
 
 @dataclass
 class CFG:
@@ -160,7 +149,7 @@ class CFG:
 
 규모를 더 줄여도 된다. loss가 NaN이면 `lr`을 낮춘다.
 
-### 8. 토이 토크나이저
+## 7. 토이 토크나이저
 
 공백 없는 한글을 위해 **문자 단위**가 안전하다. 영어·숫자는 문자/기호 단위로 묶어도 된다.
 
@@ -173,7 +162,6 @@ from __future__ import annotations
 import json
 from collections import Counter
 from pathlib import Path
-
 
 class CharTokenizer:
     PAD, BOS, EOS, UNK = "<pad>", "<bos>", "<eos>", "<unk>"
@@ -238,7 +226,7 @@ class CharTokenizer:
         return cls(stoi)
 ```
 
-### 9. 토이 LM
+## 8. 토이 LM
 
 설명용으로 **Embedding + GRU + Linear**면 충분하다.（Transformer로 바꿔도 인터페이스만 같으면 된다.）
 
@@ -251,7 +239,6 @@ from __future__ import annotations
 import torch
 import torch.nn as nn
 import torch.nn.functional as F
-
 
 class ToyLM(nn.Module):
     def __init__(self, vocab_size: int, d_model: int = 64, n_layers: int = 1):
@@ -293,7 +280,7 @@ class ToyLM(nn.Module):
 
 평균 NLL（또는 평균 logprob）을 쓰는 이유: 길이 차만으로 margin이 지배되지 않게 하기 위함이다. 합（sum）logprob를 쓰는 변형도 있으며, report에 **어느 쪽인지** 명시한다.
 
-### 10. 데이터 로더
+## 9. 데이터 로더
 
 ```python
 # ch95_preference_rl/data_pref.py
@@ -307,7 +294,6 @@ from pathlib import Path
 import torch
 from torch.utils.data import Dataset
 
-
 def load_jsonl(path: str | Path) -> list[dict]:
     rows = []
     with open(path, encoding="utf-8") as f:
@@ -316,7 +302,6 @@ def load_jsonl(path: str | Path) -> list[dict]:
             if line:
                 rows.append(json.loads(line))
     return rows
-
 
 class PrefDataset(Dataset):
     def __init__(self, path: str | Path, tok, max_len: int = 48):
@@ -335,14 +320,12 @@ class PrefDataset(Dataset):
             "rejected": r["rejected"],
         }
 
-
 def _pad(seqs: list[list[int]], pad_id: int) -> torch.Tensor:
     T = max(len(s) for s in seqs)
     out = torch.full((len(seqs), T), pad_id, dtype=torch.long)
     for i, s in enumerate(seqs):
         out[i, : len(s)] = torch.tensor(s, dtype=torch.long)
     return out
-
 
 def collate_pref(batch: list[dict], tok, max_len: int) -> dict[str, torch.Tensor | list]:
     prompts, chosens, rejecteds = [], [], []
@@ -364,13 +347,14 @@ def collate_pref(batch: list[dict], tok, max_len: int) -> dict[str, torch.Tensor
     }
 ```
 
-### 11. 경로 A — DPO
+## 10. 경로 A — DPO
 
-#### 11.1 손실（복습을 코드에 고정）
+### 10.1 손실（복습을 코드에 고정）
 
 참조 정책 $\pi_{\mathrm{ref}}$（보통 SFT/워밍 스냅샷）와 학습 정책 $\pi_\theta$에 대해:
 
 $$
+
 L_{\mathrm{DPO}}
 =
 -\mathbb{E}\log\sigma\Big(
@@ -380,11 +364,12 @@ L_{\mathrm{DPO}}
 (\log\pi_\theta(y_l|x)-\log\pi_{\mathrm{ref}}(y_l|x))
 \big]
 \Big)
+
 $$
 
 여기서는 구현 편의를 위해 **평균 토큰 logprob**를 $\log\pi$ 자리에 넣는다. 논문의 토큰 합과 스케일이 다르므로, $\beta$는 toy에 맞게 다시 고른다.
 
-#### 11.2 `train_dpo.py`
+### 10.2 `train_dpo.py`
 
 ```python
 # ch95_preference_rl/train_dpo.py
@@ -406,11 +391,9 @@ from data_pref import PrefDataset, collate_pref, load_jsonl
 from toy_lm import ToyLM
 from toy_tokenizer import CharTokenizer
 
-
 def set_seed(seed: int) -> None:
     random.seed(seed)
     torch.manual_seed(seed)
-
 
 def build_tokenizer() -> CharTokenizer:
     rows = load_jsonl(CFG.data_train) + load_jsonl(CFG.data_eval)
@@ -421,7 +404,6 @@ def build_tokenizer() -> CharTokenizer:
     Path(CFG.artifacts).mkdir(parents=True, exist_ok=True)
     tok.save(Path(CFG.artifacts) / "tok.json")
     return tok
-
 
 def dpo_loss(
     model: ToyLM,
@@ -440,7 +422,6 @@ def dpo_loss(
     logits = beta * ((logp_w - logp_ref_w) - (logp_l - logp_ref_l))
     return -F.logsigmoid(logits).mean()
 
-
 @torch.no_grad()
 def mean_margin(model: ToyLM, loader: DataLoader, pad_id: int) -> float:
     margins = []
@@ -450,7 +431,6 @@ def mean_margin(model: ToyLM, loader: DataLoader, pad_id: int) -> float:
         logp_l = -model.nll_on_continuation(p, cl, pad_id)
         margins.append((logp_w - logp_l).mean().item())
     return sum(margins) / max(len(margins), 1)
-
 
 def main() -> None:
     set_seed(CFG.seed)
@@ -506,12 +486,11 @@ def main() -> None:
     print("saved", ckpt)
     print(metrics)
 
-
 if __name__ == "__main__":
     main()
 ```
 
-#### 11.3 기대 출력（형태）
+### 10.3 기대 출력（형태）
 
 정확한 숫자는 시드·데이터에 따라 달라진다. **형태**만 고정한다.
 
@@ -526,7 +505,7 @@ saved artifacts/ckpt_dpo.pt
 성공 판정: `eval_margin_after > eval_margin_before`.  
 실패 시 §16 챌린지를 본다.
 
-### 12. （선택）워밍 SFT
+## 11. （선택）워밍 SFT
 
 preference만으로 처음부터 돌리면 toy LM이 노이즈에 가깝다. chosen 응답에 짧은 CE 워밍을 넣을 수 있다.
 
@@ -548,11 +527,9 @@ from toy_lm import ToyLM
 from toy_tokenizer import CharTokenizer
 from train_dpo import build_tokenizer, set_seed
 
-
 def ce_on_chosen(model: ToyLM, batch: dict, pad_id: int) -> torch.Tensor:
     # reuse mean NLL as loss
     return model.nll_on_continuation(batch["prompt_ids"], batch["chosen_ids"], pad_id).mean()
-
 
 def main() -> None:
     set_seed(CFG.seed)
@@ -583,7 +560,6 @@ def main() -> None:
     torch.save(model.state_dict(), path)
     print("saved", path)
 
-
 if __name__ == "__main__":
     main()
 ```
@@ -597,14 +573,16 @@ python train_dpo.py
 python evaluate.py
 ```
 
-### 13. 경로 B — Reward Model + REINFORCE
+## 12. 경로 B — Reward Model + REINFORCE
 
-#### 13.1 RM
+### 12.1 RM
 
 프롬프트+응답을 이어 붙여 스칼라 점수를 낸다. BT 손실:
 
 $$
+
 L_{\mathrm{RM}} = -\log\sigma\big(r_\phi(x,y_w)-r_\phi(x,y_l)\big)
+
 $$
 
 ```python
@@ -626,7 +604,6 @@ from data_pref import PrefDataset, collate_pref
 from toy_tokenizer import CharTokenizer
 from train_dpo import build_tokenizer, set_seed
 
-
 class ToyRM(nn.Module):
     def __init__(self, vocab_size: int, d_model: int = 64):
         super().__init__()
@@ -643,7 +620,6 @@ class ToyRM(nn.Module):
         lengths = mask.sum(dim=1).clamp_min(1) - 1
         last = h[torch.arange(h.size(0)), lengths]
         return self.score(last).squeeze(-1)  # [B]
-
 
 def main() -> None:
     set_seed(CFG.seed)
@@ -692,14 +668,13 @@ def main() -> None:
     )
     print("saved", path, "eval_pref_acc", acc)
 
-
 if __name__ == "__main__":
     main()
 ```
 
 기대: `eval_pref_acc`가 0.5를 안정적으로 넘는 것. 데이터 10쌍 미만이면 변동이 크다.
 
-#### 13.2 REINFORCE（초미니）
+### 12.2 REINFORCE（초미니）
 
 프롬프트에서 짧게 샘플링 → RM 점수 → $(r-b)\nabla\log\pi$.
 
@@ -721,7 +696,6 @@ from toy_lm import ToyLM
 from toy_tokenizer import CharTokenizer
 from train_rm import ToyRM
 
-
 @torch.no_grad()
 def sample(model: ToyLM, prompt_ids: torch.Tensor, pad_id: int, max_new: int) -> torch.Tensor:
     B = prompt_ids.size(0)
@@ -735,7 +709,6 @@ def sample(model: ToyLM, prompt_ids: torch.Tensor, pad_id: int, max_new: int) ->
         cur = torch.cat([cur, tok.unsqueeze(1)], dim=1)
     return torch.stack(gens, dim=1)  # [B, max_new]
 
-
 def continuation_logprob_sum(
     model: ToyLM, prompt_ids: torch.Tensor, cont_ids: torch.Tensor
 ) -> torch.Tensor:
@@ -746,7 +719,6 @@ def continuation_logprob_sum(
     logp = F.log_softmax(pred, dim=-1)
     token_lp = logp.gather(-1, cont_ids.unsqueeze(-1)).squeeze(-1)
     return token_lp.sum(dim=1)  # [B]
-
 
 def main() -> None:
     tok = CharTokenizer.load(Path(CFG.artifacts) / "tok.json")
@@ -792,14 +764,13 @@ def main() -> None:
     torch.save(model.state_dict(), path)
     print("saved", path)
 
-
 if __name__ == "__main__":
     main()
 ```
 
 경로 B의 성공은 “생성 문장이 아름다움”이 아니라 **RM이 선호하는 쪽 토큰이 샘플에 더 자주 등장**하는 조짐이다. 분산이 커서 실패하기 쉽다 — 그 실패 자체가 학습 목표다.
 
-### 14. `evaluate.py`
+## 13. `evaluate.py`
 
 ```python
 # ch95_preference_rl/evaluate.py
@@ -818,7 +789,6 @@ from data_pref import PrefDataset, collate_pref
 from toy_lm import ToyLM
 from toy_tokenizer import CharTokenizer
 from train_dpo import mean_margin
-
 
 def main() -> None:
     art = Path(CFG.artifacts)
@@ -877,12 +847,11 @@ def main() -> None:
     report.write_text("\n".join(lines), encoding="utf-8")
     print("wrote", report)
 
-
 if __name__ == "__main__":
     main()
 ```
 
-### 15. `README.md`（프로젝트 폴더용 초안）
+## 14. `README.md`（프로젝트 폴더용 초안）
 
 ```markdown
 # ch95_preference_rl
@@ -910,7 +879,7 @@ python train_reinforce.py
 - `artifacts/report.md`
 ```
 
-### 16. 챌린지 · 실패 실험（권장）
+## 15. 챌린지 · 실패 실험（권장）
 
 완벽 성공만 기록하지 말고, 아래를 **하나씩** 깨본다.
 
@@ -925,7 +894,7 @@ python train_reinforce.py
 
 제96강（reward hacking, sycophancy 등）의 **축소판 감각**을 남기는 것이 목적이다.
 
-### 17. 채점 루브릭（자가）
+## 16. 채점 루브릭（자가）
 
 | 점수 | 기준 |
 |---|---|
@@ -935,7 +904,7 @@ python train_reinforce.py
 | 감점 | 외부 대형 모델 API에 의존 |
 | 감점 | 벤치마크 숫자를 책 밖으로 날조해 report에 기입 |
 
-### 18. 4권 이론과의 대응표
+## 17. 4권 이론과의 대응표
 
 | 코드 | 강의 |
 |---|---|
@@ -949,60 +918,59 @@ python train_reinforce.py
 
 Reasoning outcome RL을 이 폴더에 억지로 넣지 않아도 된다. 여력이 있으면 `outcome_reward`로 숫자 퀴즈만 검증하는 스크립트를 **별도 파일**로 추가하라.
 
-### 19. 핵심 정리
+## 18. 핵심 정리
 
 - 미니 프로젝트의 완결 조건은 유창한 챗봇이 아니라 **선호 방향 메트릭의 이동**이다.
 - 경로 A（DPO）만으로 4권 중반의 수식을 코드에 고정할 수 있다.
 - 경로 B는 “RM이 곧 보상”인 RLHF 스케치이며 분산과 해킹 여지가 드러난다.
 - 챌린지 실험이 제96강으로 가는 다리이다.
 
-### 20. 복습 문제
-
-#### 문제 1
+## 19. 연습 문제
+### 문제 1
 
 DPO에서 `ref = copy.deepcopy(model)` 후 `requires_grad_(False)`를 하는 이유를 쓰시오.
 
-#### 문제 2
+### 문제 2
 
 이 프로젝트의 `mean_margin` 정의를 수식으로 쓰시오.
 
-#### 문제 3
+### 문제 3
 
 경로 B에서 RM accuracy가 0.5 근처이면 REINFORCE를 돌려도 안 되는 이유를 쓰시오.
 
-#### 문제 4
+### 문제 4
 
 sum logprob와 mean logprob 중, 길이 bias에 더 민감한 쪽은?
 
-#### 문제 5
+### 문제 5
 
 챌린지 C1（라벨 뒤집기）이 제96강의 어떤 주제와 맞닿는지 한 줄로 쓰시오.
 
 ---
 
-### 정답 및 해설
+## 정답 및 해설
 
-#### 문제 1
+### 문제 1
 
 DPO 항이 $\pi_\theta$와 $\pi_{\mathrm{ref}}$의 로그비에 의존하므로, 참조 분포를 학습 중 움직이지 않게 고정하기 위함이다.
 
-#### 문제 2
+### 문제 2
 
 $\frac{1}{N}\sum_i\big(\overline{\log\pi}(y_w^{(i)}|x^{(i)})-\overline{\log\pi}(y_l^{(i)}|x^{(i)})\big)$ （막대는 토큰 평균）.
 
-#### 문제 3
+### 문제 3
 
 보상이 선호를 구분하지 못하면 정책 경사에 쓸 신호가 노이즈에 가깝다.
 
-#### 문제 4
+### 문제 4
 
 sum logprob.
 
-#### 문제 5
+### 문제 5
 
 보상/선호 신호 자체가 오염되면 최적화는 “틀린 목표”를 잘 푸는 쪽으로 간다（reward misspecification·해킹의 입구）.
 
-### 21. 다음 강의와 연결
+## 20. 다음 강의와 연결
 **제96강. Alignment의 한계와 부작용**에서 reward hacking, sycophancy, over-refusal, 분포 이동, 평가 한계를 정리한다. 제95강 report의 실패 로그가 있으면 사례로 삼아라.
 
 <!-- LECTURE_NAV -->

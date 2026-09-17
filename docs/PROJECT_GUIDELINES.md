@@ -35,3 +35,4 @@ Python → 수학 → Tensor → Neural Network → Backpropagation → PyTorch 
 - 용어집: `glossary/`
 - EPUB 산출물: `epub/`
 - 공통 문서: `docs/`
+- **Markdown 공식 스타일:** [MARKDOWN_STYLE_GUIDE.md](MARKDOWN_STYLE_GUIDE.md)

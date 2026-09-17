@@ -1,21 +1,14 @@
-# 1권. Python · Tensor · 수학 · PyTorch
+# 제16강. Forward Propagation
 
-## 제16강. Forward Propagation
+> **학습 목표**
+> - Forward Propagation(순전파)의 정의와 목적
+> - 2-2-1 네트워크에서 $z^{(1)}, a^{(1)}, \hat{y}, L$을 손으로 계산하는 방법
+> - 중간 활성화 값을 왜 저장해야 하는지
+> - NumPy로 벡터화 Forward를 구현하는 방법
+> - LLM Inference가 “학습 없는 Forward의 반복”임을 설명하는 방법
 
-### 1. 이번 강의에서 배울 것
-
-제15강에서 Neural Network의 부품(Neuron, Weight, Bias, Activation, MLP)을 조립했다.  
-이번 강의는 그 네트워크에 입력을 넣어 **출력을 계산하는 한 방향의 통행**을 완전히 익힌다.
-
-이 강의를 마치면 다음을 말할 수 있어야 한다.
-
-- **Forward Propagation(순전파)**의 정의와 목적
-- 2-2-1 네트워크에서 \(z^{(1)}, a^{(1)}, \hat{y}, L\)을 손으로 계산하는 방법
-- 중간 활성화 값을 **왜 저장**해야 하는지
-- NumPy로 벡터화 Forward를 구현하는 방법
-- LLM Inference가 “학습 없는 Forward의 반복”임을 설명하는 방법
-
-### 2. 왜 이것을 배우는가
+---
+## 1. 왜 이것을 배우는가
 
 학습의 한 스텝은 대략 다음이다.
 
@@ -26,21 +19,21 @@
 ```
 
 Backward를 이해하려면 Forward의 계산 그래프를 먼저 써야 한다.  
-중간 값 \(z\), \(a\)를 모르면 Chain Rule을 어디에 적용할지 모른다.
+중간 값 $z$, $a$를 모르면 Chain Rule을 어디에 적용할지 모른다.
 
 또한 서비스를 하는 LLM Inference는 대개 Backward 없이 **Forward만 반복**한다.  
 생성은 “다음 토큰 점수 계산(Forward) → 토큰 선택 → 다시 Forward”의 루프이다.
 
-### 3. 먼저 알아야 할 개념
+## 2. 먼저 알아야 할 개념
 
 - 제15강의 2-2-1 구조와 ReLU
-- 행렬-벡터 곱 \(W\mathbf{x}\)
+- 행렬-벡터 곱 $W\mathbf{x}$
 - MSE 같은 기본 Loss (제13강)
 - Chain Rule이 “합성 함수의 미분”이라는 사실 (제14강) — 이번 강의에서는 아직 미분하지 않는다
 
-### 4. 핵심 개념 설명
+## 3. 핵심 개념 설명
 
-#### 4.1 Forward Propagation
+### 3.1 Forward Propagation
 
 **Forward Propagation(순전파, Forward Pass)**는 입력을 네트워크의 앞쪽 층부터 뒤쪽 층으로 통과시켜 **예측값(및 Loss)**를 계산하는 과정이다.
 
@@ -56,7 +49,7 @@ x → Layer1 → Layer2 → … → ŷ → (선택) Loss L
 **예제:** 이미지 분류 모델에 고양이 사진을 넣으면, Forward 끝에 클래스 점수가 나온다.  
 그 점수만 필요하면 Inference이고, 정답과 비교해 Loss까지 가면 Training step의 전반부이다.
 
-#### 4.2 Computational Graph (계산 그래프) — Forward 관점
+### 3.2 Computational Graph (계산 그래프) — Forward 관점
 
 **Computational Graph(계산 그래프)**는 연산을 노드로, 값의 흐름을 간선으로 나타낸 그래프이다.
 
@@ -73,13 +66,13 @@ W1─┘                    W2, b2
 
 17강에서는 같은 그래프를 **반대 방향**으로 미분한다.
 
-#### 4.3 Cache / Intermediate Values
+### 3.3 Cache / Intermediate Values
 
-Forward에서 나온 중간 값(\(z^{(l)}, a^{(l)}\))을 저장해 두는 것을 종종 **cache**라고 부른다.
+Forward에서 나온 중간 값($z^{(l)}, a^{(l)}$)을 저장해 두는 것을 종종 **cache**라고 부른다.
 
 **왜 필요한가?**  
-Backpropagation은 \(\partial L/\partial W\)를 구할 때 Forward의 중간 값을 다시 사용한다.  
-예: \(\partial L/\partial W^{(1)}\)에는 입력 \(x\)와, ReLU 미분에 필요한 \(z^{(1)}\) 정보가 필요하다.
+Backpropagation은 $\partial L/\partial W$를 구할 때 Forward의 중간 값을 다시 사용한다.  
+예: $\partial L/\partial W^{(1)}$에는 입력 $x$와, ReLU 미분에 필요한 $z^{(1)}$ 정보가 필요하다.
 
 따라서 잘 짠 Forward 함수는 보통 다음을 반환한다.
 
@@ -87,13 +80,13 @@ Backpropagation은 \(\partial L/\partial W\)를 구할 때 Forward의 중간 값
 예측값 ŷ + 중간 캐시(z, a, ...)
 ```
 
-#### 4.4 Batch Forward
+### 3.4 Batch Forward
 
 실무에서는 샘플 하나를 거의 다루지 않는다.  
 **Batch(배치)**는 여러 샘플을 한 번에 행렬로 묶어 처리하는 단위이다.
 
-샘플 하나: \(\mathbf{x} \in \mathbb{R}^{d}\)  
-배치: \(X \in \mathbb{R}^{B \times d}\) (이 책의 한 관례)
+샘플 하나: $\mathbf{x} \in \mathbb{R}^{d}$  
+배치: $X \in \mathbb{R}^{B \times d}$ (이 책의 한 관례)
 
 그러면
 
@@ -102,9 +95,9 @@ Z = X W^{\top} + \mathbf{b}
 \]
 
 처럼 한 번에 계산한다.  
-오늘은 샘플 하나(\(B=1\))로 원리를 고정하고, 배치 형태는 실습에서 살짝 확장한다.
+오늘은 샘플 하나($B=1$)로 원리를 고정하고, 배치 형태는 실습에서 살짝 확장한다.
 
-### 5. 직관적으로 이해하기
+## 4. 직관적으로 이해하기
 
 Forward는 **시험지를 앞에서부터 푸는 과정**이다.
 
@@ -116,7 +109,7 @@ Forward는 **시험지를 앞에서부터 푸는 과정**이다.
 
 아직 “어디서 틀렸는지 채점 코멘트(Gradient)”는 쓰지 않는다. 그건 Backward이다.
 
-### 6. 수학적으로 이해하기
+## 5. 수학적으로 이해하기
 
 2-2-1 회귀 네트워크:
 
@@ -133,13 +126,13 @@ L &= \frac{1}{2}\left(\hat{y} - y\right)^2
 
 | 기호 | shape |
 |---|---|
-| \(\mathbf{x}\) | \((2,)\) |
-| \(W^{(1)}\) | \((2,2)\) |
-| \(\mathbf{b}^{(1)}\) | \((2,)\) |
-| \(\mathbf{z}^{(1)}, \mathbf{a}^{(1)}\) | \((2,)\) |
-| \(W^{(2)}\) | \((1,2)\) |
-| \(b^{(2)}\) | 스칼라(또는 \((1,)\)) |
-| \(\hat{y}, L\) | 스칼라 |
+| $\mathbf{x}$ | $(2,)$ |
+| $W^{(1)}$ | $(2,2)$ |
+| $\mathbf{b}^{(1)}$ | $(2,)$ |
+| $\mathbf{z}^{(1)}, \mathbf{a}^{(1)}$ | $(2,)$ |
+| $W^{(2)}$ | $(1,2)$ |
+| $b^{(2)}$ | 스칼라(또는 $(1,)$) |
+| $\hat{y}, L$ | 스칼라 |
 
 층이 더 깊어져도 패턴은 같다.
 
@@ -153,7 +146,7 @@ L &= \frac{1}{2}\left(\hat{y} - y\right)^2
 - 이진 분류: Sigmoid
 - 다중 분류: Softmax (2권에서 본격 학습)
 
-### 7. 작은 숫자로 직접 계산하기
+## 6. 작은 숫자로 직접 계산하기
 
 제15강과 **동일한 파라미터**를 사용한다.
 
@@ -169,7 +162,7 @@ W2 = [[0.5, -0.4]]
 b2 = 0.2
 ```
 
-#### 7.1 Step 1 — 은닉 Pre-activation
+### 6.1 Step 1 — 은닉 Pre-activation
 
 \[
 \begin{aligned}
@@ -182,67 +175,64 @@ z_2^{(1)} &= 0.4\cdot 1.0 + 0.1\cdot 0.5 - 0.1 = 0.35
 \mathbf{z}^{(1)} = [0.30,\ 0.35]
 \]
 
-#### 7.2 Step 2 — ReLU
+### 6.2 Step 2 — ReLU
 
 \[
 \mathbf{a}^{(1)} = [\max(0,0.30),\ \max(0,0.35)] = [0.30,\ 0.35]
 \]
 
-#### 7.3 Step 3 — 출력
+### 6.3 Step 3 — 출력
 
 \[
 \hat{y} = 0.5\cdot 0.30 + (-0.4)\cdot 0.35 + 0.2 = 0.15 - 0.14 + 0.2 = 0.21
 \]
 
-#### 7.4 Step 4 — Loss
+### 6.4 Step 4 — Loss
 
 \[
 L = \frac{1}{2}(0.21 - 1.0)^2 = \frac{1}{2}(0.79)^2 = 0.31205
 \]
 
-#### 7.5 Forward 결과표 (이후 강의용 캐시)
+### 6.5 Forward 결과표 (이후 강의용 캐시)
 
 | 이름 | 값 |
 |---|---|
-| \(x\) | \([1.0,\ 0.5]\) |
-| \(z^{(1)}\) | \([0.30,\ 0.35]\) |
-| \(a^{(1)}\) | \([0.30,\ 0.35]\) |
-| \(\hat{y}\) | \(0.21\) |
-| \(y\) | \(1.0\) |
-| \(L\) | \(0.31205\) |
+| $x$ | $[1.0,\ 0.5]$ |
+| $z^{(1)}$ | $[0.30,\ 0.35]$ |
+| $a^{(1)}$ | $[0.30,\ 0.35]$ |
+| $\hat{y}$ | $0.21$ |
+| $y$ | $1.0$ |
+| $L$ | $0.31205$ |
 
 17강에서는 이 표를 펼쳐 놓고 모든 편미분을 계산한다.
 
-#### 7.6 한 샘플 더 — ReLU가 꺼지는 경우
+### 6.6 한 샘플 더 — ReLU가 꺼지는 경우
 
-\(x = [0.0, 1.0]\)이면 제15강 복습에서 봤듯
+$x = [0.0, 1.0]$이면 제15강 복습에서 봤듯
 
 \[
 \mathbf{z}^{(1)}=[-0.1,\ 0.0],\quad \mathbf{a}^{(1)}=[0.0,\ 0.0],\quad \hat{y}=0.2
 \]
 
-이다. Forward만 보면 “출력이 0.2”로 끝나지만, Backward에서는 \(a^{(1)}=0\)인 경로의 Gradient가 막힐 수 있다.  
+이다. Forward만 보면 “출력이 0.2”로 끝나지만, Backward에서는 $a^{(1)}=0$인 경로의 Gradient가 막힐 수 있다.  
 중간 값을 기록해 두어야 그 현상이 설명된다.
 
-### 8. 코드로 구현하기
+## 7. 코드로 구현하기
 
-#### 8.1 샘플 하나 Forward
+### 7.1 샘플 하나 Forward
 
 ```python
 """16강: 2-2-1 Forward Propagation (손계산과 동일 숫자)."""
 
 import numpy as np
 
-
 def relu(z: np.ndarray) -> np.ndarray:
     """ReLU activation."""
     return np.maximum(0.0, z)
 
-
 def mse_loss(y_hat: float, y: float) -> float:
     """1/2 * (y_hat - y)^2  — 미분 시 계수 정리용."""
     return 0.5 * (y_hat - y) ** 2
-
 
 def forward(x, W1, b1, W2, b2, y=None):
     """순전파. cache에 중간 값을 담아 반환한다.
@@ -278,7 +268,6 @@ def forward(x, W1, b1, W2, b2, y=None):
     }
     return y_hat, loss, cache
 
-
 if __name__ == "__main__":
     x = np.array([1.0, 0.5])
     y = 1.0
@@ -295,7 +284,7 @@ if __name__ == "__main__":
     # 기대값: z1=[0.3 0.35], a1=[0.3 0.35], yhat=0.21, loss=0.31205
 ```
 
-#### 8.2 배치 Forward (미리보기)
+### 7.2 배치 Forward (미리보기)
 
 ```python
 def forward_batch(X, W1, b1, W2, b2):
@@ -314,7 +303,7 @@ def forward_batch(X, W1, b1, W2, b2):
 
 배치에서도 **샘플 축만 늘었을 뿐**, 샘플마다의 계산은 7절과 동일하다.
 
-#### 8.3 이진 분류용 Forward (Sigmoid 출력)
+### 7.3 이진 분류용 Forward (Sigmoid 출력)
 
 회귀가 아니라 확률을 내고 싶다면 출력에 Sigmoid를 붙인다.
 
@@ -322,7 +311,6 @@ def forward_batch(X, W1, b1, W2, b2):
 def sigmoid(z):
     """수치적으로 단순한 sigmoid."""
     return 1.0 / (1.0 + np.exp(-z))
-
 
 def forward_binary(x, W1, b1, W2, b2):
     """은닉 ReLU + 출력 Sigmoid."""
@@ -336,7 +324,7 @@ def forward_binary(x, W1, b1, W2, b2):
 Loss는 Binary Cross Entropy를 쓰는 것이 자연스럽다(제13강 연장).  
 18강 실습에서 분류 루프를 한 번 돌린다.
 
-### 9. Forward만으로 할 수 있는 일 / 없는 일
+## 8. Forward만으로 할 수 있는 일 / 없는 일
 
 | 할 수 있다 | 할 수 없다 |
 |---|---|
@@ -349,9 +337,9 @@ Loss는 Binary Cross Entropy를 쓰는 것이 자연스럽다(제13강 연장).
 같은 파라미터로 Forward를 100번 해도 Loss는 그대로이다.  
 학습에는 Backward + Update가 필수이다.
 
-### 10. 실제 LLM에서는 어떻게 사용하는가
+## 9. 실제 LLM에서는 어떻게 사용하는가
 
-#### 10.1 Training step의 전반부
+### 9.1 Training step의 전반부
 
 LLM 학습의 한 step:
 
@@ -362,7 +350,7 @@ logits + labels → Cross Entropy Loss
 
 여기까지가 Forward이다. 그다음 `loss.backward()`가 Backward이다.
 
-#### 10.2 Inference = Forward 반복
+### 9.2 Inference = Forward 반복
 
 텍스트 생성:
 
@@ -376,28 +364,28 @@ logits + labels → Cross Entropy Loss
 
 KV Cache 같은 최적화(5권)는 “매 스텝 전체 Forward를 덜 반복하게” 만드는 기법이지, Forward 자체를 없애지는 않는다.
 
-#### 10.3 Teacher Forcing
+### 9.3 Teacher Forcing
 
 학습 시에는 정답 다음 토큰을 입력으로 넣어 **한 번의 Forward로 여러 위치의 Loss**를 계산한다.  
 이것도 Forward Propagation의 배치·시퀀스 확장이다.
 
-### 11. 실습
+## 10. 실습
 
-#### 실습 1 — 손계산 검증
+### 실습 1 — 손계산 검증
 
 7절 숫자를 가리고 다시 손으로 계산한 뒤, 8.1 코드 결과와 비교한다.  
 한 자리라도 다르면 shape 또는 Activation 위치 오류이다.
 
-#### 실습 2 — cache 없이 구현해 보기
+### 실습 2 — cache 없이 구현해 보기
 
-`forward`가 `y_hat`만 반환하게 바꾼 뒤, “나중에 \(W1\) Gradient를 구하려면 무엇이 부족한가?”를 문장으로 적는다.
+`forward`가 `y_hat`만 반환하게 바꾼 뒤, “나중에 $W1$ Gradient를 구하려면 무엇이 부족한가?”를 문장으로 적는다.
 
-#### 실습 3 — 입력 변경 실험
+### 실습 3 — 입력 변경 실험
 
-\(x=[1.0, 0.5]\)를 \(x=[2.0, -1.0]\)으로 바꿔 \(z1, a1, yhat\)을 구한다.  
+$x=[1.0, 0.5]$를 $x=[2.0, -1.0]$으로 바꿔 $z1, a1, yhat$을 구한다.  
 어느 은닉 뉴런이 꺼지는지 확인한다.
 
-#### 실습 4 — 배치 두 샘플
+### 실습 4 — 배치 두 샘플
 
 ```python
 X = np.array([
@@ -408,15 +396,15 @@ X = np.array([
 
 `forward_batch`로 두 예측을 한 번에 구하고, 샘플별 손계산과 비교한다.
 
-#### 실습 5 — Loss 곡면 맛보기 (선택)
+### 실습 5 — Loss 곡면 맛보기 (선택)
 
-\(W2_{11}\)만 \(-1.0\)부터 \(1.0\)까지 0.1 간격으로 바꾸며 Loss를 기록해 꺾은선으로 그려 본다.  
+$W2_{11}$만 $-1.0$부터 $1.0$까지 0.1 간격으로 바꾸며 Loss를 기록해 꺾은선으로 그려 본다.  
 Forward만으로도 “파라미터가 Loss를 어떻게 바꾸는지” 지형을 엿볼 수 있다. 최솟값으로 가는 방법은 12강·17강의 Gradient이다.
 
-### 12. 자주 하는 실수
+## 11. 자주 하는 실수
 
 1. **Activation 순서를 바꾼다**  
-   \(W(\mathrm{ReLU}(x))\)와 \(\mathrm{ReLU}(Wx)\)는 다르다. 표준 MLP는 Affine → Activation이다.
+   $W(\mathrm{ReLU}(x))$와 $\mathrm{ReLU}(Wx)$는 다르다. 표준 MLP는 Affine → Activation이다.
 
 2. **Bias를 행렬곱 뒤에 안 더한다**  
    `W @ x`만 하고 끝내면 표현력이 줄어든다.
@@ -433,15 +421,15 @@ Forward만으로도 “파라미터가 Loss를 어떻게 바꾸는지” 지형�
 6. **부동소수점 기대를 과도하게 한다**  
    `0.31205`는 이 예제의 유한 소수이다. 더 복잡한 망에서는 근사 비교(`np.allclose`)가 필요하다.
 
-### 13. 핵심 정리
+## 12. 핵심 정리
 
 - Forward Propagation은 입력→층→예측(→Loss)으로 계산 그래프를 앞에서 뒤로 평가하는 과정이다.
-- 2-2-1에서 \(z^{(1)}\to a^{(1)}\to\hat{y}\to L\) 순서를 손과 코드로 일치시켜야 한다.
+- 2-2-1에서 $z^{(1)}\to a^{(1)}\to\hat{y}\to L$ 순서를 손과 코드로 일치시켜야 한다.
 - 중간 값 cache는 Backpropagation의 연료이다.
 - Forward만으로는 예측과 Loss 확인만 가능하고, 학습에는 Backward가 필요하다.
 - LLM의 학습 전반부와 생성 Inference 모두 Forward에 기반한다.
 
-### 14. 핵심 용어
+## 13. 핵심 용어
 
 | 용어 | 의미 |
 |---|---|
@@ -449,61 +437,60 @@ Forward만으로도 “파라미터가 Loss를 어떻게 바꾸는지” 지형�
 | Forward Pass | Forward Propagation과 같은 말 |
 | Computational Graph | 연산과 값의 의존 관계를 나타낸 그래프 |
 | Cache / Intermediate | Backward를 위해 보관하는 Forward 중간 값 |
-| Pre-activation \(z\) | Affine 결과, Activation 직전 |
-| Activation \(a\) | 비선형 통과 후 다음 층 입력 |
-| Prediction \(\hat{y}\) | 네트워크 출력 |
-| Loss \(L\) | 예측과 정답의 차이를 스칼라로 측정한 값 |
+| Pre-activation $z$ | Affine 결과, Activation 직전 |
+| Activation $a$ | 비선형 통과 후 다음 층 입력 |
+| Prediction $\hat{y}$ | 네트워크 출력 |
+| Loss $L$ | 예측과 정답의 차이를 스칼라로 측정한 값 |
 | Batch | 여러 샘플을 묶어 한 번에 Forward하는 단위 |
 | Inference | 학습 없이 예측만 수행하는 실행 모드 |
 
-### 15. 복습 문제
-
-#### 문제 1 (개념)
+## 14. 연습 문제
+### 문제 1 (개념)
 
 Forward Propagation을 “계산 그래프” 관점에서 한 문장으로 정의하시오.
 
-#### 문제 2 (계산)
+### 문제 2 (계산)
 
-7절 설정에서 \(b2\)만 \(0.2\) → \(0.0\)으로 바꾸면 \(\hat{y}\)와 \(L\)은?
+7절 설정에서 $b2$만 $0.2$ → $0.0$으로 바꾸면 $\hat{y}$와 $L$은?
 
-#### 문제 3 (계산)
+### 문제 3 (계산)
 
-\(W2=[0.5,\ -0.4]\) 대신 \(W2=[1.0,\ 0.0]\)이면 \(\hat{y}\)는? (\(a^{(1)}\)은 그대로 \([0.3,0.35]\), \(b2=0.2\))
+$W2=[0.5,\ -0.4]$ 대신 $W2=[1.0,\ 0.0]$이면 $\hat{y}$는? ($a^{(1)}$은 그대로 $[0.3,0.35]$, $b2=0.2$)
 
-#### 문제 4 (코드)
+### 문제 4 (코드)
 
 `cache`에 `z1`을 넣지 않으면, ReLU 구간의 Backprop에서 어떤 정보가 빠지는가?
 
-#### 문제 5 (연결)
+### 문제 5 (연결)
 
 LLM 텍스트 생성 10토큰을 만들 때 Forward는 최소 몇 번 개념적으로 필요한가? (KV Cache 없는 단순 모델 가정)
 
 ---
 
-### 정답 및 해설
+## 정답 및 해설
 
-#### 문제 1
+### 문제 1
 
 계산 그래프의 입력 노드에서 출력(Loss) 노드 방향으로 각 연산을 차례로 평가해 예측과 Loss를 얻는 과정이다.
 
-#### 문제 2
+### 문제 2
 
-\(\hat{y}=0.15-0.14+0=0.01\),  
-\(L=\frac12(0.01-1)^2=\frac12(0.99)^2=0.49005\).
+$\hat{y}=0.15-0.14+0=0.01$,  
+$L=\frac12(0.01-1)^2=\frac12(0.99)^2=0.49005$.
 
-#### 문제 3
+### 문제 3
 
-\(\hat{y}=1.0\cdot0.3 + 0.0\cdot0.35 + 0.2 = 0.5\).
+$\hat{y}=1.0\cdot0.3 + 0.0\cdot0.35 + 0.2 = 0.5$.
 
-#### 문제 4
+### 문제 4
 
-ReLU의 미분은 \(z>0\)에서 1, \(z\le0\)에서 0이다. \(z1\)(또는 동등한 마스크)이 없으면 어느 뉴런이 켜져 있었는지 알 수 없다.
+ReLU의 미분은 $z>0$에서 1, $z\le0$에서 0이다. $z1$(또는 동등한 마스크)이 없으면 어느 뉴런이 켜져 있었는지 알 수 없다.
 
-#### 문제 5
+### 문제 5
 
 매 토큰마다 한 번의 Forward가 필요하므로 개념적으로 **10번**. (실제 구현은 캐시로 중복 계산을 줄인다.)
 
-### 16. 다음 강의와 연결
+## 15. 다음 강의와 연결
 
 이번 강의에서 신호가 **앞에서 뒤로** 흐르는 길을 고정했다.
 

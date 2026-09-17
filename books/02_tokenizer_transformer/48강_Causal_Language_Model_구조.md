@@ -1,19 +1,13 @@
-# 2권. Tokenizer와 Transformer
+# 제48강. Causal Language Model 구조
 
-## 제48강. Causal Language Model 구조
+> **학습 목표**
+> - CLM의 데이터 흐름을 `token ids → embed → (+pos) → N blocks → lm_head → logits`로 설명한다.
+> - 텐서 shape를 `[B, T, C]` 관례로 추적한다.
+> - Weight tying(임베딩–출력 공유)이 무엇인지, 왜 쓰는지 설명한다.
+> - 제49~50강 Mini Transformer 프로젝트의 “빈 칸”이 어디인지 미리 본다.
 
-### 1. 이번 강의에서 배울 것
-
-제47강까지 Attention·Block·Encoder/Decoder를 부품으로 익혔다. 이번 강의에서는 그 부품을 **Causal Language Model(CLM)** 한 덩어리로 조립하는 **전체 골격**을 고정한다.
-
-이 강의를 마치면 다음을 할 수 있어야 한다.
-
-- CLM의 데이터 흐름을 `token ids → embed → (+pos) → N blocks → lm_head → logits`로 설명한다.
-- 텐서 shape를 `[B, T, C]` 관례로 추적한다.
-- Weight tying(임베딩–출력 공유)이 무엇인지, 왜 쓰는지 설명한다.
-- 제49~50강 Mini Transformer 프로젝트의 “빈 칸”이 어디인지 미리 본다.
-
-### 2. 왜 이것을 배우는가
+---
+## 1. 왜 이것을 배우는가
 
 GPT 계열 모델은 “마법의 블랙박스”가 아니다. 구조는 놀라울 정도로 단순하다.
 
@@ -29,7 +23,7 @@ GPT 계열 모델은 “마법의 블랙박스”가 아니다. 구조는 놀라
 
 제49~50강에서 코드를 칠 때, shape와 모듈 경계가 흔들리면 디버깅이 지옥이 된다. 지금 배선도를 머릿속에 고정해야 한다.
 
-### 3. 먼저 알아야 할 개념
+## 2. 먼저 알아야 할 개념
 
 이번 강의 전에 다음이 준비되어 있어야 한다.
 
@@ -42,7 +36,7 @@ GPT 계열 모델은 “마법의 블랙박스”가 아니다. 구조는 놀라
 
 아직 학습 루프 전체는 제50강에서 다시 조립한다. 지금은 **forward 골격**이 목표다.
 
-### 4. 핵심 개념 — Causal LM이란
+## 3. 핵심 개념 — Causal LM이란
 
 **Causal Language Model**은 “지금까지 본 토큰만으로 다음 토큰을 예측”하는 언어 모델이다.
 
@@ -50,12 +44,14 @@ GPT 계열 모델은 “마법의 블랙박스”가 아니다. 구조는 놀라
 - **Language Model**: 토큰 서열의 결합 분포를 조건부 분포의 곱으로 분해한다.
 
 $$
+
 P(x_1,\ldots,x_T) = \prod_{t=1}^{T} P(x_t \mid x_{<t})
+
 $$
 
 구현에서는 보통 **한 번의 forward**로 모든 위치의 다음 토큰 logit을 동시에 얻는다. 위치 $t$의 출력은 $x_{t+1}$을 예측하도록 학습한다(시프트된 타깃).
 
-### 5. 전체 구조 다이어그램
+## 4. 전체 구조 다이어그램
 
 GPT-style Decoder-only CLM의 표준 골격은 다음과 같다.
 
@@ -104,7 +100,7 @@ logits: [B, T, V]
 
 이 책에서는 shape를 **`[B, T, C]`**로 통일한다. PyTorch `nn.Linear`는 마지막 축에 작용하므로, `[B, T, C]` 텐서에 Linear를 적용하면 `[B, T, out]`이 된다.
 
-### 6. 단계별 shape 추적
+## 5. 단계별 shape 추적
 
 작은 숫자로 한 번 따라가 보자.
 
@@ -128,9 +124,9 @@ lm_head      : [2, 8, 1000]  = logits
 
 Loss는 위치마다 Cross Entropy를 구한 뒤 평균한다(제34강). Softmax는 Loss 함수 안에서 수치 안정적으로 처리하는 것이 일반적이다(`CrossEntropyLoss`는 logit을 받는다).
 
-### 7. 모듈별 역할
+## 6. 모듈별 역할
 
-#### 7.1 Token Embedding
+### 6.1 Token Embedding
 
 `nn.Embedding(V, C)`는 정수 ID를 $C$차원 벡터로 바꾼다.
 
@@ -140,7 +136,7 @@ Loss는 위치마다 Cross Entropy를 구한 뒤 평균한다(제34강). Softmax
 
 초기에는 비슷한 토큰이 꼭 비슷한 벡터일 필요는 없다. 학습이 의미를 만든다.
 
-#### 7.2 Positional 정보
+### 6.2 Positional 정보
 
 Self-Attention 자체는 순열에 대해 대칭에 가깝다(마스크를 제외하면). 따라서 **위치**를 어딘가에 넣어야 한다.
 
@@ -154,7 +150,7 @@ Self-Attention 자체는 순열에 대해 대칭에 가깝다(마스크를 제�
 
 Mini Transformer(제49~50강)에서는 구현 단순화를 위해 **learned absolute position embedding**을 권장한다. RoPE는 개념은 이미 배웠고, 제품형 GPT는 3권에서 다시 만난다.
 
-#### 7.3 Transformer Block × N
+### 6.3 Transformer Block × N
 
 제46강에서 조립한 블록을 $N$번 쌓는다. 각 블록의 입출력은 모두 `[B, T, C]`다.
 
@@ -167,11 +163,11 @@ x = x + FFN(LN(x))
 
 Post-LN(원조)도 가능하지만, 깊은 모델에서는 Pre-LN이 학습이 안정적인 경우가 많다. Mini 모델에서는 둘 다 동작한다. **한 가지를 고르고 일관**하면 된다.
 
-#### 7.4 Final LayerNorm
+### 6.4 Final LayerNorm
 
 많은 Decoder-only 구현은 마지막 블록 뒤에 LayerNorm을 한 번 더 둔다. 없어도 이론상 CLM은 성립하지만, 관례와 안정성 때문에 두는 편이다.
 
-#### 7.5 LM Head
+### 6.5 LM Head
 
 `lm_head`는 `[B, T, C] → [B, T, V]`로 투영하는 선형층이다. 각 위치에서 어휘 전체에 대한 **logit**을 만든다.
 
@@ -181,7 +177,7 @@ Post-LN(원조)도 가능하지만, 깊은 모델에서는 Pre-LN이 학습이 �
 logits[:, -1, :]  →  다음 토큰 분포
 ```
 
-### 8. Weight Tying
+## 7. Weight Tying
 
 **Weight tying(가중치 공유)**은 token embedding 행렬과 lm_head 가중치를 **같은 파라미터**로 쓰는 기법이다.
 
@@ -207,7 +203,7 @@ self.lm_head.weight = self.tok_emb.weight
 - tying을 **안 해도** CLM은 완전히 성립한다. Mini Transformer에서는 선택 사항으로 둔다.
 - tying은 **사실(관행·동기)**과 **효과의 크기**를 구분해야 한다. “항상 성능이 N% 오른다” 같은 수치는 이 강의에서 단정하지 않는다. 동기(파라미터·공간 정렬)만 기억한다.
 
-### 9. 코드로 보는 골격 (의사코드)
+## 8. 코드로 보는 골격 (의사코드)
 
 제49강에서 채울 뼈대다. 지금은 읽기만 해도 된다.
 
@@ -235,7 +231,7 @@ class CausalLM(nn.Module):
 
 `Block` 안에는 제41·44·45·46강 내용이 그대로 들어간다. CLM “전체”는 사실 **임베딩 + 블록 스택 + 헤드**다.
 
-### 10. Encoder-Decoder와의 위치
+## 9. Encoder-Decoder와의 위치
 
 제47강에서 Encoder/Decoder를 구분했다. Causal LM(GPT 계열)은 보통 **Decoder-only**다.
 
@@ -247,7 +243,7 @@ class CausalLM(nn.Module):
 
 이 책의 주 경로(3권 GPT Pretraining)는 Decoder-only CLM이다. Encoder는 “비교 좌표계”로 남겨 둔다.
 
-### 11. 학습과 생성에서의 같은 골격
+## 10. 학습과 생성에서의 같은 골격
 
 같은 `forward`가 두 모드를 먹는다.
 
@@ -271,7 +267,7 @@ context [1, t]
 
 제50강에서 greedy generate를 실제로 붙인다. Temperature·top-k 샘플링은 3권에서 확장한다.
 
-### 12. 자주 하는 실수
+## 11. 자주 하는 실수
 
 1. **Causal mask 누락**  
    미래 토큰을 보면 “커닝”이 되어 Loss는 쉽게 내려가지만, 생성 시 붕괴한다.
@@ -288,7 +284,7 @@ context [1, t]
 5. **weight tying 후 한쪽만 초기화/재할당**  
    공유 참조가 깨지면 파라미터가 두 벌이 된다. `is`로 동일 객체인지 확인한다.
 
-### 13. 핵심 정리
+## 12. 핵심 정리
 
 - Causal LM은 token embed (+pos) → $N$ Transformer blocks → lm_head로 구성된 Decoder-only 언어 모델이다.
 - 주 shape 관례는 `[B, T, C]`이며, logit은 `[B, T, V]`다.
@@ -296,7 +292,7 @@ context [1, t]
 - Weight tying은 embedding과 lm_head를 공유하는 선택적 관행이다.
 - 제49~50강은 이 골격을 실행 가능한 Mini Transformer로 만든다.
 
-### 14. 핵심 용어
+## 13. 핵심 용어
 
 | 용어 | 의미 |
 |---|---|
@@ -309,53 +305,52 @@ context [1, t]
 | Logits | Softmax 직전의 vocab 점수 |
 | Pre-LN / Post-LN | Norm과 Residual의 배치 순서 |
 
-### 15. 복습 문제
-
-#### 문제 1 (개념)
+## 14. 연습 문제
+### 문제 1 (개념)
 
 Causal LM의 forward 파이프라인을 다섯 단계 이상으로 나열하시오.
 
-#### 문제 2 (shape)
+### 문제 2 (shape)
 
 $B=4$, $T=16$, $C=128$, $V=5000$일 때 `lm_head` 출력 shape를 쓰시오.
 
-#### 문제 3 (개념)
+### 문제 3 (개념)
 
 Weight tying을 쓰는 동기 두 가지를 쓰시오. (성능 % 수치 금지)
 
-#### 문제 4 (연결)
+### 문제 4 (연결)
 
 학습 시 위치 $t$의 logit이 예측해야 하는 타깃 토큰은 무엇인가?
 
-#### 문제 5 (디버깅)
+### 문제 5 (디버깅)
 
 Loss는 잘 내려가는데 생성 문장이 엉망이다. Causal mask 관점에서 의심할 버그를 설명하시오.
 
 ---
 
-### 정답 및 해설
+## 정답 및 해설
 
-#### 문제 1
+### 문제 1
 
 예: token id → token embedding → (+positional) → Block×N → (final LN) → lm_head → logits.
 
-#### 문제 2
+### 문제 2
 
 `[4, 16, 5000]`.
 
-#### 문제 3
+### 문제 3
 
 (1) 파라미터 수 감소 ($V\times C$ 한 벌) (2) 입력·출력 토큰 공간을 같은 임베딩 좌표계로 맞추려는 동기.
 
-#### 문제 4
+### 문제 4
 
 보통 $x_{t+1}$ (다음 토큰). 시퀀스 끝은 패딩/무시 처리하거나 EOS 등으로 설계한다.
 
-#### 문제 5
+### 문제 5
 
 학습 때 미래 토큰을 보게 되면(마스크 버그) 커닝으로 Loss가 내려간다. 생성은 미래가 없으므로 그 능력은 쓸모없고 품질이 무너진다.
 
-### 16. 다음 강의와 연결
+## 15. 다음 강의와 연결
 
 배선도를 그렸다. 다음은 **조립**이다.
 

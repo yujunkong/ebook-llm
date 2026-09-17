@@ -1,19 +1,13 @@
-# 1권. Python · Tensor · 수학 · PyTorch
+# 제1강. LLM을 밑바닥부터 배운다는 것
 
-## 제1강. LLM을 밑바닥부터 배운다는 것
+> **학습 목표**
+> - AI, Machine Learning, Deep Learning, LLM이 어떻게 다른지
+> - 이 책이 “밑바닥부터”라고 말하는 이유가 무엇인지
+> - Python부터 vLLM·DGX Spark까지 이어지는 한 줄의 학습 경로
+> - 각 권이 전체 여정에서 어떤 역할을 하는지
 
-### 1. 이번 강의에서 배울 것
-
-이번 강의에서는 코드를 거의 쓰지 않는다. 대신 앞으로 120강 동안 무엇을, 왜, 어떤 순서로 배우는지 지도를 그린다.
-
-이 강의를 마치면 다음을 말할 수 있어야 한다.
-
-- **AI**, **Machine Learning**, **Deep Learning**, **LLM**이 어떻게 다른지
-- 이 책이 “밑바닥부터”라고 말하는 이유가 무엇인지
-- Python부터 vLLM·DGX Spark까지 이어지는 한 줄의 학습 경로
-- 각 권이 전체 여정에서 어떤 역할을 하는지
-
-### 2. 왜 이것을 배우는가
+---
+## 1. 왜 이것을 배우는가
 
 LLM을 처음 접하면 용어가 한꺼번에 쏟아진다.
 
@@ -23,7 +17,7 @@ Transformer, Attention, Token, Embedding, Pretraining, SFT, RLHF, KV Cache, vLLM
 
 이번 강의의 목적은 지식의 양보다 **학습의 좌표**를 잡는 것이다.
 
-### 3. 먼저 알아야 할 개념
+## 2. 먼저 알아야 할 개념
 
 아직은 수학이나 PyTorch를 몰라도 된다. 다만 다음 태도는 필요하다.
 
@@ -33,9 +27,9 @@ Transformer, Attention, Token, Embedding, Pretraining, SFT, RLHF, KV Cache, vLLM
 
 이 세 가지가 이 책의 학습 습관이다.
 
-### 4. 핵심 개념 설명
+## 3. 핵심 개념 설명
 
-#### 4.1 AI란 무엇인가
+### 3.1 AI란 무엇인가
 
 **AI(Artificial Intelligence, 인공지능)**는 사람이 하던 판단, 분류, 생성, 계획 같은 작업을 컴퓨터 시스템이 수행하도록 만드는 기술 분야이다.
 
@@ -48,7 +42,7 @@ Transformer, Attention, Token, Embedding, Pretraining, SFT, RLHF, KV Cache, vLLM
 
 중요한 점은 AI가 하나의 알고리즘 이름이 아니라 **목표를 가리키는 큰 우산**이라는 것이다.
 
-#### 4.2 Machine Learning
+### 3.2 Machine Learning
 
 **Machine Learning(머신러닝, 기계학습)**은 규칙을 사람이 일일이 작성하지 않고, **데이터로부터 규칙을 학습**하는 방법이다.
 
@@ -72,7 +66,7 @@ Transformer, Attention, Token, Embedding, Pretraining, SFT, RLHF, KV Cache, vLLM
 
 LLM도 결국 이 큰 줄기 위에 있다. 다만 다루는 데이터가 텍스트이고, 모델이 매우 크며, 목표가 “다음 토큰 예측”과 그 위의 여러 학습 단계로 확장된다.
 
-#### 4.3 Deep Learning
+### 3.3 Deep Learning
 
 **Deep Learning(딥러닝)**은 Machine Learning의 한 갈래로, **Neural Network(신경망)**를 여러 층으로 쌓아 복잡한 패턴을 학습하는 방법이다.
 
@@ -88,7 +82,7 @@ LLM도 결국 이 큰 줄기 위에 있다. 다만 다루는 데이터가 텍스
 
 이 책의 후반에서 다루는 Transformer와 GPT도 Deep Learning의 구체적 구조이다.
 
-#### 4.4 LLM
+### 3.4 LLM
 
 **LLM(Large Language Model, 대규모 언어 모델)**은 대규모 텍스트 데이터로 학습되어, 자연어를 이해하고 생성하는 데 특화된 큰 언어 모델이다.
 
@@ -125,7 +119,7 @@ Pretraining
 
 이 책의 3권~5권이 바로 이 후반 여정이다.
 
-### 5. 직관적으로 이해하기
+## 4. 직관적으로 이해하기
 
 LLM을 처음 보면 “생각하는 기계”처럼 느껴질 수 있다. 더 정확한 직관은 다음이다.
 
@@ -143,11 +137,11 @@ LLM을 처음 보면 “생각하는 기계”처럼 느껴질 수 있다. 더 �
 
 따라서 이 책은 마법처럼 보이는 능력을, 다시 부품으로 분해한다.
 
-### 6. 이 책이 말하는 “밑바닥부터”의 의미
+## 5. 이 책이 말하는 “밑바닥부터”의 의미
 
 “밑바닥부터”는 두 가지를 동시에 의미한다.
 
-#### 6.1 라이브러리 사용법만 배우지 않는다
+### 5.1 라이브러리 사용법만 배우지 않는다
 
 예를 들어 `loss.backward()`를 호출하는 법만 알면, 학습이 실패했을 때 원인을 찾기 어렵다.
 
@@ -166,7 +160,7 @@ LLM을 처음 보면 “생각하는 기계”처럼 느껴질 수 있다. 더 �
 
 모든 개념에 모든 단계를 억지로 넣지는 않는다. 다만 **핵심 개념은 건너뛰지 않는다.**
 
-#### 6.2 처음부터 거대한 모델을 만들지 않는다
+### 5.2 처음부터 거대한 모델을 만들지 않는다
 
 처음에는 작은 숫자, 작은 네트워크, 작은 Transformer로 원리를 확인한다.  
 원리가 손에 익으면 규모를 키운다.
@@ -177,7 +171,7 @@ LLM을 처음 보면 “생각하는 기계”처럼 느껴질 수 있다. 더 �
 - 버그를 “느낌”이 아니라 계산으로 잡을 수 있다.
 - 나중에 큰 모델을 다룰 때, 각 모듈이 무엇을 하는지 이미 알고 있다.
 
-### 7. 전체 학습 지도
+## 6. 전체 학습 지도
 
 이 책의 최종 경로는 다음과 같다.
 
@@ -213,39 +207,39 @@ Python
 
 > **모델을 이해하고, 만들고, 학습시키고, 정렬하고, 빠르게 실행한다.**
 
-### 8. 5권의 역할
+## 7. 5권의 역할
 
-#### 📗 1권 (1~26강) — 기초 체력
+### 📗 1권 (1~26강) — 기초 체력
 
 Python, NumPy, 선형대수, 미분, Gradient, Loss, Backpropagation, PyTorch를 다룬다.
 
 목표: “학습이 어떻게 일어나는지”를 직접 계산하고 구현할 수 있다.
 
-#### 📘 2권 (27~54강) — LLM의 심장
+### 📘 2권 (27~54강) — LLM의 심장
 
 Tokenizer, Embedding, Attention, Multi-Head Attention, RoPE, Transformer Block을 다룬다.
 
 목표: 텍스트가 토큰이 되고, 토큰이 서로 참조하며, 다음 토큰을 예측하는 구조를 직접 만든다.
 
-#### 📙 3권 (55~78강) — 학습의 현실
+### 📙 3권 (55~78강) — 학습의 현실
 
 GPT 구현, 생성 전략, Pretraining, Checkpoint, SFT, LoRA/QLoRA를 다룬다.
 
 목표: 작은 GPT를 학습시키고, 지시 따르기 능력을 붙일 수 있다.
 
-#### 📕 4권 (79~98강) — 정렬과 추론 학습
+### 📕 4권 (79~98강) — 정렬과 추론 학습
 
 강화학습 기초, Reward Model, RLHF, PPO, DPO, GRPO, RLVR, Reasoning Training을 다룬다.
 
 목표: “더 나은 답”을 고르도록 모델을 조정하는 방법을 이해한다.
 
-#### 📔 5권 (99~120강) — 실행과 최적화
+### 📔 5권 (99~120강) — 실행과 최적화
 
 Prefill/Decode, KV Cache, Continuous Batching, vLLM, PagedAttention, GLM, MoE, DGX Spark, Tensor Parallel, NCCL을 다룬다.
 
 목표: 학습된 모델을 실제로 서빙하고, GPU 관점에서 성능을 해석한다.
 
-### 9. 작은 숫자로 맛보기 — “다음 토큰” 직관
+## 8. 작은 숫자로 맛보기 — “다음 토큰” 직관
 
 아직 Softmax를 자세히 배우지 않았다. 그래도 “점수 → 확률” 감각만 확인하자.
 
@@ -265,7 +259,7 @@ Prefill/Decode, KV Cache, Continuous Batching, vLLM, PagedAttention, GLM, MoE, D
 - LLM의 기본 출력은 “정답 하나”가 아니라 **후보 토큰별 점수**이다.
 - 생성은 그 점수(또는 확률)를 이용해 다음 토큰을 고르는 과정의 반복이다.
 
-### 10. 코드로 맛보기 — 학습 여정의 최소 스케치
+## 9. 코드로 맛보기 — 학습 여정의 최소 스케치
 
 아래 코드는 동작을 위한 완전한 모델이 아니다.  
 “앞으로 배우게 될 부품의 이름”을 파이썬으로 나열한 스케치이다.
@@ -277,7 +271,6 @@ Prefill/Decode, KV Cache, Continuous Batching, vLLM, PagedAttention, GLM, MoE, D
 def tokenize(text: str) -> list[str]:
     """텍스트를 토큰 리스트로 나눈다. (2권에서 본격 구현)"""
     return text.lower().replace(".", "").split()
-
 
 def predict_next_token(context_tokens: list[str]) -> str:
     """
@@ -295,14 +288,12 @@ def predict_next_token(context_tokens: list[str]) -> str:
     }
     return toy_memory.get(last, "...")
 
-
 def generate(prompt: str, steps: int = 3) -> str:
     tokens = tokenize(prompt)
     for _ in range(steps):
         next_token = predict_next_token(tokens)
         tokens.append(next_token)
     return " ".join(tokens)
-
 
 if __name__ == "__main__":
     print(generate("오늘은 날씨가"))
@@ -322,7 +313,7 @@ if __name__ == "__main__":
 
 2권 이후에는 `toy_memory` 자리를 **학습된 Parameter**가 대체한다.
 
-### 11. 실제 LLM에서는 어떻게 사용하는가
+## 10. 실제 LLM에서는 어떻게 사용하는가
 
 실제 LLM 제품 하나를 분해하면 대략 다음 층이 보인다.
 
@@ -337,9 +328,9 @@ if __name__ == "__main__":
 
 따라서 “ChatGPT 같은 서비스를 이해한다”는 말은, 위 층을 모두 어느 정도 이해한다는 뜻에 가깝다.
 
-### 12. 실습
+## 11. 실습
 
-#### 실습 1 — 학습 지도 손으로 다시 쓰기
+### 실습 1 — 학습 지도 손으로 다시 쓰기
 
 **목표:** 전체 경로를 자기 언어로 복원한다.
 
@@ -349,7 +340,7 @@ if __name__ == "__main__":
 
 **예상 결과:** 모르는 단계가 많아도 괜찮다. 좌표가 생기면 이후 학습 속도가 달라진다.
 
-#### 실습 2 — 일상 문장을 토큰처럼 나눠 보기
+### 실습 2 — 일상 문장을 토큰처럼 나눠 보기
 
 **목표:** Token 감각을 만든다.
 
@@ -365,7 +356,7 @@ if __name__ == "__main__":
 
 이 문제는 2권 Tokenizer 강의에서 더 정확히 다시 다룬다.
 
-#### 실습 3 — roadmap_sketch.py 수정
+### 실습 3 — roadmap_sketch.py 수정
 
 **목표:** Next Token Prediction 루프를 체감한다.
 
@@ -375,7 +366,7 @@ if __name__ == "__main__":
 
 **추가 도전:** `predict_next_token`이 여러 후보 중 하나를 고르도록 바꿔 본다. (아직 확률 계산은 필요 없다.)
 
-### 13. 자주 하는 실수
+## 12. 자주 하는 실수
 
 1. **처음부터 큰 모델을 만지려고만 한다**  
    원리가 없으면 설정 파일만 바꾸다 끝나기 쉽다. 작은 예제로 계산 감각을 먼저 만든다.
@@ -389,7 +380,7 @@ if __name__ == "__main__":
 4. **실행하지 않고 읽기만 한다**  
    이 책은 실전형이다. 코드는 실행하고, 숫자를 바꾸고, 깨지는 장면을 직접 봐야 한다.
 
-### 14. 핵심 정리
+## 13. 핵심 정리
 
 - AI는 큰 목표, Machine Learning은 데이터로 규칙을 배우는 방법, Deep Learning은 깊은 신경망 기반 접근, LLM은 대규모 언어 모델이다.
 - LLM의 기본 엔진은 Next Token Prediction이다.
@@ -397,7 +388,7 @@ if __name__ == "__main__":
 - 이 책은 5권 120강으로, 기초 → 구조 → 학습 → 정렬 → 서빙 최적화를 한 줄로 잇는다.
 - 지금 단계의 목표는 완벽한 이해가 아니라, **이후 강의가 꽂힐 지도**를 갖는 것이다.
 
-### 15. 핵심 용어
+## 14. 핵심 용어
 
 | 용어 | 의미 |
 |---|---|
@@ -413,42 +404,41 @@ if __name__ == "__main__":
 | SFT | 지시-응답 데이터로 모델을 맞추는 지도 미세조정 |
 | Inference | 학습된 모델로 실제 출력을 계산하는 과정 |
 
-### 16. 복습 문제
-
-#### 문제 1 (개념)
+## 15. 연습 문제
+### 문제 1 (개념)
 
 AI, Machine Learning, Deep Learning, LLM의 포함 관계를 한 문장으로 설명하시오.
 
-#### 문제 2 (개념)
+### 문제 2 (개념)
 
 LLM의 가장 기본적인 학습 목표인 Next Token Prediction을 자신의 문장으로 설명하시오.
 
-#### 문제 3 (응용)
+### 문제 3 (응용)
 
 “번역 앱”을 만든다고 할 때, 이 책의 5권 중 어느 어디에 해당하는 지식이 필요한지 두 가지 이상 고르고 이유를 쓰시오.
 
-#### 문제 4 (코드)
+### 문제 4 (코드)
 
 `roadmap_sketch.py`에서 `tokenize`과 `predict_next_token`의 역할을 각각 한 줄로 쓰시오.
 
-#### 문제 5 (연결)
+### 문제 5 (연결)
 
 Gradient Descent는 아직 배우지 않았다. 그런데도 1권에서 반드시 배워야 하는 이유를, LLM 학습 관점에서 예측해 보시오.
 
 ---
 
-### 정답 및 해설
+## 정답 및 해설
 
-#### 문제 1
+### 문제 1
 
 LLM ⊂ Deep Learning ⊂ Machine Learning ⊂ AI  
 더 풀어 쓰면, LLM은 딥러닝 기반 언어 모델이고, 딥러닝은 머신러닝의 한 방법이며, 머신러닝은 AI를 구현하는 주요 접근이다.
 
-#### 문제 2
+### 문제 2
 
 주어진 이전 토큰들을 조건으로, 다음에 올 토큰의 점수(또는 확률)를 예측하는 것이다. 생성이란 이 예측을 반복하는 과정이다.
 
-#### 문제 3 예시 답
+### 문제 3 예시 답
 
 - 2권: 문장을 토큰화하고 Transformer로 문맥을 처리해야 한다.
 - 3권: 번역 데이터로 Pretraining/SFT 성격의 학습이 필요하다.
@@ -456,16 +446,16 @@ LLM ⊂ Deep Learning ⊂ Machine Learning ⊂ AI
 
 (1권의 Tensor/Loss 기초, 4권의 선호 학습도 품질 개선에 연결될 수 있다.)
 
-#### 문제 4
+### 문제 4
 
 - `tokenize`: 문자열을 모델이 다룰 토큰 단위로 나눈다.
 - `predict_next_token`: 현재까지의 토큰을 보고 다음 토큰을 고른다.
 
-#### 문제 5
+### 문제 5
 
 LLM 학습은 결국 Loss를 낮추도록 Parameter를 업데이트하는 과정이다. Gradient Descent는 그 업데이트 방향을 정하는 기본 원리다. Transformer나 GPT를 코드로만 따라 쳐도, 학습이 안 될 때 원인을 보려면 이 개념이 필요하다.
 
-### 17. 다음 강의와 연결
+## 16. 다음 강의와 연결
 
 이번 강의에서 지도를 펼쳤다.
 

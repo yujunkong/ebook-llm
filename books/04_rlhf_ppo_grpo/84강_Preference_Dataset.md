@@ -1,22 +1,14 @@
-# 4권. RLHF · PPO · GRPO
+# 제84강. Preference Dataset
 
-## 제84강. Preference Dataset
+> **학습 목표**
+> - Chosen / Rejected 쌍이 무엇인지, 왜 단일 정답 라벨과 다른지
+> - Human preference(인간 선호)가 어떤 절차로 수집되는지
+> - Pairwise 형식(프롬프트 + 두 응답 + 선호)의 스키마
+> - 품질 문제: 애매함, 편향, 불일치, 길이 편향, 라벨 노이즈
+> - 제85강 Reward Model이 이 데이터를 어떻게 먹는지에 대한 예고
 
-### 1. 이번 강의에서 배울 것
-
-제83강까지는 **Advantage**를 포함해, 강화학습이 “어떤 행동이 평균보다 나았는가”를 어떻게 재는지 다뤘다. 이번 강의부터는 LLM 정렬(alignment)의 데이터 층으로 내려간다. 핵심은 **Preference Dataset(선호 데이터셋)**이다.
-
-이 강의를 마치면 다음을 말할 수 있어야 한다.
-
-- Chosen / Rejected 쌍이 무엇인지, 왜 단일 정답 라벨과 다른지
-- Human preference(인간 선호)가 어떤 절차로 수집되는지
-- Pairwise 형식(프롬프트 + 두 응답 + 선호)의 스키마
-- 품질 문제: 애매함, 편향, 불일치, 길이 편향, 라벨 노이즈
-- 제85강 Reward Model이 이 데이터를 어떻게 먹는지에 대한 예고
-
-Preference Dataset은 “정답 한 줄”이 아니다. **같은 질문에 대한 두(또는 여러) 응답 중 어느 쪽이 더 나은가**를 기록한 데이터다. SFT가 “이렇게 말하라”라면, Preference는 “이쪽이 저쪽보다 낫다”이다.
-
-### 2. 왜 이것을 배우는가
+---
+## 1. 왜 이것을 배우는가
 
 SFT만으로는 한계가 있다.
 
@@ -47,7 +39,7 @@ instruction → output    prompt → (yw, yl)
 
 제85강에서 이 쌍으로 Reward Model을 학습하고, 제86~88강에서 그 점수로 정책을 업데이트한다. **데이터가 흔들리면 RM·PPO·DPO 전부가 흔들린다.**
 
-### 3. 먼저 알아야 할 개념
+## 2. 먼저 알아야 할 개념
 
 - SFT / Instruction Dataset (3권 제69·70강)
 - Chat messages 형식 (`user` / `assistant`)
@@ -62,34 +54,34 @@ instruction → output    prompt → (yw, yl)
 - DPO가 preference를 직접 쓰는 방식 (제90강)
 - 특정 공개 벤치마크의 “SOTA 점수” 수치
 
-### 4. 핵심 개념 설명
+## 3. 핵심 개념 설명
 
-#### 4.1 Preference Dataset이란?
+### 3.1 Preference Dataset이란?
 
 **Preference Dataset(선호 데이터셋)**은 각 샘플이 대략 다음을 담는 집합이다.
 
 | 필드 | 의미 |
 |---|---|
 | `prompt` (또는 `messages`의 user 구간) | 질문·지시 |
-| `chosen` (\(y_w\), winner) | 선호된 응답 |
-| `rejected` (\(y_l\), loser) | 덜 선호된 응답 |
+| `chosen` ($y_w$, winner) | 선호된 응답 |
+| `rejected` ($y_l$, loser) | 덜 선호된 응답 |
 | (선택) `margin`, `confidence`, `annotator_id` | 확신·주석자 메타 |
 
 표기:
 
-- \(x\): 프롬프트
-- \(y_w\): chosen (preferred / winning response)
-- \(y_l\): rejected (dispreferred / losing response)
+- $x$: 프롬프트
+- $y_w$: chosen (preferred / winning response)
+- $y_l$: rejected (dispreferred / losing response)
 
-한 샘플의 의미는 “\(y_w\)가 정답이다”가 아니라:
+한 샘플의 의미는 “$y_w$가 정답이다”가 아니라:
 
 \[
 y_w \succ y_l \mid x
 \]
 
-즉, **조건 \(x\)에서 \(y_w\)가 \(y_l\)보다 선호된다**.
+즉, **조건 $x$에서 $y_w$가 $y_l$보다 선호된다**.
 
-#### 4.2 Chosen / Rejected
+### 3.2 Chosen / Rejected
 
 **Chosen**은 주석자(또는 규칙·모델 심사자)가 더 낫다고 고른 응답이다.  
 **Rejected**는 비교에서 진 쪽이다.
@@ -109,7 +101,7 @@ rejected: "for 루프로 더하세요. (코드 없음)"
 
 둘 다 “도움”일 수 있으나, 과제 수행력에서 chosen이 앞선다.
 
-#### 4.3 Human preference
+### 3.3 Human preference
 
 **Human preference(인간 선호)**는 사람이 두(또는 여러) 후보를 보고 순위를 매기거나 승자를 고르는 신호다. RLHF 문헌에서 자주 등장하는 수집 절차는 대략 다음과 같다.
 
@@ -128,7 +120,7 @@ rejected: "for 루프로 더하세요. (코드 없음)"
 **사실:** 실제 대규모 정렬 데이터는 조직·제품마다 가이드라인과 검수 절차가 다르다.  
 **설명:** 이 책은 특정 회사의 내부 수치나 “몇 %가 안전 개선” 같은 숫자를 발명하지 않는다. 구조와 실패 모드에 집중한다.
 
-#### 4.4 Pairwise 형식
+### 3.4 Pairwise 형식
 
 가장 흔한 학습용 형식은 **pairwise(쌍 비교)**다.
 
@@ -160,21 +152,21 @@ Messages 스타일로 확장한 예:
 
 멀티턴이면 `prompt`에 이전 대화가 포함된다. 중요한 계약은 하나다.
 
-> **비교되는 두 응답은 같은 대화 문맥 \(x\)를 공유해야 한다.**
+> **비교되는 두 응답은 같은 대화 문맥 $x$를 공유해야 한다.**
 
 문맥이 다르면 “선호”가 아니라 “다른 과제”를 비교하는 셈이다.
 
-#### 4.5 Pointwise · Listwise와의 관계
+### 3.5 Pointwise · Listwise와의 관계
 
 | 형식 | 내용 | 비고 |
 |---|---|---|
-| Pairwise | \(y_w \succ y_l\) | RM·DPO에서 가장 흔함 |
+| Pairwise | $y_w \succ y_l$ | RM·DPO에서 가장 흔함 |
 | Pointwise | 응답에 절대 점수(1~5 등) | 점수 척도 보정이 어려움 |
-| Listwise | \(y_1 \succ y_2 \succ \cdots\) | 쌍으로 분해해 쓰기도 함 |
+| Listwise | $y_1 \succ y_2 \succ \cdots$ | 쌍으로 분해해 쓰기도 함 |
 
 Pointwise 점수가 있어도 학습 시 pairwise로 바꾸는 경우가 많다. 이유: 주석자마다 점수 스케일이 다르고, “4점 vs 5점”의 의미가 불안정하기 쉽다.
 
-#### 4.6 데이터가 생기는 경로
+### 3.6 데이터가 생기는 경로
 
 Preference 쌍을 만드는 대표 경로:
 
@@ -189,7 +181,7 @@ Preference 쌍을 만드는 대표 경로:
 
 이 책의 RLHF 본체(제85~88강)는 주로 **사람 또는 그에 준하는 pairwise 라벨**을 전제로 한다.
 
-#### 4.7 품질 이슈 — 왜 “그냥 많이”가 위험한가
+### 3.7 품질 이슈 — 왜 “그냥 많이”가 위험한가
 
 Preference 데이터는 라벨이 주관적이다. 품질이 나쁘면 RM이 **잘못된 취향**을 학습한다.
 
@@ -212,7 +204,7 @@ Preference 데이터는 라벨이 주관적이다. 품질이 나쁘면 RM이 **�
 데이터에 섞인 편향 → RM → 정책으로 증폭
 ```
 
-#### 4.8 Tie와 “둘 다 나쁨”
+### 3.8 Tie와 “둘 다 나쁨”
 
 주석 UI에는 종종 다음이 있다.
 
@@ -225,7 +217,7 @@ Preference 데이터는 라벨이 주관적이다. 품질이 나쁘면 RM이 **�
 
 초보 실습에서는 **명확한 승패 쌍만** 쓰는 것이 안전하다.
 
-#### 4.9 SFT 데이터와의 공존
+### 3.9 SFT 데이터와의 공존
 
 Preference Dataset이 SFT를 대체하지는 않는다.
 
@@ -237,7 +229,7 @@ Preference Dataset이 SFT를 대체하지는 않는다.
 
 SFT 없이 약한 base에서 preference만 돌리면, 비교 대상 응답 자체가 너무 나빠 **상대 선호가 의미를 잃는다**.
 
-### 5. 직관적으로 이해하기
+## 4. 직관적으로 이해하기
 
 식당 리뷰에 비유하자.
 
@@ -264,11 +256,11 @@ RM = 선수 실력 점수 추정기
 
 심판이 뇌물을 받거나(편향), 규칙이 없으면(가이드 부재) 랭킹이 무의미해진다.
 
-### 6. 수학적으로 이해하기
+## 5. 수학적으로 이해하기
 
 Preference를 확률 모델로 쓰는 가장 흔한 출발점은 **Bradley-Terry**다. (유도·학습은 제85강에서 본격화한다.)
 
-응답에 스칼라 점수 \(r(x,y)\)가 있다고 가정하면:
+응답에 스칼라 점수 $r(x,y)$가 있다고 가정하면:
 
 \[
 P(y_w \succ y_l \mid x)
@@ -278,15 +270,15 @@ P(y_w \succ y_l \mid x)
 \frac{1}{1+e^{-(r_w - r_l)}}
 \]
 
-여기서 \(\sigma\)는 sigmoid다.
+여기서 $\sigma$는 sigmoid다.
 
 해석:
 
 - 점수 차이가 크면 승 확률이 1에 가까움
 - 점수가 같으면 승 확률 0.5 (동전)
 
-데이터셋 \(\mathcal{D}=\{(x^{(i)}, y_w^{(i)}, y_l^{(i)})\}\)는 이 확률 모델의 **관측 표본**이다.  
-RM 학습은 “관측된 승패를 잘 설명하는 \(r\)”를 찾는 일이다.
+데이터셋 $\mathcal{D}=\{(x^{(i)}, y_w^{(i)}, y_l^{(i)})\}$는 이 확률 모델의 **관측 표본**이다.  
+RM 학습은 “관측된 승패를 잘 설명하는 $r$”를 찾는 일이다.
 
 이 강의에서 기억할 최소 수학:
 
@@ -294,17 +286,17 @@ RM 학습은 “관측된 승패를 잘 설명하는 \(r\)”를 찾는 일이�
 \text{데이터 한 줄} \;\equiv\; \text{사건 }\{y_w \succ y_l \mid x\}
 \]
 
-절대 점수 라벨이 없어도, 상대 비교만으로 \(r\)의 **차이**를 학습할 수 있다. 절대 스케일은 나중에 KL·정규화로 묶는다(제89강).
+절대 점수 라벨이 없어도, 상대 비교만으로 $r$의 **차이**를 학습할 수 있다. 절대 스케일은 나중에 KL·정규화로 묶는다(제89강).
 
-### 7. 작은 숫자로 직접 계산하기
+## 6. 작은 숫자로 직접 계산하기
 
 가상의 주석 결과 3쌍이 있다고 하자. (교육용 숫자)
 
-| i | \(r_w\) | \(r_l\) | \(r_w-r_l\) | \(P(y_w\succ y_l)=\sigma(\Delta)\) |
+| i | $r_w$ | $r_l$ | $r_w-r_l$ | $P(y_w\succ y_l)=\sigma(\Delta)$ |
 |---|---|---|---|---|
-| 1 | 2.0 | 0.0 | 2.0 | \(\sigma(2)\approx 0.88\) |
-| 2 | 0.5 | 0.4 | 0.1 | \(\sigma(0.1)\approx 0.525\) |
-| 3 | 1.0 | 3.0 | -2.0 | \(\sigma(-2)\approx 0.12\) |
+| 1 | 2.0 | 0.0 | 2.0 | $\sigma(2)\approx 0.88$ |
+| 2 | 0.5 | 0.4 | 0.1 | $\sigma(0.1)\approx 0.525$ |
+| 3 | 1.0 | 3.0 | -2.0 | $\sigma(-2)\approx 0.12$ |
 
 해석:
 
@@ -334,7 +326,7 @@ RM 학습은 “관측된 승패를 잘 설명하는 \(r\)”를 찾는 일이�
 → RM: 길이 ↑ → reward ↑ 경향
 ```
 
-### 8. 코드로 구현하기 — 스키마와 검증
+## 7. 코드로 구현하기 — 스키마와 검증
 
 학습 전에 **스키마 검증**을 두는 것이 실무적으로 중요하다.
 
@@ -342,7 +334,6 @@ RM 학습은 “관측된 승패를 잘 설명하는 \(r\)”를 찾는 일이�
 from typing import Any
 
 REQUIRED = ("prompt", "chosen", "rejected")
-
 
 def as_text(field: Any) -> str:
     """prompt/chosen/rejected가 str 또는 messages  alike인지 정규화."""
@@ -357,7 +348,6 @@ def as_text(field: Any) -> str:
             parts.append(f"{role}: {content}")
         return "\n".join(parts).strip()
     raise TypeError(f"unsupported field type: {type(field)}")
-
 
 def validate_preference_row(row: dict) -> list[str]:
     errors = []
@@ -397,14 +387,13 @@ def filter_dataset(rows: list[dict]) -> tuple[list[dict], list[dict]]:
     return keep, drop
 ```
 
-### 9. PyTorch로 구현하기 — Dataset 골격
+## 8. PyTorch로 구현하기 — Dataset 골격
 
 토크나이저·템플릿은 프로젝트마다 다르므로, 여기서는 **쌍을 텐서로 묶는 골격**만 둔다. RM 학습 루프는 제85강.
 
 ```python
 import torch
 from torch.utils.data import Dataset
-
 
 class PreferenceDataset(Dataset):
     def __init__(self, rows, tokenizer, max_length=512):
@@ -442,7 +431,6 @@ class PreferenceDataset(Dataset):
             "rejected_attention_mask": r_mask,
         }
 
-
 def collate_preference(batch, pad_id=0):
     def pad(seqs):
         m = max(len(s) for s in seqs)
@@ -469,7 +457,7 @@ def collate_preference(batch, pad_id=0):
 - 프롬프트만 인코딩하고 응답을 빼먹는 버그 금지
 - 패딩 토큰이 점수에 섞이지 않게 mask 전달 (제85강)
 
-### 10. 실제 LLM에서는 어떻게 사용하는가
+## 9. 실제 LLM에서는 어떻게 사용하는가
 
 산업·연구 파이프라인에서의 위치:
 
@@ -499,9 +487,9 @@ SFT 정책 π_SFT
 - 영어 중심 데이터로 한국어 정책을 학습하면 **언어·문화 불일치**가 생긴다
 - “유명 데이터셋 이름”만으로 품질을 보장하지 않는다
 
-### 11. 실습
+## 10. 실습
 
-#### 실습 A — 미니 선호 데이터 10쌍 작성
+### 실습 A — 미니 선호 데이터 10쌍 작성
 
 주제: “초보에게 파이썬 함수 설명”.
 
@@ -512,7 +500,7 @@ SFT 정책 π_SFT
 3. `validate_preference_row`로 검증
 4. chosen==rejected가 없게
 
-#### 실습 B — 주석 가이드 한 장
+### 실습 B — 주석 가이드 한 장
 
 다음 충돌을 우선순위로 문서화하라.
 
@@ -524,7 +512,7 @@ SFT 정책 π_SFT
 
 각 항목에 예시 쌍 1개씩.
 
-#### 실습 C — 길이 편향 측정
+### 실습 C — 길이 편향 측정
 
 작성한 10쌍에서
 
@@ -534,7 +522,7 @@ SFT 정책 π_SFT
 
 의 부호가 +인 비율을 세라. 80% 이상이면 의도적으로 짧은 chosen 쌍을 추가해 재균형하라.
 
-#### 실습 D — SFT 샘플과 혼동하지 않기
+### 실습 D — SFT 샘플과 혼동하지 않기
 
 같은 프롬프트로
 
@@ -543,7 +531,7 @@ SFT 정책 π_SFT
 
 를 나란히 두고, 학습 목표 문장을 각각 한 줄로 쓰라.
 
-### 12. 자주 하는 실수
+## 11. 자주 하는 실수
 
 1. **Rejected를 항상 쓰레기로 만들기**  
    너무 쉬운 분류만 학습되어 미세 선호를 못 배운다.
@@ -569,9 +557,9 @@ SFT 정책 π_SFT
 8. **Preference를 SFT gold처럼 취급**  
    chosen만 모아 SFT하면 “상대 정보”가 사라진다. (쓰더라도 목적이 다름을 명시)
 
-### 13. 핵심 정리
+## 12. 핵심 정리
 
-- Preference Dataset은 \((x, y_w, y_l)\) 형태의 **상대 선호** 기록이다.
+- Preference Dataset은 $(x, y_w, y_l)$ 형태의 **상대 선호** 기록이다.
 - Chosen/Rejected는 절대 진리가 아니라 **쌍 안 승패**다.
 - Human preference는 가이드라인·검수·불일치 관리가 데이터 품질의 핵심이다.
 - Pairwise 형식이 RM·DPO의 표준 입력이다.
@@ -579,13 +567,13 @@ SFT 정책 π_SFT
 - SFT 데이터와 목적이 다르며, 보통 SFT 이후에 쌓는다.
 - 다음 강의에서 이 데이터로 **스칼라 보상 함수**를 학습한다.
 
-### 14. 핵심 용어
+## 13. 핵심 용어
 
 | 용어 | 의미 |
 |---|---|
 | Preference Dataset | 선호 비교가 라벨인 데이터셋 |
-| Chosen (\(y_w\)) | 선호된 응답 |
-| Rejected (\(y_l\)) | 덜 선호된 응답 |
+| Chosen ($y_w$) | 선호된 응답 |
+| Rejected ($y_l$) | 덜 선호된 응답 |
 | Pairwise | 두 응답을 비교하는 형식 |
 | Human preference | 사람이 매긴 선호 신호 |
 | Annotator disagreement | 주석자 간 승패 불일치 |
@@ -594,65 +582,64 @@ SFT 정책 π_SFT
 | Bradley-Terry | 점수 차이로 승 확률을 모델링하는 틀(제85강) |
 | RLAIF | AI가 선호 라벨을 다는 계열 접근 |
 
-### 15. 복습 문제
-
-#### 문제 1（형식）
+## 14. 연습 문제
+### 문제 1（형식）
 
 SFT 샘플과 Preference 샘플의 필드 차이를 한 문장으로 쓰시오.
 
-#### 문제 2（의미）
+### 문제 2（의미）
 
 Rejected 응답이 사실적으로 맞을 수도 있는 이유를 쓰시오.
 
-#### 문제 3（품질）
+### 문제 3（품질）
 
 길이 편향이 PPO 정책에 어떤 행동으로 나타날 수 있는가?
 
-#### 문제 4（스키마）
+### 문제 4（스키마）
 
 `chosen == rejected`인 행을 학습에 넣으면 생기는 문제를 쓰시오.
 
-#### 문제 5（연결）
+### 문제 5（연결）
 
-제85강 Reward Model이 Preference Dataset에서 학습하려는 함수 \(r(x,y)\)의 출력 형태는?
+제85강 Reward Model이 Preference Dataset에서 학습하려는 함수 $r(x,y)$의 출력 형태는?
 
-#### 문제 6（구분）
+### 문제 6（구분）
 
 Pointwise 5점 척도와 pairwise 승패 중, 주석자 스케일 불일치에 더 민감한 쪽은?
 
 ---
 
-### 정답 및 해설
+## 정답 및 해설
 
-#### 문제 1
+### 문제 1
 
 SFT는 보통 `(prompt, response)` 정답 한 개이고, Preference는 `(prompt, chosen, rejected)` 상대 비교다.
 
-#### 문제 2
+### 문제 2
 
 선호는 상대 비교이므로, 둘 다 그럴듯해도 스타일·완전성·안전 등에서 한쪽이 질 수 있다.
 
-#### 문제 3
+### 문제 3
 
 보상·선호가 길이를 좋아하면 정책이 불필요하게 장황한 답변을 생성하도록 강화될 수 있다.
 
-#### 문제 4
+### 문제 4
 
 비교 신호가 0이라 학습이 무의미하거나, 수치적으로 불안정한 쌍이 되어 노이즈가 된다.
 
-#### 문제 5
+### 문제 5
 
 스칼라 점수(실수 보상). 확률 자체가 아니라 보상에 가깝다. (승 확률은 점수 차이로 유도)
 
-#### 문제 6
+### 문제 6
 
 Pointwise 5점 척도. 사람마다 점수 기준이 달라지기 쉽다.
 
-### 16. 다음 강의와 연결
+## 15. 다음 강의와 연결
 
 제83강에서 Advantage로 “평균 대비 얼마나 나았는지”를 배웠다면, 이번 강의는 그 보상의 **데이터 원천**을 LLM 정렬 맥락에서 정의한 셈이다.
 
-다음 **제85강. Reward Model 구현**에서는 Preference 쌍을 입력으로 받아, Bradley-Terry 목표로 \(r_\phi(x,y)\)를 학습하는 방법을 수식·숫자·코드로 구현한다. 출력이 스칼라 보상이 되는 순간, 제86강 RLHF 파이프라인이 닫히기 시작한다.
+다음 **제85강. Reward Model 구현**에서는 Preference 쌍을 입력으로 받아, Bradley-Terry 목표로 $r_\phi(x,y)$를 학습하는 방법을 수식·숫자·코드로 구현한다. 출력이 스칼라 보상이 되는 순간, 제86강 RLHF 파이프라인이 닫히기 시작한다.
 
 > 정답을 하나 고르는 데이터가 아니라, 승패를 고르는 데이터다. 그 승패로 점수 함수를 만드는 일이 바로 Reward Model이다.
 

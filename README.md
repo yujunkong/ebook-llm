@@ -25,6 +25,8 @@ Python → 수학 → Tensor → Neural Network → Backpropagation → PyTorch
 
 ## 문서
 
+- [Markdown 스타일 가이드 (Sigil EPUB)](docs/MARKDOWN_STYLE_GUIDE.md)
+
 - [전체 커리큘럼](docs/CURRICULUM.md)
 - [프로젝트 지침](docs/PROJECT_GUIDELINES.md)
 - [작성 체크리스트](docs/WRITING_CHECKLIST.md)

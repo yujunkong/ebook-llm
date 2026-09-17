@@ -1,19 +1,13 @@
-# 1권. Python · Tensor · 수학 · PyTorch
+# 제22강. Dataset과 DataLoader
 
-## 제22강. Dataset과 DataLoader
+> **학습 목표**
+> - `Dataset`이 샘플 하나를 정의하는 인터페이스임을 설명한다.
+> - `DataLoader`가 배치·셔플·병렬 로딩을 담당함을 이해한다.
+> - `batch`, `shuffle`, `collate_fn`의 역할을 구분한다.
+> - LLM 학습에서 “배치로 토큰을 묶는 이유”를 연결한다.
 
-### 1. 이번 강의에서 배울 것
-
-제21강에서 `nn.Module`로 모델의 골격을 만들었다. 모델은 입력이 있어야 학습한다. 이번 강의는 **데이터를 모델이 먹을 수 있는 형태로 잘라 공급하는 방법**을 다룬다.
-
-이 강의를 마치면 다음을 할 수 있어야 한다.
-
-- `Dataset`이 샘플 하나를 정의하는 인터페이스임을 설명한다.
-- `DataLoader`가 배치·셔플·병렬 로딩을 담당함을 이해한다.
-- `batch`, `shuffle`, `collate_fn`의 역할을 구분한다.
-- LLM 학습에서 “배치로 토큰을 묶는 이유”를 연결한다.
-
-### 2. 왜 이것을 배우는가
+---
+## 1. 왜 이것을 배우는가
 
 작은 예제에서는 이렇게 해도 된다.
 
@@ -37,7 +31,7 @@ loss = criterion(model(x), y)
 
 LLM Pretraining에서는 수조 토큰을 다루므로, 이 분리 없이는 학습 파이프라인이 성립하지 않는다.
 
-### 3. 먼저 알아야 할 개념
+## 2. 먼저 알아야 할 개념
 
 1. **배치(Batch)** — 한 번에 모델에 넣는 샘플들의 묶음
 2. **에폭(Epoch)** — 학습 데이터 전체를 한 번 순회하는 단위
@@ -46,9 +40,9 @@ LLM Pretraining에서는 수조 토큰을 다루므로, 이 분리 없이는 학
 
 토큰화 세부 규칙은 2권에서 다룬다. 지금은 “샘플 → 배치 → 모델” 파이프만 고정한다.
 
-### 4. 핵심 개념 설명
+## 3. 핵심 개념 설명
 
-#### 4.1 Dataset — 샘플의 정의
+### 3.1 Dataset — 샘플의 정의
 
 **`Dataset`(데이터셋)**은 PyTorch에서 **인덱스로 샘플 하나를 꺼낼 수 있는 객체**이다.
 
@@ -76,7 +70,7 @@ class ToyDataset(Dataset):
 
 `__getitem__`이 반환하는 형태는 자유다. 텐서 쌍, 딕셔너리, 문자열 경로 등. 다만 **DataLoader가 배치로 묶을 수 있는 형태**를 미리 설계하는 것이 중요하다.
 
-#### 4.2 DataLoader — 배치 공급기
+### 3.2 DataLoader — 배치 공급기
 
 **`DataLoader`(데이터로더)**는 Dataset을 받아 **미니배치 스트림**을 만들어 주는 유틸리티이다.
 
@@ -103,7 +97,7 @@ for xb, yb in loader:
 | `drop_last` | 마지막 불완전 배치 버릴지 여부 |
 | `collate_fn` | 샘플 리스트를 배치 텐서로 묶는 함수 |
 
-#### 4.3 Batch — 왜 묶는가
+### 3.3 Batch — 왜 묶는가
 
 **배치 학습(mini-batch training)**은 샘플 전체가 아니라 일부만 모아 Gradient를 추정하는 방법이다.
 
@@ -115,7 +109,7 @@ for xb, yb in loader:
 
 배치가 너무 작으면 기울기 잡음이 크고, 너무 크면 메모리 부족·일반화 저하가 생길 수 있다. LLM에서는 토큰 수 기준 배치(global batch tokens)로 이야기하는 경우가 많다.
 
-#### 4.4 Shuffle — 왜 섞는가
+### 3.4 Shuffle — 왜 섞는가
 
 **Shuffle(셔플)**은 학습 샘플 순서를 무작위로 바꾸는 것이다.
 
@@ -123,7 +117,7 @@ for xb, yb in loader:
 
 검증/테스트 로더는 보통 `shuffle=False`로 두어 재현 가능한 평가를 한다.
 
-#### 4.5 collate_fn — 길이가 다를 때
+### 3.5 collate_fn — 길이가 다를 때
 
 **`collate_fn`(콜레이트 함수)**은 DataLoader가 뽑아 온 **샘플 리스트를 하나의 배치로 결합**하는 함수이다.
 
@@ -151,7 +145,7 @@ def collate_pad(batch):
 
 2권·3권에서 Tokenizer와 Dataset Packing을 배울 때 이 개념이 다시 등장한다. 지금은 “배치 결합 규칙을 커스터마이즈할 수 있다”는 점만 기억한다.
 
-### 5. 직관적으로 이해하기
+## 4. 직관적으로 이해하기
 
 식당에 비유하자.
 
@@ -162,19 +156,21 @@ def collate_pad(batch):
 
 모델(요리사)은 개별 재료의 창고 구조를 몰라도 된다. 접시만 계속 받으면 된다.
 
-### 6. 수학적으로 이해하기
+## 5. 수학적으로 이해하기
 
 데이터셋 $\mathcal{D} = \{(x_i, y_i)\}_{i=1}^{N}$이 있을 때, 배치 $B$에 대한 평균 손실은
 
 $$
+
 L_B(\theta) = \frac{1}{|B|} \sum_{i \in B} \ell(f_\theta(x_i), y_i)
+
 $$
 
 전체 손실의 Gradient $\nabla L_{\mathcal{D}}$ 대신 $\nabla L_B$를 사용해 파라미터를 갱신한다. 이것이 Mini-batch SGD의 핵심이다.
 
 배치 크기 $|B|$가 커질수록 $\nabla L_B$는 $\nabla L_{\mathcal{D}}$에 가까워지는 경향이 있지만, 계산·메모리 비용도 커진다.
 
-### 7. 작은 숫자로 직접 계산하기
+## 6. 작은 숫자로 직접 계산하기
 
 샘플이 5개, `batch_size=2`, `drop_last=False`라고 하자.
 
@@ -201,13 +197,12 @@ epoch2: [1,3] [0,4] [2]
 
 이 작은 그림만 머리에서 그릴 수 있어도, 학습 로그의 `steps/epoch` 숫자를 해석할 수 있다.
 
-### 8. 코드로 구현하기 — 커스텀 Dataset
+## 7. 코드로 구현하기 — 커스텀 Dataset
 
 ```python
 # toy_loader.py
 import torch
 from torch.utils.data import Dataset, DataLoader
-
 
 class RegressionDataset(Dataset):
     """y = 2x0 - x1 + noise 형태의 장난감 회귀 데이터."""
@@ -224,7 +219,6 @@ class RegressionDataset(Dataset):
     def __getitem__(self, idx):
         return self.x[idx], self.y[idx]
 
-
 def main():
     ds = RegressionDataset(n=10, seed=0)
     print("len:", len(ds))
@@ -234,7 +228,6 @@ def main():
     loader = DataLoader(ds, batch_size=4, shuffle=True)
     for step, (xb, yb) in enumerate(loader, start=1):
         print(f"step {step}: xb={tuple(xb.shape)} yb={tuple(yb.shape)}")
-
 
 if __name__ == "__main__":
     main()
@@ -252,7 +245,7 @@ step 3: xb=(2, 2) yb=(2, 1)
 
 `n=10`, `batch_size=4`이면 배치 개수는 3이다. (`ceil(10/4)=3`)
 
-### 9. PyTorch로 구현하기 — TensorDataset과 딕셔너리 배치
+## 8. PyTorch로 구현하기 — TensorDataset과 딕셔너리 배치
 
 단순한 텐서 쌍은 `TensorDataset`으로 충분하다.
 
@@ -285,7 +278,7 @@ class DictDataset(Dataset):
 
 기본 collate는 같은 키끼리 리스트/텐서로 묶는다. 텍스트 문자열은 텐서가 아니므로, 학습 전에 토큰 ID 텐서로 바꾸거나 커스텀 `collate_fn`이 필요하다.
 
-### 10. 실제 LLM에서는 어떻게 사용하는가
+## 9. 실제 LLM에서는 어떻게 사용하는가
 
 LLM 학습 데이터는 대략 다음 파이프라인을 따른다.
 
@@ -308,9 +301,9 @@ LLM 학습 데이터는 대략 다음 파이프라인을 따른다.
 
 지금은 숫자 행렬 toy dataset으로도, “샘플 정의와 배치 공급의 분리”를 몸에 익히는 것이 목표다.
 
-### 11. 실습
+## 10. 실습
 
-#### 실습 1 — epoch당 step 수 계산
+### 실습 1 — epoch당 step 수 계산
 
 **목표:** `len(dataset)`, `batch_size`, `drop_last` 관계를 확인한다.
 
@@ -320,7 +313,7 @@ LLM 학습 데이터는 대략 다음 파이프라인을 따른다.
 
 **정답 힌트:** `False`면 7 step (`6*16 + 4`), `True`면 6 step.
 
-#### 실습 2 — shuffle 재현성
+### 실습 2 — shuffle 재현성
 
 **목표:** 난수 시드와 로더 동작의 관계를 본다.
 
@@ -328,7 +321,7 @@ LLM 학습 데이터는 대략 다음 파이프라인을 따른다.
 2. 시드 없이 여러 번 실행해 순서가 바뀌는지 본다.
 3. 검증용 로더는 `shuffle=False`로 두고 결과가 고정되는지 확인한다.
 
-#### 실습 3 — 최소 collate_fn
+### 실습 3 — 최소 collate_fn
 
 **목표:** 길이가 다른 1D 텐서를 패딩으로 묶는다.
 
@@ -339,7 +332,7 @@ LLM 학습 데이터는 대략 다음 파이프라인을 따른다.
 
 `torch.nn.utils.rnn.pad_sequence(..., batch_first=True)`를 사용한다.
 
-### 12. 자주 하는 실수
+## 11. 자주 하는 실수
 
 1. **Dataset에서 너무 무거운 전처리를 매 `__getitem__`마다 반복한다**  
    필요하면 캐시하거나, 오프라인으로 전처리한 뒤 가벼운 로딩만 남긴다.
@@ -356,7 +349,7 @@ LLM 학습 데이터는 대략 다음 파이프라인을 따른다.
 5. **LLM 텍스트를 바로 `TensorDataset`에 넣으려 한다**  
    문자열은 텐서가 아니다. 토큰 ID로 수치화한 뒤 배치를 만든다.
 
-### 13. 핵심 정리
+## 12. 핵심 정리
 
 - `Dataset`은 `__len__`과 `__getitem__`으로 샘플을 정의한다.
 - `DataLoader`는 배치 크기, 셔플, 병렬 로딩, collate를 담당한다.
@@ -364,7 +357,7 @@ LLM 학습 데이터는 대략 다음 파이프라인을 따른다.
 - 길이가 다른 샘플은 `collate_fn`으로 패딩·패킹한다.
 - LLM 학습도 같은 공급 구조를 쓰며, 토큰 배치가 GPU 효율과 학습 안정성을 좌우한다.
 
-### 14. 핵심 용어
+## 13. 핵심 용어
 
 | 용어 | 의미 |
 |---|---|
@@ -377,21 +370,20 @@ LLM 학습 데이터는 대략 다음 파이프라인을 따른다.
 | Padding | 길이를 맞추기 위해 채움 토큰/값을 넣는 기법 |
 | `TensorDataset` | 텐서들을 병렬로 인덱싱하는 기본 Dataset |
 
-### 15. 복습 문제
-
-#### 문제 1 (개념)
+## 14. 연습 문제
+### 문제 1 (개념)
 
 Dataset과 DataLoader의 책임을 한 문장씩으로 구분하시오.
 
-#### 문제 2 (계산)
+### 문제 2 (계산)
 
 샘플 1000개, `batch_size=64`, `drop_last=False`일 때 한 epoch의 step 수는?
 
-#### 문제 3 (개념)
+### 문제 3 (개념)
 
 검증 데이터에서 `shuffle=False`를 권하는 이유를 쓰시오.
 
-#### 문제 4 (코드)
+### 문제 4 (코드)
 
 다음 `__getitem__`이 DataLoader 기본 collate와 잘 맞는지 판단하고, 문제치면 이유를 쓰시오.
 
@@ -400,37 +392,39 @@ def __getitem__(self, idx):
     return [1, 2, 3], "cat"  # 리스트와 문자열
 ```
 
-#### 문제 5 (연결)
+### 문제 5 (연결)
 
 LLM Pretraining에서 배치를 크게 가져가려는 이유를 GPU 관점과 Gradient 관점에서 각각 한 줄로 쓰시오.
 
 ---
 
-### 정답 및 해설
+## 정답 및 해설
 
-#### 문제 1
+### 문제 1
 
 Dataset은 개별 샘플을 정의·반환한다. DataLoader는 그 샘플들을 배치로 묶어 순회 가능한 형태로 공급한다.
 
-#### 문제 2
+### 문제 2
 
 $$
+
 \lceil 1000 / 64 \rceil = \lceil 15.625 \rceil = 16
+
 $$
 
-#### 문제 3
+### 문제 3
 
 평가 결과를 재현 가능하게 유지하고, 배치 구성 변화가 메트릭 변동으로 해석되는 일을 줄이기 위해서이다.
 
-#### 문제 4
+### 문제 4
 
 기본 collate는 숫자 리스트를 텐서로 묶으려 할 수 있지만, 문자열 라벨은 바로 텐서가 되지 않는다. 라벨을 정수 ID로 바꾸거나 커스텀 `collate_fn`이 필요하다.
 
-#### 문제 5
+### 문제 5
 
 GPU 관점: 큰 행렬 연산으로 장치 활용률·처리량을 높인다. Gradient 관점: 더 많은 토큰 평균으로 기울기 추정의 분산을 줄여 학습을 안정화한다.
 
-### 16. 다음 강의와 연결
+## 15. 다음 강의와 연결
 
 데이터 접시가 준비되었다. 이제 요리사가 실제로 **맛을 보고 조미료(파라미터)를 조절**하는 절차가 필요하다.
 

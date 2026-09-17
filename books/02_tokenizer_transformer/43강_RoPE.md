@@ -1,26 +1,15 @@
-# 2권. Tokenizer와 Transformer
+# 제43강. RoPE
 
-## 제43강. RoPE
+> **학습 목표**
+> - 2D 회전 행렬이 벡터에 하는 일
+> - RoPE가 $Q, K$에만 적용되고 $V$에는 보통 적용하지 않는 이유(설계 관점)
+> - 회전 후 내적이 상대 위치에 의존하게 되는 핵심 아이디어
+> - 작은 숫자로 한 쌍의 차원을 직접 회전·내적해 보기
+> - 다차원으로 확장하는 짝(pair) 구조
+> - 현대 LLM에서 RoPE 사용의 사실과, 상대 위치 설명의 해석을 구분하기
 
-### 1. 이번 강의에서 배울 것
-
-제42강 Positional Encoding은 임베딩에 위치 벡터를 **더했다**.  
-이번 강의의 **RoPE (Rotary Position Embedding)**는 위치를 더하지 않고, Query/Key 벡터를 **위치각만큼 회전**시킨다.
-
-이 강의를 마치면 다음을 말할 수 있어야 한다.
-
-- 2D 회전 행렬이 벡터에 하는 일
-- RoPE가 \(Q, K\)에만 적용되고 \(V\)에는 보통 적용하지 않는 이유(설계 관점)
-- 회전 후 내적이 **상대 위치**에 의존하게 되는 핵심 아이디어
-- 작은 숫자로 한 쌍의 차원을 직접 회전·내적해 보기
-- 다차원으로 확장하는 짝(pair) 구조
-- 현대 LLM에서 RoPE 사용의 **사실**과, 상대 위치 설명의 **해석**을 구분하기
-- 제42강 absolute PE와의 인터페이스 차이
-
-RoPE는 “수식이 무서워 보이는” 주제에 속한다.  
-오늘은 복소해석을 최소화하고, **2D 회전 → 내적 → 상대 위치** 순서로 고정한다.
-
-### 2. 왜 이것을 배우는가
+---
+## 1. 왜 이것을 배우는가
 
 현대 decoder-only LLM을 읽다 보면 거의 반드시 RoPE가 나온다.
 
@@ -31,7 +20,7 @@ RoPE는 “수식이 무서워 보이는” 주제에 속한다.
 
 왜 관심이 큰가(설명):
 
-- Attention score의 핵심은 \(q^\top k\)다.
+- Attention score의 핵심은 $q^\top k$다.
 - 두 벡터를 각각의 위치각으로 회전하면, 내적이 **절대 위치 두 개**가 아니라 **위치 차**에 더 직접적으로 의존하는 형태가 된다.
 - 긴 컨텍스트·상대 의존에 유리하다는 설계 직관이 있다.
 
@@ -42,38 +31,41 @@ RoPE는 “수식이 무서워 보이는” 주제에 속한다.
 
 제48강 Causal LM 구조를 그릴 때, 위치 모듈이 Embedding add가 아니라 **Attention 내부의 Q/K 회전**으로 들어갈 수 있음을 알아야 한다.
 
-### 3. 먼저 알아야 할 개념
+## 2. 먼저 알아야 할 개념
 
 - 벡터 내적 (제10강)
-- \(Q, K\)와 scaled dot-product (제36~38강)
+- $Q, K$와 scaled dot-product (제36~38강)
 - 삼각함수 덧셈 공식
 - 2×2 회전 행렬
 - 제42강 absolute PE의 한계
 
 복소수 표기는 선택 사항이다. 없어도 따라올 수 있게 쓴다.
 
-### 4. 핵심 개념 설명
+## 3. 핵심 개념 설명
 
-#### 4.1 용어
+### 3.1 용어
 
-**RoPE (Rotary Position Embedding, 회전 위치 임베딩)**는 위치 \(t\)에 따라 Query/Key를 블록 대각 회전 행렬로 변환하는 위치 인코딩이다.
+**RoPE (Rotary Position Embedding, 회전 위치 임베딩)**는 위치 $t$에 따라 Query/Key를 블록 대각 회전 행렬로 변환하는 위치 인코딩이다.
 
 원 아이디어 출처: RoFormer 논문(Su et al.).
 
-#### 4.2 2D 회전부터
+### 3.2 2D 회전부터
 
-2D 벡터 \(v = (x, y)\)를 각도 \(\theta\)만큼 회전:
+2D 벡터 $v = (x, y)$를 각도 $\theta$만큼 회전:
 
 $$
+
 R(\theta)
 =
 \begin{bmatrix}
 \cos\theta & -\sin\theta \\
 \sin\theta & \cos\theta
 \end{bmatrix}
+
 $$
 
 $$
+
 R(\theta)
 \begin{bmatrix}
 x \\ y
@@ -83,26 +75,30 @@ x \\ y
 x\cos\theta - y\sin\theta \\
 x\sin\theta + y\cos\theta
 \end{bmatrix}
+
 $$
 
 성질:
 
-- 길이는 보존: \(\|R(\theta)v\| = \|v\|\)
-- \(R(\theta_1)R(\theta_2) = R(\theta_1+\theta_2)\)
-- \(R(\theta)^\top = R(-\theta)\)
+- 길이는 보존: $\|R(\theta)v\| = \|v\|$
+- $R(\theta_1)R(\theta_2) = R(\theta_1+\theta_2)$
+- $R(\theta)^\top = R(-\theta)$
 
-#### 4.3 RoPE의 적용 대상
+### 3.3 RoPE의 적용 대상
 
-위치 \(m\)의 Query \(q_m\), 위치 \(n\)의 Key \(k_n\)에 대해:
+위치 $m$의 Query $q_m$, 위치 $n$의 Key $k_n$에 대해:
 
 $$
+
 \tilde{q}_m = R_m q_m,\quad
 \tilde{k}_n = R_n k_n
+
 $$
 
 Attention score에 들어가는 내적:
 
 $$
+
 \tilde{q}_m^\top \tilde{k}_n
 =
 (R_m q_m)^\top (R_n k_n)
@@ -110,20 +106,23 @@ $$
 q_m^\top R_m^\top R_n k_n
 =
 q_m^\top R_{n-m} k_n
+
 $$
 
 마지막 줄이 핵심이다.
 
 $$
+
 R_m^\top R_n = R_{-m} R_n = R_{n-m}
+
 $$
 
-즉, 회전을 거친 내적은 **상대 위치 \(n-m\)**에 의존하는 형태로 정리된다.
+즉, 회전을 거친 내적은 **상대 위치 $n-m$**에 의존하는 형태로 정리된다.
 
-Value \(v\)에는 보통 RoPE를 적용하지 않는다.  
+Value $v$에는 보통 RoPE를 적용하지 않는다.  
 가중합의 “내용 벡터”는 위치 회전 없이 두고, **누가 누구를 볼지(score)**에 상대 위치를 심는 설계다.
 
-#### 4.4 Absolute PE와의 인터페이스 차이
+### 3.4 Absolute PE와의 인터페이스 차이
 
 | | Absolute PE (제42강) | RoPE |
 |---|---|---|
@@ -132,34 +131,40 @@ Value \(v\)에는 보통 RoPE를 적용하지 않는다.
 | V에 영향 | 간접(입력이 바뀌므로) | 직접 회전은 보통 안 함 |
 | 구현 위치 | Embedding 층 근처 | MHA 내부 |
 
-#### 4.5 다차원: 짝지어 회전
+### 3.5 다차원: 짝지어 회전
 
-\(d_k\)가 2보다 크면, 벡터를 2차원씩 묶는다.
+$d_k$가 2보다 크면, 벡터를 2차원씩 묶는다.
 
 $$
+
 (q_0, q_1),\ (q_2, q_3),\ \ldots
-$$
-
-각 쌍 \(i\)에 서로 다른 주파수 \(\theta_i\)를 둔다.
-
-위치 \(m\)에서 쌍 \(i\)의 회전각:
 
 $$
+
+각 쌍 $i$에 서로 다른 주파수 $\theta_i$를 둔다.
+
+위치 $m$에서 쌍 $i$의 회전각:
+
+$$
+
 m \theta_i
+
 $$
 
 주파수의 전형적인 선택(RoFormer/LLaMA류):
 
 $$
+
 \theta_i = 10000^{-2i/d}
+
 $$
 
-여기서 \(i = 0, 1, \ldots, d/2 - 1\), \(d = d_k\)(head 차원).
+여기서 $i = 0, 1, \ldots, d/2 - 1$, $d = d_k$(head 차원).
 
-제42강 sinusoidal의 \(10000^{2i/d}\)와 **같은 가족**의 주파수 설계다.  
+제42강 sinusoidal의 $10000^{2i/d}$와 **같은 가족**의 주파수 설계다.  
 차이는 “임베딩에 sin/cos를 더하느냐” vs “Q/K를 회전하느냐”다.
 
-### 5. 직관적으로 이해하기
+## 4. 직관적으로 이해하기
 
 시계 바늘을 생각하자.
 
@@ -172,50 +177,56 @@ $$
 비유를 과도하게 확장하지는 말자.  
 수학적으로 붙잡을 문장은 하나면 충분하다.
 
-> 회전을 통과한 \(q^\top k\)는 \(R_{n-m}\)을 통해 상대 위치에 의존한다.
+> 회전을 통과한 $q^\top k$는 $R_{n-m}$을 통해 상대 위치에 의존한다.
 
-### 6. 수학적으로 이해하기
+## 5. 수학적으로 이해하기
 
-#### 6.1 한 쌍에 대한 내적 전개
+### 5.1 한 쌍에 대한 내적 전개
 
-\(q = (q_0, q_1),\ k = (k_0, k_1)\)라 하고,  
-Query는 각도 \(m\theta\), Key는 \(n\theta\)로 회전한다.
+$q = (q_0, q_1),\ k = (k_0, k_1)$라 하고,  
+Query는 각도 $m\theta$, Key는 $n\theta$로 회전한다.
 
 $$
+
 \tilde{q}
 =
 \begin{bmatrix}
 q_0\cos m\theta - q_1\sin m\theta \\
 q_0\sin m\theta + q_1\cos m\theta
 \end{bmatrix}
+
 $$
 
 $$
+
 \tilde{k}
 =
 \begin{bmatrix}
 k_0\cos n\theta - k_1\sin n\theta \\
 k_0\sin n\theta + k_1\cos n\theta
 \end{bmatrix}
+
 $$
 
-내적 \(\tilde{q}^\top\tilde{k}\)를 전개하면 \(\cos((n-m)\theta),\ \sin((n-m)\theta)\) 항으로 정리된다.  
-절대각 \(m, n\)이 따로 남지 않고 **차 \(n-m\)**만 남는다.
+내적 $\tilde{q}^\top\tilde{k}$를 전개하면 $\cos((n-m)\theta),\ \sin((n-m)\theta)$ 항으로 정리된다.  
+절대각 $m, n$이 따로 남지 않고 **차 $n-m$**만 남는다.
 
-#### 6.2 복소 표기 (선택)
+### 5.2 복소 표기 (선택)
 
-쌍을 복소수 \(q_0 + i q_1\)로 보면, 회전은 \(e^{im\theta}\) 곱과 같다.  
-내적은 상대 위상 \(e^{i(n-m)\theta}\)에 의존한다.  
+쌍을 복소수 $q_0 + i q_1$로 보면, 회전은 $e^{im\theta}$ 곱과 같다.  
+내적은 상대 위상 $e^{i(n-m)\theta}$에 의존한다.  
 편하면 쓰고, 불편하면 2D 행렬만으로도 충분하다.
 
-#### 6.3 Softmax Attention에 들어가는 위치
+### 5.3 Softmax Attention에 들어가는 위치
 
 Head 하나에서:
 
 $$
+
 \mathrm{score}_{mn}
 =
 \frac{\tilde{q}_m^\top \tilde{k}_n}{\sqrt{d_k}}
+
 $$
 
 Causal Mask(제40강)는 그 위에 그대로 더해진다.  
@@ -230,11 +241,11 @@ Q,K 생성
           → × V
 ```
 
-#### 6.4 상대 위치 “보장”의 정확한 의미
+### 5.4 상대 위치 “보장”의 정확한 의미
 
 사실:
 
-- 수식상 \(\tilde{q}_m^\top\tilde{k}_n = q_m^\top R_{n-m} k_n\) 형태가 된다.
+- 수식상 $\tilde{q}_m^\top\tilde{k}_n = q_m^\top R_{n-m} k_n$ 형태가 된다.
 
 설명:
 
@@ -244,27 +255,30 @@ Q,K 생성
 
 사실과 해석을 섞지 않는 것이 이 강의의 태도다.
 
-### 7. 작은 숫자로 직접 계산하기
+## 6. 작은 숫자로 직접 계산하기
 
-#### 7.1 설정
+### 6.1 설정
 
-- head 차원 \(d_k = 2\) (한 쌍만)
-- \(\theta = \pi/2\) (과장된 각도. 계산 명확화용)
-- Query 내용 \(q = [1,\ 0]\)
-- Key 내용 \(k = [1,\ 0]\)
-- Query 위치 \(m=0\), Key 위치 \(n=1\)
+- head 차원 $d_k = 2$ (한 쌍만)
+- $\theta = \pi/2$ (과장된 각도. 계산 명확화용)
+- Query 내용 $q = [1,\ 0]$
+- Key 내용 $k = [1,\ 0]$
+- Query 위치 $m=0$, Key 위치 $n=1$
 
-#### 7.2 회전
+### 6.2 회전
 
-\(m=0\):
+$m=0$:
 
 $$
+
 R_0 = I,\quad \tilde{q} = [1,\ 0]
-$$
-
-\(n=1,\ \theta=\pi/2\):
 
 $$
+
+$n=1,\ \theta=\pi/2$:
+
+$$
+
 R_1
 =
 \begin{bmatrix}
@@ -276,9 +290,11 @@ R_1
 0 & -1 \\
 1 & 0
 \end{bmatrix}
+
 $$
 
 $$
+
 \tilde{k}
 =
 R_1
@@ -289,48 +305,57 @@ R_1
 \begin{bmatrix}
 0 \\ 1
 \end{bmatrix}
-$$
-
-#### 7.3 내적
 
 $$
+
+### 6.3 내적
+
+$$
+
 \tilde{q}^\top \tilde{k} = 1\cdot 0 + 0\cdot 1 = 0
-$$
-
-위치 차가 0일 때(\(m=n=0\)):
 
 $$
+
+위치 차가 0일 때($m=n=0$):
+
+$$
+
 \tilde{q}^\top\tilde{k} = 1
+
 $$
 
 같은 내용 벡터인데, **상대 위치가 바뀌자 내적이 1 → 0으로 변했다.**  
 RoPE가 score에 위치를 심는다는 최소 데모다.
 
-#### 7.4 상대각으로 바로 보기
+### 6.4 상대각으로 바로 보기
 
 $$
+
 R_{n-m} = R_1
+
 $$
 
 $$
+
 q^\top R_{1} k
 =
 \begin{bmatrix}1 & 0\end{bmatrix}
 \begin{bmatrix}0 \\ 1\end{bmatrix}
 = 0
+
 $$
 
 동일하다.
 
-#### 7.5 더 작은 각도
+### 6.5 더 작은 각도
 
-실전 \(\theta\)는 \(\pi/2\)처럼 극단적이지 않다.  
-\(\theta = 0.1\), \(n-m=1\)이면 내적 변화는 완만하다.  
+실전 $\theta$는 $\pi/2$처럼 극단적이지 않다.  
+$\theta = 0.1$, $n-m=1$이면 내적 변화는 완만하다.  
 여러 주파수 쌍이 모여 **다양한 거리 스케일**을 표현한다.
 
-### 8. 코드로 구현하기
+## 7. 코드로 구현하기
 
-#### 8.1 NumPy: 한 head, 짝 회전
+### 7.1 NumPy: 한 head, 짝 회전
 
 ```python
 # rope_numpy.py
@@ -340,13 +365,11 @@ from __future__ import annotations
 
 import numpy as np
 
-
 def build_theta(d_k: int, base: float = 10000.0) -> np.ndarray:
     """theta_i for i=0..d_k/2-1"""
     assert d_k % 2 == 0
     i = np.arange(0, d_k, 2, dtype=np.float64)
     return base ** (-i / d_k)
-
 
 def apply_rope(x: np.ndarray, positions: np.ndarray, theta: np.ndarray) -> np.ndarray:
     """
@@ -383,7 +406,6 @@ def apply_rope(x: np.ndarray, positions: np.ndarray, theta: np.ndarray) -> np.nd
         return out[0, 0]
     return out
 
-
 if __name__ == "__main__":
     q = np.array([[1.0, 0.0]])  # T=1, D=2  → 사실상 한 벡터
     # 데모: T=2 시퀀스에서 위치 0,1
@@ -398,14 +420,13 @@ if __name__ == "__main__":
     print("score", score)  # 약 0.0
 ```
 
-#### 8.2 PyTorch 스케치 (MHA에 꽂기)
+### 7.2 PyTorch 스케치 (MHA에 꽂기)
 
 ```python
 # rope_torch_sketch.py
 import torch
 import torch.nn as nn
 import math
-
 
 def rotate_half(x: torch.Tensor) -> torch.Tensor:
     # (..., D) where D even: [-x1, x0, -x3, x2, ...] 형태 구현도 가능
@@ -415,11 +436,9 @@ def rotate_half(x: torch.Tensor) -> torch.Tensor:
     out = torch.stack((-x2, x1), dim=-1).flatten(-2)
     return out
 
-
 def apply_rope_torch(x: torch.Tensor, cos: torch.Tensor, sin: torch.Tensor) -> torch.Tensor:
     # x, cos, sin: broadcastable to (B,H,T,D)
     return x * cos + rotate_half(x) * sin
-
 
 class RopeCache(nn.Module):
     def __init__(self, d_k: int, max_len: int = 2048, base: float = 10000.0):
@@ -443,7 +462,7 @@ class RopeCache(nn.Module):
 - **수학적 동치인 다른 배치**가 존재한다. 한 구현을 고르면 일관되게 유지한다.
 - 위 스케치는 개념용이다. 제49~50강 Mini Transformer에서 하나로 고정한다.
 
-### 9. MHA와의 결합 위치
+## 8. MHA와의 결합 위치
 
 제41강 MHA 흐름에 RoPE를 끼우면:
 
@@ -459,21 +478,21 @@ x → Wq,Wk,Wv → split heads
 Positional Encoding을 Embedding에 더하는 코드를 쓰던 모델은, RoPE 모델에서 그 add를 **제거**하는 경우가 많다.  
 위치를 두 방식으로 중복 주입하지 않는 것이 일반적이다(모델별 예외 가능).
 
-### 10. 실제 LLM에서는 어떻게 사용하는가
+## 9. 실제 LLM에서는 어떻게 사용하는가
 
-#### 10.1 사실
+### 9.1 사실
 
 - RoFormer가 RoPE를 제안했다.
 - LLaMA 계열 등 다수 LLM이 RoPE를 채택했다.
 - GPT-2는 RoPE가 아니라 learned absolute position embedding이다.
 - “모든 LLM = RoPE”는 사실이 아니다.
 
-#### 10.2 설명
+### 9.2 설명
 
 - RoPE가 인기인 이유로는 상대 위치 친화적 내적 구조, 길이 확장 연구와의 연결, 구현 친화성 등이 거론된다.
 - 하지만 성능의 전부 RoPE 하나만으로 결정되지 않는다. 데이터·스케일·아키텍처·학습 레시피가 함께 간다.
 
-#### 10.3 길이 확장 (맛보기)
+### 9.3 길이 확장 (맛보기)
 
 컨텍스트를 학습 길이보다 늘릴 때:
 
@@ -482,9 +501,9 @@ Positional Encoding을 Embedding에 더하는 코드를 쓰던 모델은, RoPE �
 - YaRN 같은 복합 방법
 
 상세 알고리즘은 제53강 개요로 미룬다.  
-오늘은 “RoPE의 \(\theta\)를 만지면 길이 특성이 바뀐다” 정도만 기억한다.
+오늘은 “RoPE의 $\theta$를 만지면 길이 특성이 바뀐다” 정도만 기억한다.
 
-#### 10.4 제40강·제48강과 같이 놓기
+### 9.4 제40강·제48강과 같이 놓기
 
 ```text
 제40강 Causal Mask : 미래를 가린다
@@ -494,7 +513,7 @@ Positional Encoding을 Embedding에 더하는 코드를 쓰던 모델은, RoPE �
 
 둘은 대체재가 아니라 **동시에 쓰는 부품**이다.
 
-### 10.5 생성 루프와 위치 인덱스 (맛보기)
+## 10.5 생성 루프와 위치 인덱스 (맛보기)
 
 오토리그레시브 생성에서는 토큰을 한 개씩 늘린다.
 
@@ -505,7 +524,7 @@ t=1: 다음 토큰
 t=T-1: 방금 샘플링한 토큰
 ```
 
-RoPE는 각 토큰의 **절대 인덱스 \(t\)**로 각을 만든다.  
+RoPE는 각 토큰의 **절대 인덱스 $t$**로 각을 만든다.  
 KV 캐시를 쓰는 추론에서는, 과거에 캐시된 Key에 이미 해당 위치의 회전이 적용되어 있어야 한다.
 
 사실:
@@ -519,10 +538,10 @@ KV 캐시를 쓰는 추론에서는, 과거에 캐시된 Key에 이미 해당 �
 제48~50강·추론 장에서 캐시와 위치를 다시 만난다.  
 오늘은 “RoPE 각 = 위치 인덱스의 함수”만 고정한다.
 
-### 10.6 제42강과의 숫자 감각 연결
+## 10.6 제42강과의 숫자 감각 연결
 
-Sinusoidal PE는 \(\sin(t\omega),\cos(t\omega)\)를 임베딩에 더한다.  
-RoPE는 같은 계열의 \(\omega\)로 \(R_{t}\)를 만들어 Q/K에 곱한다.
+Sinusoidal PE는 $\sin(t\omega),\cos(t\omega)$를 임베딩에 더한다.  
+RoPE는 같은 계열의 $\omega$로 $R_{t}$를 만들어 Q/K에 곱한다.
 
 같은 주파수 가족이라도:
 
@@ -534,15 +553,15 @@ RoPE는 같은 계열의 \(\omega\)로 \(R_{t}\)를 만들어 Q/K에 곱한다.
 이 차이가 “왜 현대 LLM이 RoPE를 자주 택하는지”를 설명할 때 가장 안전한 수준이다.  
 그 이상의 성능 단정은 하지 않는다.
 
-### 11. 실습
+## 10. 실습
 
 1. 제7절 숫자 예제를 NumPy로 재현해 score가 0에 가까운지 확인하라.
-2. \(m=n\)일 때 같은 \(q,k\)의 score가 회전 전 내적과 같은지 확인하라.
-3. `d_k=4`로 두 쌍을 두고, 주파수 \(\theta_0>\theta_1\)일 때 위치 1 이동의 영향이 첫 쌍에서 더 큰지 관찰하라.
+2. $m=n$일 때 같은 $q,k$의 score가 회전 전 내적과 같은지 확인하라.
+3. `d_k=4`로 두 쌍을 두고, 주파수 $\theta_0>\theta_1$일 때 위치 1 이동의 영향이 첫 쌍에서 더 큰지 관찰하라.
 4. MHA 코드에 `apply_rope(q)`, `apply_rope(k)`를 끼워 shape가 보존되는지 확인하라.
 5. (선택) V에도 잘못 적용해 보면 어떤 일이 생기는지 shape/실험적으로만 관찰하고, 표준 설계와 비교하라.
 
-### 12. 자주 하는 실수
+## 11. 자주 하는 실수
 
 1. **Embedding에 PE를 더하고 RoPE도 적용**  
    중복일 수 있다. 모델 설계를 확인한다.
@@ -562,32 +581,31 @@ RoPE는 같은 계열의 \(\omega\)로 \(R_{t}\)를 만들어 Q/K에 곱한다.
 6. **‘상대 위치 보장’을 과대해석**  
    수식 형태와 학습된 행동를 구분한다.
 
-### 13. 핵심 정리
+## 12. 핵심 정리
 
 - RoPE는 Q/K를 위치각으로 회전하는 위치 인코딩이다.
-- 회전 후 내적은 \(R_{n-m}\)을 통해 상대 위치에 의존하는 형태가 된다.
+- 회전 후 내적은 $R_{n-m}$을 통해 상대 위치에 의존하는 형태가 된다.
 - 다차원에서는 2D 쌍마다 다른 주파수로 회전한다.
 - Causal Mask와는 별개 부품이며 함께 쓰인다.
 - 현대 LLM 다수가 채택하지만, 모든 모델의 법칙은 아니다.
 - Absolute PE(add)와 구현 위치가 다르다.
 
-### 14. 핵심 용어
+## 13. 핵심 용어
 
 | 용어 | 설명 |
 |---|---|
 | RoPE | Rotary Position Embedding. Q/K 회전 위치 인코딩 |
-| Rotation Matrix | 각 \(\theta\)만큼 벡터를 돌리는 행렬 |
-| Relative Position | 두 토큰 위치 차 \(n-m\) |
-| Frequency \(\theta_i\) | 차원 쌍별 회전 각속도 |
+| Rotation Matrix | 각 $\theta$만큼 벡터를 돌리는 행렬 |
+| Relative Position | 두 토큰 위치 차 $n-m$ |
+| Frequency $\theta_i$ | 차원 쌍별 회전 각속도 |
 | Absolute PE | 임베딩에 더하는 절대 위치 방식(제42강) |
 
-### 15. 복습 문제
-
+## 14. 연습 문제
 **문제 1.** RoPE를 보통 어디에 적용하는가?
 
-**문제 2.** \(\tilde{q}_m^\top\tilde{k}_n = q_m^\top R_{n-m} k_n\)이 의미하는 바는?
+**문제 2.** $\tilde{q}_m^\top\tilde{k}_n = q_m^\top R_{n-m} k_n$이 의미하는 바는?
 
-**문제 3.** 제7절에서 \(q=k=[1,0]\), \(m=0,n=1,\theta=\pi/2\)일 때 내적은?
+**문제 3.** 제7절에서 $q=k=[1,0]$, $m=0,n=1,\theta=\pi/2$일 때 내적은?
 
 **문제 4.** RoPE와 Causal Mask의 역할을 한 줄씩 구분하라.
 
@@ -595,11 +613,11 @@ RoPE는 같은 계열의 \(\omega\)로 \(R_{t}\)를 만들어 Q/K에 곱한다.
 
 **문제 6.** Absolute sinusoidal PE와 RoPE의 공통점 하나는?
 
-#### 정답과 해설
+### 정답과 해설
 
 1. Query와 Key (보통 Value는 제외).
 
-2. Attention 내적이 절대 위치 쌍이 아니라 상대 위치 회전 \(R_{n-m}\)에 의존하는 형태로 정리됨.
+2. Attention 내적이 절대 위치 쌍이 아니라 상대 위치 회전 $R_{n-m}$에 의존하는 형태로 정리됨.
 
 3. 0.
 
@@ -607,9 +625,9 @@ RoPE는 같은 계열의 \(\omega\)로 \(R_{t}\)를 만들어 Q/K에 곱한다.
 
 5. 사실(모델 설계/구현에 대한 관측).
 
-6. \(10000^{-2i/d}\) 계열의 다중 주파수 설계를 공유하는 점(가족 닮음).
+6. $10000^{-2i/d}$ 계열의 다중 주파수 설계를 공유하는 점(가족 닮음).
 
-### 16. 다음 강의와 연결
+## 15. 다음 강의와 연결
 
 위치까지 넣었다.  
 다음으로 층을 깊게 쌓기 위한 **Residual과 LayerNorm(및 RMSNorm)**을 제44강에서 다룬다.

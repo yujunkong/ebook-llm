@@ -1,24 +1,14 @@
-# 5권. vLLM · GLM · DGX Spark
+# 제116강. 프로젝트 — 실제 LLM Serving
 
-## 제116강. 프로젝트 — 실제 LLM Serving
+> **학습 목표**
+> - 서빙 올리기 체크리스트(환경 → 모델 → 엔진 → API → 관측)를 순서대로 수행한다.
+> - OpenAI 호환 엔드포인트로 요청을 보내고 스트리밍/비스트리밍을 구분한다.
+> - TTFT / TPOT / 처리량 측정 템플릿을 채워 해석한다.
+> - 실패·느림의 원인을 capacity / bandwidth / 스케줄 / 네트워크 후보로 분류한다.
+> - 제117강 GPU 최적화 실험으로 넘길 가설 목록을 남긴다.
 
-### 1. 이번 강의에서 배울 것
-
-제99~115강에서 Inference 기초, vLLM 개념, 지표, 모델 계열, GPU·엔진·TP·NCCL·DGX Spark 환경까지 쌓았다. 이번 강의는 **한 바퀴 완주 프로젝트**다. 모델을 실제로(또는 재현 가능한 스케치로) 서빙하고, **TTFT·TPOT**를 템플릿으로 측정하며, 병목을 해석한다.
-
-이 강의를 마치면 다음을 할 수 있어야 한다.
-
-- 서빙 올리기 **체크리스트**(환경 → 모델 → 엔진 → API → 관측)를 순서대로 수행한다.
-- OpenAI 호환 엔드포인트로 요청을 보내고 스트리밍/비스트리밍을 구분한다.
-- TTFT / TPOT / 처리량 측정 **템플릿**을 채워 해석한다.
-- 실패·느림의 원인을 capacity / bandwidth / 스케줄 / 네트워크 후보로 분류한다.
-- 제117강 GPU 최적화 실험으로 넘길 **가설 목록**을 남긴다.
-
-목표가 아니다: 리더보드 SOTA, 멀티테넌트 상용 플랫폼 완성.
-
-목표가 맞다: **“띄운다 → 잰다 → 해석한다 → 다음 실험을 정한다”** 루프의 증거물(`artifacts/`)을 남기는 것.
-
-### 2. 왜 이것을 배우는가
+---
+## 1. 왜 이것을 배우는가
 
 문서만 읽으면 서빙은 한 줄이다다.
 
@@ -39,16 +29,16 @@ vllm serve <MODEL>
 
 제95강 Preference 프로젝트가 “선호 루프 한 바퀴”였듯, 이번은 **서빙 루프 한 바퀴**다.
 
-### 3. 프로젝트 목표와 성공 기준
+## 2. 프로젝트 목표와 성공 기준
 
-#### 3.1 목표
+### 2.1 목표
 
 1. (경로 A) GPU가 있는 환경에서 **vLLM으로 소형~중형 모델 서빙**  
 2. (경로 B) GPU가 없으면 **클라이언트·측정·가짜 서버 스케치**로 동일 산출물 형식 완성  
 3. TTFT/TPOT 측정 스크립트와 `artifacts/report.md` 작성  
 4. 병목 가설 3개와 제117강용 실험안 작성  
 
-#### 3.2 성공 기준
+### 2.2 성공 기준
 
 - [ ] `GET /v1/models` 또는 동등 헬스 확인이 된다 (경로 B는 mock)  
 - [ ] 동일 프롬프트 세트로 N회 측정 로그가 남는다  
@@ -58,7 +48,7 @@ vllm serve <MODEL>
 
 경로 A를 권장한다. 경로 B만 완료해도 **측정 규율**은 통과다. 단 report에 GPU 미사용을 명시한다.
 
-### 4. 권장 디렉터리
+## 3. 권장 디렉터리
 
 ```text
 ch116_llm_serving/
@@ -84,7 +74,7 @@ ch116_llm_serving/
     └── bottlenecks.md
 ```
 
-### 5. 두 경로
+## 4. 두 경로
 
 ```text
 경로 A (권장): 실 GPU + vLLM (또는 팀 표준 엔진) + 측정
@@ -97,11 +87,11 @@ ch116_llm_serving/
 | 산출물 | 실측 숫자 | 파이프라인·정의 검증 |
 | 한계 | 환경 의존 | 성능 결론 금지 |
 
-### 6. 서빙 체크리스트 (Step-by-step)
+## 5. 서빙 체크리스트 (Step-by-step)
 
 실행하며 `checklist.md`에 날짜·결과·로그 경로를 적는다.
 
-#### Step 1 — 환경 스냅샷
+### Step 1 — 환경 스냅샷
 
 ```bash
 date -Is | tee artifacts/env_snapshot.txt
@@ -114,7 +104,7 @@ pip show vllm 2>/dev/null | tee -a artifacts/env_snapshot.txt || true
 
 2× DGX Spark라면 제115강 환경 노트(고속 IF, NCCL 요약)를 여기에 붙인다.
 
-#### Step 2 — 모델 선택 원칙
+### Step 2 — 모델 선택 원칙
 
 초보 프로젝트 권장:
 
@@ -124,7 +114,7 @@ pip show vllm 2>/dev/null | tee -a artifacts/env_snapshot.txt || true
 
 거대 모델·TP=2는 **단일 노드 smoke 성공 후** 확장(제113~115강).
 
-#### Step 3 — 서버 기동 (경로 A 스케치)
+### Step 3 — 서버 기동 (경로 A 스케치)
 
 옵션명은 버전별로 다르다. 실행 전 헬프를 본다.
 
@@ -146,7 +136,7 @@ vllm serve "$MODEL_ID" \
 - KV/캐시 관련 초기화 메시지  
 - 바인딩 주소·포트  
 
-#### Step 4 — 헬스·모델 목록
+### Step 4 — 헬스·모델 목록
 
 ```bash
 curl -s "http://127.0.0.1:${PORT}/v1/models" | head
@@ -154,18 +144,18 @@ curl -s "http://127.0.0.1:${PORT}/v1/models" | head
 
 실패 시: 방화벽, 바인드 주소, 아직 로딩 중, 잘못된 포트.
 
-#### Step 5 — Smoke chat
+### Step 5 — Smoke chat
 
 ```bash
 python scripts/smoke_chat.py --base-url "http://127.0.0.1:${PORT}/v1" --model "$MODEL_ID"
 ```
 
-#### Step 6 — 워밍업
+### Step 6 — 워밍업
 
 측정 전 **동일 유형 요청**을 수회 버려 콜드스타트·컴파일·그래프 캡처를 분리한다.  
 report에 `warmup_runs: N` 을 명시한다.
 
-#### Step 7 — 본측정
+### Step 7 — 본측정
 
 ```bash
 python scripts/measure_ttft_tpot.py \
@@ -179,7 +169,7 @@ python scripts/measure_ttft_tpot.py \
 
 이후 동시성 4, 8 등으로 **별도 파일**을 남긴다. 한 파일에 섞지 말 것.
 
-#### Step 8 — 요약·리포트
+### Step 8 — 요약·리포트
 
 ```bash
 python scripts/summarize_metrics.py \
@@ -189,7 +179,7 @@ python scripts/summarize_metrics.py \
 # report.md 는 템플릿(§10)을 채워 커밋
 ```
 
-### 7. 측정 정의 — 다시 고정
+## 6. 측정 정의 — 다시 고정
 
 제107강과 맞춘다. report 상단에 그대로 붙인다.
 
@@ -206,9 +196,9 @@ python scripts/summarize_metrics.py \
 2. 토크나이저 왕복·네트워크 지연이 클라이언트에 포함된다. **측정 위치가 클라이언트**임을 명시.  
 3. 서버 내부 메트릭이 있으면 나란히 두되, 정의를 섞지 말 것.
 
-### 8. 실행 가능 스케치 코드
+## 7. 실행 가능 스케치 코드
 
-#### 8.1 `scripts/smoke_chat.py`
+### 7.1 `scripts/smoke_chat.py`
 
 ```python
 #!/usr/bin/env python3
@@ -221,7 +211,6 @@ import json
 import sys
 import urllib.request
 
-
 def post_json(url: str, payload: dict, timeout: float = 120.0) -> dict:
     data = json.dumps(payload).encode("utf-8")
     req = urllib.request.Request(
@@ -232,7 +221,6 @@ def post_json(url: str, payload: dict, timeout: float = 120.0) -> dict:
     )
     with urllib.request.urlopen(req, timeout=timeout) as resp:
         return json.loads(resp.read().decode("utf-8"))
-
 
 def main() -> int:
     p = argparse.ArgumentParser()
@@ -257,12 +245,11 @@ def main() -> int:
     print("SMOKE_OK:", text.replace("\n", " ")[:200])
     return 0
 
-
 if __name__ == "__main__":
     sys.exit(main())
 ```
 
-#### 8.2 `scripts/measure_ttft_tpot.py` (스트림 기준)
+### 7.2 `scripts/measure_ttft_tpot.py` (스트림 기준)
 
 ```python
 #!/usr/bin/env python3
@@ -285,7 +272,6 @@ import time
 import urllib.request
 from typing import Any, Iterator
 
-
 def iter_sse_chat(url: str, payload: dict, timeout: float = 300.0) -> Iterator[dict[str, Any]]:
     data = json.dumps(payload).encode("utf-8")
     req = urllib.request.Request(
@@ -307,7 +293,6 @@ def iter_sse_chat(url: str, payload: dict, timeout: float = 300.0) -> Iterator[d
                 break
             yield json.loads(body)
 
-
 def extract_text_delta(event: dict[str, Any]) -> str:
     try:
         delta = event["choices"][0].get("delta") or {}
@@ -315,7 +300,6 @@ def extract_text_delta(event: dict[str, Any]) -> str:
         return content or ""
     except (KeyError, IndexError, TypeError):
         return ""
-
 
 def load_prompts(path: str) -> list[dict[str, str]]:
     rows = []
@@ -325,7 +309,6 @@ def load_prompts(path: str) -> list[dict[str, str]]:
             if line:
                 rows.append(json.loads(line))
     return rows
-
 
 def measure_one(base_url: str, model: str, prompt: str, max_tokens: int) -> dict[str, Any]:
     payload = {
@@ -380,7 +363,6 @@ def measure_one(base_url: str, model: str, prompt: str, max_tokens: int) -> dict
         "note": "TPOT is inter-chunk mean; for token-accurate TPOT use server token timestamps if available",
     }
 
-
 def main() -> None:
     ap = argparse.ArgumentParser()
     ap.add_argument("--base-url", required=True)
@@ -411,14 +393,13 @@ def main() -> None:
             out.write(json.dumps(rec, ensure_ascii=False) + "\n")
             print(json.dumps({k: rec[k] for k in ("repeat", "ok", "ttft_ms", "tpot_ms", "e2e_ms")}, ensure_ascii=False))
 
-
 if __name__ == "__main__":
     main()
 ```
 
 설명: chunk ≠ token 일 수 있다. report에 **근사임**을 적는다. 엔진이 토큰 사용량·타임스탬프를 주면 그쪽으로 고친다.
 
-#### 8.3 `scripts/summarize_metrics.py`
+### 7.3 `scripts/summarize_metrics.py`
 
 ```python
 #!/usr/bin/env python3
@@ -428,7 +409,6 @@ import argparse
 import json
 import statistics as stats
 from pathlib import Path
-
 
 def percentile(xs: list[float], p: float) -> float:
     if not xs:
@@ -440,7 +420,6 @@ def percentile(xs: list[float], p: float) -> float:
     if f == c:
         return ys[f]
     return ys[f] + (ys[c] - ys[f]) * (k - f)
-
 
 def main() -> None:
     ap = argparse.ArgumentParser()
@@ -476,12 +455,11 @@ def main() -> None:
     Path(args.out).write_text(json.dumps(summary, indent=2), encoding="utf-8")
     print(json.dumps(summary, indent=2))
 
-
 if __name__ == "__main__":
     main()
 ```
 
-#### 8.4 경로 B — `scripts/mock_openai_server.py`
+### 7.4 경로 B — `scripts/mock_openai_server.py`
 
 ```python
 #!/usr/bin/env python3
@@ -492,7 +470,6 @@ from __future__ import annotations
 import json
 import time
 from http.server import BaseHTTPRequestHandler, HTTPServer
-
 
 class Handler(BaseHTTPRequestHandler):
     def log_message(self, fmt: str, *args) -> None:
@@ -545,14 +522,13 @@ class Handler(BaseHTTPRequestHandler):
             self.wfile.flush()
         self.wfile.write(b"data: [DONE]\n\n")
 
-
 if __name__ == "__main__":
     HTTPServer(("127.0.0.1", 8000), Handler).serve_forever()
 ```
 
 경로 B report에는 반드시 적는다: **“수치는 mock이며 하드웨어 성능이 아니다.”**
 
-### 9. 프롬프트 세트
+## 8. 프롬프트 세트
 
 `prompts/short.jsonl` 예:
 
@@ -569,7 +545,7 @@ if __name__ == "__main__":
 
 실서비스 데이터를 넣지 말 것. PII·비밀키 금지.
 
-### 10. `artifacts/report.md` 템플릿
+## 9. `artifacts/report.md` 템플릿
 
 ```markdown
 # Ch116 Serving Report
@@ -607,7 +583,7 @@ if __name__ == "__main__":
 |---|---|---|---|
 ```
 
-### 11. 병목 해석 가이드
+## 10. 병목 해석 가이드
 
 | 관찰 | 후보 원인 | 다음 레버 (제117 연결) |
 |---|---|---|
@@ -620,7 +596,7 @@ if __name__ == "__main__":
 
 단정하지 말고 **가설 → 한 변수 변경 → 재측정** (제118강 리포트 규율).
 
-### 12. 도전 과제 (Challenges)
+## 11. 도전 과제 (Challenges)
 
 필수 1개 + 선택:
 
@@ -632,7 +608,7 @@ if __name__ == "__main__":
 
 각 도전은 report §6 표에 한 줄로 남긴다.
 
-### 13. 자주 하는 실수
+## 12. 자주 하는 실수
 
 1. 워밍업 없이 첫 요청만 보고 “느린 엔진” 결론  
 2. 스트림 없이 TTFT를 자신 있게 발표  
@@ -641,7 +617,7 @@ if __name__ == "__main__":
 5. 환경 스냅샷 없이 옵션만 잔뜩 변경  
 6. TP 멀티노드를 체크리스트 Step 1에 배치  
 
-### 14. 핵심 정리
+## 13. 핵심 정리
 
 - 서빙 프로젝트의 산출물은 데모 문장이 아니라 **체크리스트·측정·해석**이다.
 - TTFT/TPOT 정의를 고정하고, 클라이언트 근사 한계를 명시한다.
@@ -649,7 +625,7 @@ if __name__ == "__main__":
 - 경로 B는 파이프라인 연습이며 성능 결론을 내지 않는다.
 - 다음 강의는 여기서 만든 가설을 **GPU 최적화 실험**으로 설계한다.
 
-### 15. 핵심 용어
+## 14. 핵심 용어
 
 | 용어 | 의미 |
 |---|---|
@@ -660,61 +636,60 @@ if __name__ == "__main__":
 | OpenAI-compatible API | 널리 쓰이는 HTTP 표면 |
 | Artifact | 재현·감사 가능한 산출물 |
 
-### 16. 복습 문제
-
-#### 문제 1 (절차)
+## 15. 연습 문제
+### 문제 1 (절차)
 
 서빙 체크리스트에서 멀티노드 TP보다 **먼저** 해야 할 두 단계를 쓰시오.
 
-#### 문제 2 (지표)
+### 문제 2 (지표)
 
 비스트리밍 응답만으로 TTFT를 말할 때의 한계를 쓰시오.
 
-#### 문제 3 (해석)
+### 문제 3 (해석)
 
 TTFT p95만 크고 TPOT p50은 목표 안일 때, 먼저 볼 후보 두 가지를 쓰시오.
 
-#### 문제 4 (규율)
+### 문제 4 (규율)
 
 경로 B mock의 `ttft_ms`를 팀 슬랙에 “Spark 성능”으로 올려도 되는가? 이유와 함께.
 
-#### 문제 5 (연결)
+### 문제 5 (연결)
 
 제112강 prefix cache 이득을 이 프로젝트에서 검증하려면 프롬프트 세트를 어떻게 짜야 하는가?
 
-#### 문제 6 (다음)
+### 문제 6 (다음)
 
 제117강 실험안 한 줄을 “가설 / 조작 변수 / 고정 변수” 형식으로 작성하시오.
 
 ---
 
-### 정답 및 해설
+## 정답 및 해설
 
-#### 문제 1
+### 문제 1
 
 예: 환경 스냅샷·단일 노드 smoke(헬스/채팅). 네트워크·NCCL 검증도 TP 앞이다.
 
-#### 문제 2
+### 문제 2
 
 첫 바이트≈완료에 가깝게 보이거나, 서버 버퍼링 때문에 첫 토큰 시점을 관측할 수 없다.
 
-#### 문제 3
+### 문제 3
 
 예: 긴 prefill/프롬프트 길이, 캐시 미스, 스케줄 대기, 콜드 스타트. (두 가지)
 
-#### 문제 4
+### 문제 4
 
 안 된다. mock은 파이프라인 검증용이며 하드웨어 성능이 아니다.
 
-#### 문제 5
+### 문제 5
 
 공유 긴 prefix + 짧은 가변 꼬리 세트와, prefix가 서로 다른 대조 세트를 동일 동시성·버전으로 비교하고 히트율(가능 시)을 기록한다.
 
-#### 문제 6
+### 문제 6
 
 예: “양자화로 TPOT가 개선된다 / quantization=on / 모델·프롬프트·concurrency·버전 고정”.
 
-### 17. 다음 강의와 연결
+## 16. 다음 강의와 연결
 
 지금은 “올렸다·쟀다·해석했다”. 다음은 **의도적으로 한 변수만 바꿔** GPU·엔진 최적화를 실험한다.
 

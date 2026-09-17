@@ -20,7 +20,7 @@ BOOKS = [
 
 NAV_START = "<!-- LECTURE_NAV -->"
 NAV_END = "<!-- /LECTURE_NAV -->"
-TITLE_RE = re.compile(r"^## 제(\d+)강\.\s*(.+?)\s*$", re.M)
+TITLE_RE = re.compile(r"^#{1,2}\s*제(\d+)강\.\s*(.+?)\s*$", re.M)
 NUM_RE = re.compile(r"^(\d+)강_")
 
 

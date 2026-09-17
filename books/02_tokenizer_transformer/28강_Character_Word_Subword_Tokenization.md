@@ -1,23 +1,13 @@
-# 2권. Tokenizer와 Transformer
+# 제28강. Character / Word / Subword Tokenization
 
-## 제28강. Character / Word / Subword Tokenization
+> **학습 목표**
+> - Character / Word / Subword Tokenization의 정의와 차이
+> - OOV(Out-of-Vocabulary)가 왜 문제인지
+> - 토큰 수가 길어지면 생기는 비용(길이·계산·문맥 창)
+> - 현대 LLM이 왜 Subword(특히 BPE 계열)를 주로 쓰는지
 
-### 1. 이번 강의에서 배울 것
-
-27강에서 텍스트는 Token ID로 바뀐다는 것을 배웠다. 남은 질문은 간단해 보이지만 결정적이다.
-
-> 텍스트를 **어떤 크기의 조각**으로 자를 것인가?
-
-이 강의를 마치면 다음을 말할 수 있어야 한다.
-
-- **Character / Word / Subword Tokenization**의 정의와 차이
-- **OOV(Out-of-Vocabulary)**가 왜 문제인지
-- 토큰 수가 길어지면 생기는 비용(길이·계산·문맥 창)
-- 현대 LLM이 왜 Subword(특히 BPE 계열)를 주로 쓰는지
-
-29강의 BPE 구현은 이번 강의의 “왜”에 대한 “어떻게”이다.
-
-### 2. 왜 이것을 배우는가
+---
+## 1. 왜 이것을 배우는가
 
 Tokenizer는 “전처리 옵션”이 아니라 **모델의 입력 언어**를 정의한다.
 
@@ -38,16 +28,16 @@ Vocab을 줄이면 → 문장이 길어질 수 있음 (조각이 잘게 쪼개�
 
 LLM의 계산량·메모리·Context Window는 **토큰 길이**에 민감하므로, 이 트레이드오프를 이해하지 못하면 이후 Attention·학습 비용 이야기도 공중에 뜬다.
 
-### 3. 먼저 알아야 할 개념
+## 2. 먼저 알아야 할 개념
 
 - Token / Token ID / Vocabulary (27강)
 - OOV의 존재 (27강 실습에서 `<unk>`로 맛봄)
-- 서열 길이 \(T\)가 커지면 Self-Attention 비용이 대략 \(O(T^2)\)로 커진다는 감각 (상세는 이후 Attention 강의)
+- 서열 길이 $T$가 커지면 Self-Attention 비용이 대략 $O(T^2)$로 커진다는 감각 (상세는 이후 Attention 강의)
 - “압축”이란 같은 정보를 더 짧은 기호열로 나타내는 것
 
-### 4. 핵심 개념 설명
+## 3. 핵심 개념 설명
 
-#### 4.1 Character Tokenization (문자 단위)
+### 3.1 Character Tokenization (문자 단위)
 
 **Character Tokenization(캐릭터 토큰화)**은 텍스트를 **글자(또는 코드포인트) 단위**로 나눈다.
 
@@ -70,7 +60,7 @@ LLM의 계산량·메모리·Context Window는 **토큰 길이**에 민감하므
 
 직관: 레고를 **1×1 브릭만**으로만 조립하는 것과 같다. 무엇이든 만들 수 있지만, 조립 단계가 길다.
 
-#### 4.2 Word Tokenization (단어 단위)
+### 3.2 Word Tokenization (단어 단위)
 
 **Word Tokenization(워드 토큰화)**은 공백·구두점 규칙으로 **단어**를 단위로 삼는다.
 
@@ -93,7 +83,7 @@ LLM의 계산량·메모리·Context Window는 **토큰 길이**에 민감하므
 
 직관: 레고를 **완성된 큰 모듈**만 쓰는 것이다. 모듈이 있으면 빠르지만, 없는 모양은 조립 자체가 실패한다 (`<unk>`).
 
-#### 4.3 Subword Tokenization (부분 단어)
+### 3.3 Subword Tokenization (부분 단어)
 
 **Subword Tokenization(서브워드 토큰화)**은 단어보다 작고 글자보다 큰 **자주 나오는 부분 문자열**을 단위로 삼는다.
 
@@ -126,7 +116,7 @@ LLM의 계산량·메모리·Context Window는 **토큰 길이**에 민감하므
 
 직관: 자주 쓰는 패턴은 큰 레고 블록으로, 드문 패턴은 작은 블록으로 섞어 쓰는 것이다.
 
-#### 4.4 OOV (Out-of-Vocabulary)
+### 3.4 OOV (Out-of-Vocabulary)
 
 **OOV(Out-of-Vocabulary, 미등록 어휘)**는 Vocabulary에 없는 토큰/단어가 입력에 나타나는 현상이다.
 
@@ -153,7 +143,7 @@ Subword는 OOV를 “글자/바이트 조각”으로 **흡수**한다.
 
 모든 조각이 Vocabulary에 있으면 `<unk>` 없이 인코딩 가능하다. (byte-level이면 사실상 임의의 UTF-8 가능)
 
-#### 4.5 Compression (압축)과 토큰 효율
+### 3.5 Compression (압축)과 토큰 효율
 
 여기서 **Compression(압축)**은 “같은 텍스트를 더 적은 토큰으로 나타내는 능력”을 말한다. (정보이론의 무손실 압축과 방향은 비슷하나, Tokenizer의 1차 목표는 학습 친화적 이산 단위이다.)
 
@@ -178,12 +168,12 @@ Subword는 OOV를 “글자/바이트 조각”으로 **흡수**한다.
 Embedding 파라미터 ≈ V × d
 ```
 
-- \(V\): vocab size  
-- \(d\): embedding dimension  
+- $V$: vocab size  
+- $d$: embedding dimension  
 
 균형점이 Subword의 존재 이유이다.
 
-### 5. 직관적으로 이해하기
+## 4. 직관적으로 이해하기
 
 세 방식을 택배 포장에 비유한다.
 
@@ -196,7 +186,7 @@ Embedding 파라미터 ≈ V × d
 LLM 사전학습 코퍼스는 거대하고 잡다하다. 신조어·코드·다국어·오타가 섞인다.  
 이 조건에서 Word는 너무 깨지기 쉽고, Character는 너무 길다. Subword가 실무 기본값이 된 배경이다.
 
-### 6. 작은 숫자로 비교하기
+## 5. 작은 숫자로 비교하기
 
 문장:
 
@@ -248,9 +238,9 @@ Word:      토큰 ~1,800  (언어·도메인 가정)
 Subword:   토큰 ~2,500
 ```
 
-Attention이 \(O(T^2)\)라면 Character는 Word 대비  Roughly \((10000/1800)^2 ≈ 30\)배 무거운 자기주의 비용을 치를 수 있다. (상수·구현·근사 제외한 스케치)
+Attention이 $O(T^2)$라면 Character는 Word 대비  Roughly $(10000/1800)^2 ≈ 30$배 무거운 자기주의 비용을 치를 수 있다. (상수·구현·근사 제외한 스케치)
 
-### 7. 코드로 구현하기
+## 6. 코드로 구현하기
 
 세 방식을 같은 인터페이스로 비교한다.
 
@@ -258,16 +248,13 @@ Attention이 \(O(T^2)\)라면 Character는 Word 대비  Roughly \((10000/1800)^2
 # compare_tokenizers.py
 from typing import List
 
-
 def char_tokenize(text: str) -> List[str]:
     # 공백도 하나의 토큰으로 취급
     return list(text)
 
-
 def word_tokenize(text: str) -> List[str]:
     # 교육용: 공백 split만 수행
     return text.split()
-
 
 def naive_subword_tokenize(text: str, merges: List[tuple]) -> List[str]:
     """
@@ -297,10 +284,8 @@ def naive_subword_tokenize(text: str, merges: List[tuple]) -> List[str]:
         pieces.extend([c for c in cleaned if c])
     return pieces
 
-
 def report(name: str, tokens: List[str]) -> None:
     print(f"[{name}] n={len(tokens)} -> {tokens}")
-
 
 if __name__ == "__main__":
     text = "lower lowest lowing"
@@ -323,7 +308,7 @@ if __name__ == "__main__":
 
 이 코드의 목적은 “완벽한 Tokenizer”가 아니라 **분할 철학의 차이**를 화면에 고정하는 것이다.
 
-### 8. 한국어·코드·다국어에서의 차이
+## 7. 한국어·코드·다국어에서의 차이
 
 영어 공백 단어는 비교적 또렷하다. 한국어는 다르다.
 
@@ -347,7 +332,7 @@ Subword는 `variable`, `_`, `name`처럼 조각내 통계를 공유한다.
 결론: “어떤 단위가 정답인가?”는 언어·도메인·모델 목적에 따라 달라진다.  
 범용 LLM에서는 Subword가 평균적으로 가장 실용적이다.
 
-### 9. 실제 LLM에서는 어떻게 사용하는가
+## 8. 실제 LLM에서는 어떻게 사용하는가
 
 대표적 선택:
 
@@ -375,9 +360,9 @@ Subword는 `variable`, `_`, `name`처럼 조각내 통계를 공유한다.
 
 추정만으로 Context Overflow를 논하면 자주 틀린다.
 
-### 10. 실습
+## 9. 실습
 
-#### 실습 1. 세 방식 토큰 수 비교
+### 실습 1. 세 방식 토큰 수 비교
 
 다음 문장을 char / word / (가능하면 tiktoken 또는 HuggingFace tokenizer)로 나눠 토큰 수를 비교하시오.
 
@@ -386,12 +371,12 @@ Subword는 `variable`, `_`, `name`처럼 조각내 통계를 공유한다.
 "토큰화는 텍스트를 토큰으로 나누는 과정이다."
 ```
 
-#### 실습 2. OOV 재현
+### 실습 2. OOV 재현
 
 작은 word vocab으로 뉴스 한 문장을 encode하고 `<unk>` 비율을 세시오.  
 같은 문장을 글자 단위로 인코딩하면 `<unk>`가 사라지는지 확인하시오.
 
-#### 실습 3. 압축비 계산
+### 실습 3. 압축비 계산
 
 ```text
 compression ≈ len(text) / len(tokens)
@@ -399,7 +384,7 @@ compression ≈ len(text) / len(tokens)
 
 영어 문장과 한국어 문장의 값을 비교하고, Context Window 관점에서 한 단락 해석을 쓰시오.
 
-### 11. 자주 하는 실수
+## 10. 자주 하는 실수
 
 1. **“Subword가 항상 더 짧다”고 믿음**  
    Word보다 길어질 수 있다. 목표는 OOV·vocab 크기의 균형이다.
@@ -416,7 +401,7 @@ compression ≈ len(text) / len(tokens)
 5. **모델 비교 시 토큰 수를 무시**  
    “8k context”가 모든 언어에 같은 문자 용량을 의미하지 않는다.
 
-### 12. 핵심 정리
+## 11. 핵심 정리
 
 - Tokenization 단위는 Character / Word / Subword로 나뉜다.
 - Character는 OOV에 강하지만 서열이 길다.
@@ -425,7 +410,7 @@ compression ≈ len(text) / len(tokens)
 - LLM 실무의 기본값은 Subword(BPE/WordPiece/Unigram)이다.
 - 토큰 효율은 Context·비용·다국어 성능과 직접 연결된다.
 
-### 13. 핵심 용어
+## 12. 핵심 용어
 
 | 용어 | 의미 |
 |---|---|
@@ -438,54 +423,53 @@ compression ≈ len(text) / len(tokens)
 | Unigram LM | 후보 조각의 확률로 분할하는 방식 |
 | Compression / 토큰 효율 | 텍스트량 대비 토큰 수 효율 |
 
-### 14. 복습 문제
-
-#### 문제 1 (개념)
+## 13. 연습 문제
+### 문제 1 (개념)
 
 Character Tokenization의 장점과 단점을 각각 한 가지씩 쓰시오.
 
-#### 문제 2 (개념)
+### 문제 2 (개념)
 
 Word Tokenization에서 OOV가 생기는 이유를 예와 함께 설명하시오.
 
-#### 문제 3 (비교)
+### 문제 3 (비교)
 
 Subword가 Word와 Character 사이에서 어떤 균형을 맞추는지 두 문장으로 쓰시오.
 
-#### 문제 4 (계산)
+### 문제 4 (계산)
 
 문장 길이 120자, 토큰 30개일 때 `len(text)/len(tokens)`는?
 
-#### 문제 5 (LLM 연결)
+### 문제 5 (LLM 연결)
 
 Context Window가 토큰 기준인 이유와, 토큰 효율이 낮은 언어에서 생기는 실질적 제약을 설명하시오.
 
 ---
 
-### 정답 및 해설
+## 정답 및 해설
 
-#### 문제 1
+### 문제 1
 
 장점 예: OOV가 거의 없음 / vocab이 작음.  
 단점 예: 서열이 길어져 계산·문맥 비용이 커짐.
 
-#### 문제 2
+### 문제 2
 
 단어 사전은 유한하다. 학습/구축 때 못 본 단어(신조어·오타·고유명사)가 오면 매핑할 id가 없어 `<unk>`가 된다.
 
-#### 문제 3
+### 문제 3
 
 자주 나오는 패턴은 긴 조각으로 묶어 서열을 과도하게 늘리지 않고, 드문 패턴은 작은 조각으로 분해해 OOV를 줄인다. Vocabulary 크기와 문장 길이의 절충안이다.
 
-#### 문제 4
+### 문제 4
 
-\(120 / 30 = 4\)
+$120 / 30 = 4$
 
-#### 문제 5
+### 문제 5
 
 모델·인프라가 다루는 단위가 토큰이기 때문이다. 토큰 효율이 낮으면 같은 창에 들어가는 실제 문자·문장 수가 줄어, 긴 문서 이해·대화 기억에 불리해질 수 있다.
 
-### 15. 다음 강의와 연결
+## 14. 다음 강의와 연결
 
 이번 강의에서 세 가지 분할 철학과 OOV·압축 트레이드오프를 비교했다.
 
