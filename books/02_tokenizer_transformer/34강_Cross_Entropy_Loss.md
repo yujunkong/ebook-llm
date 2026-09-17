@@ -432,6 +432,46 @@ if __name__ == "__main__":
 - 이미 Softmax한 확률을 넣으면 잘못된 Loss가 나온다.
 - LM에서는 `(B, T, V)`를 `(B*T, V)`로 펼쳐 쓰는 패턴이 흔하다.
 
+## 수식 보강 — Softmax · NLL · 토큰 평균
+
+클래스(또는 어휘) 확률:
+
+$$
+p_k = \frac{e^{z_k}}{\sum_{j} e^{z_j}},
+\quad
+k=1,\ldots,V
+$$
+
+정답 인덱스 $y$에 대한 음의 로그우도(NLL):
+
+$$
+\ell = -\log p_y = -z_y + \log\sum_{j} e^{z_j}
+$$
+
+배치·시퀀스에서 causal LM 손실은 보통 토큰 평균입니다.
+
+$$
+L = \frac{1}{|\mathcal{T}|}
+\sum_{(b,t)\in\mathcal{T}}
+\bigl(-\log p_{b,t,y_{b,t}}\bigr)
+$$
+
+$\mathcal{T}$는 패딩·무시 인덱스를 제외한 토큰 위치 집합입니다.
+
+라벨 스무딩($\varepsilon$)을 쓰면 정답 one-hot 대신
+
+$$
+q_y = 1-\varepsilon,
+\quad
+q_{k\neq y} = \frac{\varepsilon}{V-1}
+$$
+
+를 쓰고 $L=\sum_k q_k(-\log p_k)$를 최소화합니다.
+
+> ⚠️ **주의**
+>
+> `logsumexp` 없이 $e^{z}$를 직접 더하면 수치가 폭발합니다. 구현은 항상 `log_softmax`/`cross_entropy`를 쓰세요.
+
 ## LLM에서는 어디에 사용될까?
 ### 9.1 학습 목표
 

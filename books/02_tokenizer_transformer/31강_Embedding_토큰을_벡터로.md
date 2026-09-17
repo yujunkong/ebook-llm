@@ -443,6 +443,41 @@ id
 첫 Embedding은 **문맥 없음(context-free)** 초기 표현이다.  
 같은 `"bank"` 토큰도 문맥에 따라 이후 층에서 다른 벡터가 된다. (Contextualized Representation)
 
+## 수식 보강 — Embedding lookup · one-hot 곱
+
+어휘 크기 $V$, 차원 $d$인 Embedding 행렬을 $E\in\mathbb{R}^{V\times d}$라 하면, 토큰 ID $i$의 벡터는
+
+$$
+\mathbf{e}_i = E_{i,:}\ \in\ \mathbb{R}^{d}
+$$
+
+입니다. one-hot $\mathbf{1}_i\in\mathbb{R}^{V}$와의 곱으로도 같습니다.
+
+$$
+\mathbf{e}_i = \mathbf{1}_i^{\top} E
+$$
+
+시퀀스 길이 $T$면
+
+$$
+X = \begin{bmatrix}\mathbf{e}_{i_1}\\ \vdots\\ \mathbf{e}_{i_T}\end{bmatrix}
+\in\mathbb{R}^{T\times d}
+$$
+
+배치가 있으면 $X\in\mathbb{R}^{B\times T\times d}$입니다.
+
+위치 임베딩 $P\in\mathbb{R}^{T\times d}$를 더하는 절대 위치 방식은
+
+$$
+\tilde{X} = X + P
+$$
+
+입니다 (RoPE는 다른 방식, 43강).
+
+> **핵심**
+>
+> Embedding은 “이산 ID → 연속 벡터”의 첫 선형 변환이며, $E$의 행 개수가 곧 어휘 크기입니다.
+
 ## LLM에서는 어디에 사용될까?
 대표 설정 예 (대략적 스케일):
 

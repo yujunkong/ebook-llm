@@ -223,9 +223,9 @@ $$
 $$
 
 \begin{aligned}
-PE_{(0,0)} &= \sin(0 \cdot 1) = 0 \
-PE_{(0,1)} &= \cos(0 \cdot 1) = 1 \
-PE_{(0,2)} &= \sin(0 \cdot 0.01) = 0 \
+PE_{(0,0)} &= \sin(0 \cdot 1) = 0 \\
+PE_{(0,1)} &= \cos(0 \cdot 1) = 1 \\
+PE_{(0,2)} &= \sin(0 \cdot 0.01) = 0 \\
 PE_{(0,3)} &= \cos(0 \cdot 0.01) = 1
 \end{aligned}
 
@@ -242,9 +242,9 @@ $$
 $$
 
 \begin{aligned}
-PE_{(1,0)} &= \sin(1) \approx 0.8415 \
-PE_{(1,1)} &= \cos(1) \approx 0.5403 \
-PE_{(1,2)} &= \sin(0.01) \approx 0.0100 \
+PE_{(1,0)} &= \sin(1) \approx 0.8415 \\
+PE_{(1,1)} &= \cos(1) \approx 0.5403 \\
+PE_{(1,2)} &= \sin(0.01) \approx 0.0100 \\
 PE_{(1,3)} &= \cos(0.01) \approx 0.99995
 \end{aligned}
 
@@ -264,7 +264,7 @@ $$
 
 E =
 \begin{bmatrix}
-0.1 & 0.2 & 0.3 & 0.4 \
+0.1 & 0.2 & 0.3 & 0.4 \\
 0.5 & 0.6 & 0.7 & 0.8
 \end{bmatrix}
 
@@ -277,7 +277,7 @@ $$
 X = E + PE
 \approx
 \begin{bmatrix}
-0.1 & 1.2 & 0.3 & 1.4 \
+0.1 & 1.2 & 0.3 & 1.4 \\
 1.3415 & 1.1403 & 0.7100 & 1.79995
 \end{bmatrix}
 

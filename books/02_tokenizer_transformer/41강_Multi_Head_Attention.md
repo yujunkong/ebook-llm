@@ -159,7 +159,7 @@ $$
 
 M_{ij} =
 \begin{cases}
-0 & i \ge j \
+0 & i \ge j \\
 -\infty & i < j
 \end{cases}
 
@@ -307,7 +307,7 @@ $$
 
 X =
 \begin{bmatrix}
-1 & 0 & 1 & 0 \
+1 & 0 & 1 & 0 \\
 0 & 1 & 0 & 1
 \end{bmatrix}
 
@@ -320,7 +320,7 @@ $$
 
 Q =
 \begin{bmatrix}
-1 & 0 & 1 & 0 \
+1 & 0 & 1 & 0 \\
 0 & 1 & 0 & 1
 \end{bmatrix}
 ,\quad
@@ -337,13 +337,13 @@ $$
 
 Q_1 =
 \begin{bmatrix}
-1 & 0 \
+1 & 0 \\
 0 & 1
 \end{bmatrix}
 ,\quad
 Q_2 =
 \begin{bmatrix}
-1 & 0 \
+1 & 0 \\
 0 & 1
 \end{bmatrix}
 
@@ -358,16 +358,16 @@ $$
 Q_1 K_1^\top
 =
 \begin{bmatrix}
-1 & 0 \
+1 & 0 \\
 0 & 1
 \end{bmatrix}
 \begin{bmatrix}
-1 & 0 \
+1 & 0 \\
 0 & 1
 \end{bmatrix}
 =
 \begin{bmatrix}
-1 & 0 \
+1 & 0 \\
 0 & 1
 \end{bmatrix}
 
@@ -380,7 +380,7 @@ $$
 \frac{Q_1 K_1^\top}{\sqrt{2}}
 \approx
 \begin{bmatrix}
-0.707 & 0 \
+0.707 & 0 \\
 0 & 0.707
 \end{bmatrix}
 
@@ -393,7 +393,7 @@ $$
 S_1
 \approx
 \begin{bmatrix}
-0.707 & -\infty \
+0.707 & -\infty \\
 0 & 0.707
 \end{bmatrix}
 
@@ -422,7 +422,7 @@ $$
 A_1
 \approx
 \begin{bmatrix}
-1.000 & 0.000 \
+1.000 & 0.000 \\
 0.331 & 0.669
 \end{bmatrix}
 
@@ -433,16 +433,16 @@ $$
 H_1 = A_1 V_1
 \approx
 \begin{bmatrix}
-1.000 & 0.000 \
+1.000 & 0.000 \\
 0.331 & 0.669
 \end{bmatrix}
 \begin{bmatrix}
-1 & 0 \
+1 & 0 \\
 0 & 1
 \end{bmatrix}
 =
 \begin{bmatrix}
-1.000 & 0.000 \
+1.000 & 0.000 \\
 0.331 & 0.669
 \end{bmatrix}
 
@@ -461,7 +461,7 @@ $$
 H = \mathrm{Concat}(H_1, H_2)
 \approx
 \begin{bmatrix}
-1.000 & 0.000 & 1.000 & 0.000 \
+1.000 & 0.000 & 1.000 & 0.000 \\
 0.331 & 0.669 & 0.331 & 0.669
 \end{bmatrix}
 
@@ -476,9 +476,9 @@ $$
 
 W^O =
 \begin{bmatrix}
-0.5 & 0.5 & 0 & 0 \
-0.5 & 0.5 & 0 & 0 \
-0 & 0 & 0.5 & 0.5 \
+0.5 & 0.5 & 0 & 0 \\
+0.5 & 0.5 & 0 & 0 \\
+0 & 0 & 0.5 & 0.5 \\
 0 & 0 & 0.5 & 0.5
 \end{bmatrix}^\top
 
