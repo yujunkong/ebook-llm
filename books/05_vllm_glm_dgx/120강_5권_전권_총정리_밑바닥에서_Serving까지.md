@@ -331,6 +331,37 @@ Embedding · Attention · KV Cache · Continuous Batching · 양자화 · TP는 
 - 모델 계열·MoE·스펙큘레이션·GPU·TP·패브릭이 선택 공간을 만든다.
 - 프로젝트는 기동 → 통제 실험 → 리포트 → 운영으로 닫힌다.
 
+## 전권 수식 포스터（추가로 손에 쥐기）
+$$
+
+\begin{aligned}
+\mathrm{Attention}(Q,K,V)&=\mathrm{softmax}\!\Big(\frac{QK^\top}{\sqrt{d}}\Big)V \\
+\rho&=\frac{\pi_\theta}{\pi_{\mathrm{old}}},\quad
+L^{\mathrm{CLIP}}=\mathbb{E}[\min(\rho A,\mathrm{clip}(\rho)A)] \\
+R&=r-\beta\,\mathrm{KL}(\pi\|\pi_{\mathrm{ref}}) \\
+T_{\mathrm{total}}&\approx\mathrm{TTFT}+(n_{\mathrm{out}}-1)\mathrm{TPOT} \\
+\mathrm{Throughput}&\approx\frac{N_{\mathrm{tokens}}}{\Delta t} \\
+T_{\mathrm{AR}}&\gtrsim \frac{2(P-1)}{P}\frac{M}{B_{\mathrm{eff}}}
+\end{aligned}
+
+$$
+
+위 여섯 줄이면 1~5권의 **미분 가능한 모델 → 정렬 → 서빙 → 통신**이 한 장에 붙는다.
+
+### 학습 완료의 정의（이 책）
+
+1. 기호를 코드·장애 트리에 대응시킨다  
+2. 성능 숫자를 조건 없이 외우지 않는다  
+3. 빈 칸（미측정）을 알고 있다  
+4. 다음 병목의 강의 번호를 말할 수 있다  
+
+## LLM에서는 어디에 사용될까?
+전권의 개념은 결국 **학습된 모델을 안정적으로 서빙**하는 일로 모입니다. Embedding·Attention·KV·Batching·Quant·TP·NCCL은 Prefill/Decode 지연과 처리량·안정성에 직접 닿습니다. 정렬（4권）이 바꾼 길이·거부 정책은 서빙 SLO와 함께 관리합니다.
+
+## 실습 F — 포스터 암기
+위 포스터 여섯 줄을 가리고 다시 쓰시오. 막히면 해당 권으로 돌아가시오.
+
+
 ## 핵심 요약
 - 1~2권: 미분 가능한 토큰 모델의 부품
 - 3권: Pretrain·SFT로 초기 정책

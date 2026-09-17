@@ -413,9 +413,38 @@ $$
 
 Decode는 종종 memory-bound입니다(가중치·KV 재사용 대비 연산이 적음).
 
-## LLM에서는 어디에 사용될까?
+## 수식 보강 — Roofline 한 줄
+산술강도 $I$（FLOPs/byte）, 첨단 성능 $\pi$, 대역폭 $\beta$일 때
 
-이번 111강에서 배운 개념은 이후 Transformer · GPT · 서빙 강의에서 반복해서 등장합니다. 각 수식·코드 블록을 “실제 모델의 어느 단계인가”와 연결해 다시 읽어 보세요.
+$$
+
+\mathrm{Perf} \le \min(\pi,\; \beta\cdot I)
+$$
+
+Decode의 낮은 $I$는 오른쪽（memory）천장에 가깝게 만든다. 배치를 키우거나 커널을 합치면 $I$가 올라 **여지**가 생길 수 있다. 절대 FLOPS 숫자는 시트·프로파일러로 확인하고 이 책에 암기값으로 박지 않는다.
+
+
+
+<!-- enrich-batch3-111 -->
+## Roofline 직관
+
+$$
+\mathrm{FLOPs/s}=\min(\mathrm{Peak\ FLOPs},\ \mathrm{AI}\cdot \mathrm{BW})
+$$
+
+Arithmetic Intensity:
+
+$$
+\mathrm{AI}=\frac{\mathrm{FLOPs}}{\mathrm{Bytes}}
+$$
+
+Decode는 종종 memory-bound입니다.
+
+```python
+def roofline(ai, peak_flops=1e14, bw=2e12):
+    return min(peak_flops, ai*bw)
+print(roofline(1), roofline(100))
+```
 
 ## 핵심 요약
 - CUDA 실행은 Grid → Block → Warp → Thread로 펼쳐지고, **SM**이 그 공장이다.

@@ -290,6 +290,39 @@ def e2e_ms(ttft, tpot, n_out):
 print(e2e_ms(200, 30, 64))
 ```
 
+
+<!-- enrich-batch4-98 -->
+## 4권에서 챙길 운영 숫자
+
+정렬이 끝난 모델도 서빙에서 다시 측정합니다.
+
+$$
+\mathrm{quality}=f(\pi_\theta),\qquad
+\mathrm{cost}=g(\mathrm{Mem},\mathrm{TPS},\mathrm{P99})
+$$
+
+```python
+def serves_ok(mem_gb, budget_gb, p99_ms, sla_ms):
+    # 메모리·SLA 동시 만족?
+    return mem_gb <= budget_gb and p99_ms <= sla_ms
+print(serves_ok(18, 24, 200, 300))
+```
+
+### Prefill vs Decode 자원
+
+| 단계 | 특징 |
+|---|---|
+| Prefill | compute에 가깝게, 긴 프롬프트 민감 |
+| Decode | memory-bound, KV 성장 |
+
+$$
+\mathrm{Mem}_{KV}(t)=\mathrm{Mem}_{KV}(0)+c\cdot t
+$$
+
+## 5권으로 넘기기
+
+Continuous batching · PagedAttention · 스케줄러 · 멀티노드 통신을 이어갑니다.
+
 ## LLM에서는 어디에 사용될까?
 4권 끝에서 팀이 실제로 들고 가는 산출물:
 
@@ -335,6 +368,25 @@ print(e2e_ms(200, 30, 64))
 - Reasoning/RLVR은 검증 가능 축을 열어 긴 추론 궤적을 강화한다.
 - 정렬 실패 모드는 최적화 성공과 함께 온다（96）.
 - 다음 문제는 그 정책을 **Inference·Serving**에서 살아남게 하는 것이다（99~）.
+
+## 배포 직전 체크（4권→5권）
+- [ ] 학습에 쓴 chat template과 서빙 템플릿 문자열이 동일한가
+- [ ] 특수 토큰·거절 문구가 토크나이저에 존재하는가
+- [ ] 평균/ p95 출력 길이를 측정할 계획이 있는가（숫자 창작 금지）
+- [ ] temperature/top-p가 정렬 평가와 서빙 기본값에서 너무 다르지 않은가
+- [ ] 롤백용 $\pi_{\mathrm{ref}}$/이전 체크포인트가 저장되어 있는가
+
+하나라도 아니오이면 5권 프로젝트를 시작하기 전에 메모만 남겨도 된다. **빈 칸을 아는 것**이 총정리의 성과다.
+
+## 짧은 스토리로 복습
+```text
+3권: 말을 배우게 가르쳤다
+4권: 무엇이 나은지/맞는지 신호로 다시 굽는다
+5권: 그 입을 빠르게·많이·안정적으로 연다
+```
+
+신호 없는 서빙은 빠른 무정렬이고, 서빙 없는 정렬은 연구 체크포인트일 뿐이다.
+
 
 ## 용어 사전
 | 용어 | 한 줄 의미 |

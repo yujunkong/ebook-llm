@@ -355,6 +355,31 @@ $$
 
 잘못된 수송 경로는 $\sum T_{\mathrm{collective}}$를 키워 TPOT를 망가뜨린다.
 
+
+<!-- enrich-batch4-114 -->
+## NCCL 집단 통신 패턴
+
+| 패턴 | 학습/추론 |
+|---|---|
+| all-reduce | DP grad |
+| all-gather | TP |
+| reduce-scatter | FSDP류 |
+
+```python
+def ring_volume_bytes(numel, dtype_bytes, P):
+    # ring all-reduce 대략량
+    return 2*(P-1)/P * numel * dtype_bytes
+print(ring_volume_bytes(1e9, 2, 8)/1e9, "GB")
+```
+
+### RoCE 체크
+
+$$
+B_{\mathrm{eff}}=B_{\mathrm{link}}\cdot \eta_{\mathrm{nic}}\cdot \eta_{\mathrm{pcIe}}
+$$
+
+케이블·스위치·PFC/ECN 설정이 $\eta$를 좌우합니다.
+
 ## LLM에서는 어디에 사용될까?
 - `tensor-parallel-size>1` 서빙의 침묵 hang
 - 듀얼 노드가 단일보다 느린 역설
@@ -366,6 +391,30 @@ $M$이 2배가 되면 ring 근사에서 통신 시간이 대략 어떻게 되는
 
 ## 실습 D — 폴백 탐지
 TCP 폴백을 의심할 때 확인할 로그·장치 증거 세 가지를 쓰시오.
+
+
+## 작은 숫자로 보는 부피（가정）
+교육용: $M=64\,\mathrm{MiB}$, $P=2$, $B_{\mathrm{eff}}=10\,\mathrm{GB/s}$（가정값 — 실측 아님）.
+
+Ring 근사에서 $\frac{2(P-1)}{P}=1$ 이므로
+
+$$
+
+T_{\mathrm{AR}} \gtrsim \frac{64\times 2^{20}}{10\times 10^9}\,\mathrm{s}
+\approx 6.7\,\mathrm{ms}
+$$
+
+여기에 latency·커널 오버헤드가 더해진다. Decode 토큰마다 이 항이 여러 층 쌓이면 TPOT에 가시화된다.  
+**같은 $M$이라도** $B_{\mathrm{eff}}$가 TCP 폴백으로 1/10이 되면 시간이 대략 10배로 늘어날 **여지**가 있다.
+
+### 체크리스트에 붙일 한 줄
+```text
+측정 전: NCCL이 고른 장치 이름을 티켓에 붙여라.
+측정 후: B_link / RDMA / NCCL / tok/s 를 층별로 기록하라.
+```
+
+## GPU Direct·NUMA 메모（개요）
+데이터가 CPU를 우회할수록 latency에 유리한 **후보**가 된다. NUMA 노드와 NIC 친화도가 어긋나면 같은 케이블도 느릴 수 있다. 플랫폼 문서를 보고, 추측으로 `export`를 복사하지 말 것.
 
 
 ## 핵심 요약

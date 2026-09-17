@@ -488,6 +488,128 @@ def pack_lengths(lengths, T=1024):
 print(pack_lengths([200,300,500,800], 1024))
 ```
 
+
+<!-- enrich-pass-1f64 -->
+## 수식 전개 — Packing 효율
+
+길이 $L_i$인 문서들을 창 크기 $T$에 담을 때, 문서마다 창을 하나씩 쓰면
+
+$$
+\eta_{\mathrm{naive}}
+=
+\frac{\sum_i L_i}{\sum_i T}
+=
+\frac{\bar L}{T}
+$$
+
+입니다. Packing은 여러 문서를 한 창에 이어 붙여 효율을 올립니다.
+
+$$
+\eta_{\mathrm{pack}}
+=
+\frac{\text{실제 토큰 수（특수 토큰 포함）}}{B\cdot T}
+$$
+
+목표: $\eta$를 높이되 **문서 경계를 Attention/Loss에서 섞지 않기**.
+
+### 경계와 Loss
+
+위치 $t$가 새 문서의 첫 토큰이면, 직전 토큰에 의존한 예측은 잘못된 문맥일 수 있습니다. 선택지:
+
+1. 경계에서 Loss를 `ignore`
+2. Attention을 문서 블록으로 제한（고급）
+3. EOS/BOS로 경계를 명시（교육용 Mini에서 흔함）
+
+경계 무시 비용을 개념적으로 쓰면
+
+$$
+L_{\mathrm{leak}}
+=
+-\sum_{t\in\partial}\log p(x_t\mid x_{<t})
+$$
+
+여기서 $\partial$는 문서 경계 직후 위치 집합입니다. 이 항이 커지지 않게 마스크·EOS를 설계합니다.
+
+## Shape 표 — Tokenization Pipeline
+
+| 단계 | 입력 | 출력 Shape |
+|---|---|---|
+| encode | `str` | `(L,)` |
+| concat+pack | 여러 `(L_i,)` | `(T,)` 다수 |
+| batch | 창 리스트 | `(B, T)` |
+| labels | `X` | `(B, T)` |
+| attn_mask | — | `(B, T)` |
+|（선택）doc_ids | — | `(B, T)` |
+
+## 구현 스케치 — 그리디 Packing
+
+```python
+def pack_docs(token_lists, T, eos_id=None):
+    """그리디: 남은 칸에 다음 문서가 들어가면 붙인다."""
+    windows, cur = [], []
+    for ids in token_lists:
+        piece = list(ids)
+        if eos_id is not None:
+            piece = piece + [eos_id]
+        if len(piece) > T:
+            piece = piece[:T]
+        if len(cur) + len(piece) <= T:
+            cur.extend(piece)
+        else:
+            if cur:
+                windows.append(cur)
+            cur = piece
+    if cur:
+        windows.append(cur)
+    out = []
+    for w in windows:
+        out.append(w + [0] * (T - len(w)))
+    return out
+```
+
+## 실패 모드 — Packing
+
+| 실패 | 증상 | 처방 |
+|---|---|---|
+| 경계 무시 | 문서 간 환각 연결 | EOS·doc mask |
+| 과도한 절단 | 긴 문서 정보 손실 | 슬라이딩/별도 장 |
+| 패딩 ID를 라벨로 | Loss 왜곡 | `ignore_index` |
+| 효율만 추구 | 디버깅 불가 | 먼저 pad-only 기준선 |
+
+## 실습 코드 — 효율 측정
+
+```python
+def packing_efficiency(windows, pad_id=0):
+    total = sum(len(w) for w in windows)
+    real = sum(sum(t != pad_id for t in w) for w in windows)
+    return real / max(total, 1)
+```
+
+pad-only와 pack을 같은 코퍼스에서 비교해 $\eta$ 차이를 기록하세요.
+
+## 수식 보강 — 슬라이딩 창
+
+긴 문서 $L>T$를 stride $S$로 자를 때 창 개수는
+
+$$
+n_{\mathrm{win}}
+=
+1+\left\lceil\frac{L-T}{S}\right\rceil
+\quad (L\ge T)
+$$
+
+입니다. $S=T$면 비겹침, $S<T$면 겹침（문맥 연속성↑, 중복 토큰↑）입니다.
+
+### 패딩 비율
+
+$$
+p_{\mathrm{pad}}
+=
+1-\eta_{\mathrm{pack}}
+$$
+
+$p_{\mathrm{pad}}$가 크면 실효 배치 토큰이 줄어들어 LR·스케줄 감각도 함께 흔들립니다（제63~64강）.
+
 ## LLM에서는 어디에 사용될까?
 
 이번 61강에서 배운 개념은 이후 Transformer · GPT · 서빙 강의에서 반복해서 등장합니다. 각 수식·코드 블록을 “실제 모델의 어느 단계인가”와 연결해 다시 읽어 보세요.

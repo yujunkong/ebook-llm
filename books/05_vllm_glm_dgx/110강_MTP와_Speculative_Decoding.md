@@ -354,9 +354,49 @@ $$
 
 감각의 이득을 봅니다(정확한 배수는 모델·수락률에 의존, 임의 수치 금지).
 
-## LLM에서는 어디에 사용될까?
+## 수식 보강 — 수락률과 유효 속도
+드래프트가 $\gamma$개 토큰을 제안하고 수락률이 $\alpha$일 때（이상화된 교육용）:
 
-이번 110강에서 배운 개념은 이후 Transformer · GPT · 서빙 강의에서 반복해서 등장합니다. 각 수식·코드 블록을 “실제 모델의 어느 단계인가”와 연결해 다시 읽어 보세요.
+$$
+
+\mathrm{tokens/round} \approx 1+\alpha\gamma
+$$
+
+검증 비용이 커 $\alpha$가 낮으면
+
+$$
+
+T_{\mathrm{wall}} \uparrow
+\quad\text{despite}\quad
+\gamma \uparrow
+$$
+
+가 될 수 있다. **측정 없이 $\gamma$만 키우지 말 것.** 품질은 수락 규칙이 target 분포를 보존하는지에 달려 있다（제110 본문）.
+
+
+
+<!-- enrich-batch3-110 -->
+## Speculative Decoding
+
+초안 모델 $\pi_d$가 $\gamma$토큰 제안, 목표 $\pi_t$가 검증.
+
+$$
+\alpha=\Pr[\mathrm{accept}]
+$$
+
+기대 가속(이상화):
+
+$$
+\mathrm{speedup}\approx \frac{1+\gamma\alpha}{1+c}
+$$
+
+($c$: 검증 비용 비율)
+
+```python
+def est_speedup(gamma, alpha, c=0.2):
+    return (1+gamma*alpha)/(1+c)
+print(est_speedup(5, 0.7))
+```
 
 ## 핵심 요약
 - Speculative decoding = **값싼 draft 제안 + target verify**로 스텝당 확정 토큰을 늘리려는 기법.

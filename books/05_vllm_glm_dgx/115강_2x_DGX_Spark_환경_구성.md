@@ -341,9 +341,83 @@ $$
 B_{\mathrm{global}}=B_{\mathrm{micro}}\cdot N_{\mathrm{accum}}\cdot N_{\mathrm{gpu}}
 $$
 
-## LLM에서는 어디에 사용될까?
+## 수식·용량으로 보는 2× 구성
+### 통합 메모리·KV 예산（개념）
 
-이번 115강에서 배운 개념은 이후 Transformer · GPT · 서빙 강의에서 반복해서 등장합니다. 각 수식·코드 블록을 “실제 모델의 어느 단계인가”와 연결해 다시 읽어 보세요.
+가중치 바이트 $W$, KV 캐시 $M_{\mathrm{KV}}$, 기타 오버헤드 $O$에 대해 대략
+
+$$
+
+W + M_{\mathrm{KV}} + O \;\le\; M_{\mathrm{avail}}
+$$
+
+$M_{\mathrm{KV}}$는 동시 요청·컨텍스트에 비례（제101·105강）:
+
+$$
+
+M_{\mathrm{KV}} \propto B_{\mathrm{inflight}}\cdot L\cdot(\text{층}\cdot\text{헤드차원}\cdot\text{바이트})
+$$
+
+**사실:** DGX Spark는 통합 메모리 등 플랫폼 특성이 있다. HBM-only 가정으로 환산표를 만들지 말 것.  
+**해석:** 2대 연결의 목적은 “메모리를 이어 붙인다”만이 아니라 **병렬·통신 경로를 연다**는 데 있다.
+
+### TP=2일 때 통신
+
+노드 간 TP를 켠다면 제114강의
+
+$$
+
+T_{\mathrm{token}} \approx T_{\mathrm{compute}} + \sum T_{\mathrm{collective}}
+$$
+
+가 그대로 적용된다. 케이블·RoCE가 준비되기 전에 TP size만 올리면 hang·역설적 감속이 난다.
+
+### 단일 vs 듀얼 — 언제이득인가（정성）
+
+| 상황 | 경향 |
+|---|---|
+| 단일 GPU에 모델이 여유 | 듀얼은 통신 비용만 살 수 있음 |
+| 가중치·KV가 단일 한계 | TP/샤딩 후보 |
+| 처리량 수평 확장 | 복제(replica) vs 샤딩을 구분 |
+
+복제와 TP를 혼동하지 말 것. 복제는 요청 라우팅, TP는 한 모델의 쪼갬이다.
+
+
+<!-- enrich-batch4-115 -->
+## 2× 노드 토폴로지 스케치
+
+$$
+N_{\mathrm{gpu}}=N_{\mathrm{node}}\cdot G_{\mathrm{per\ node}}
+$$
+
+```python
+nodes, gpus = 2, 8
+print("world", nodes*gpus)
+# MASTER_ADDR는 노드0, 방화벽/포트 허용 필요
+```
+
+### 헬스 체크
+
+1. `nvidia-smi` 전 GPU 가시성
+2. NCCL test bandwidth
+3. 시계 동기(로그 상관)
+
+$$
+t_{\mathrm{step}}=t_{\mathrm{comp}}+t_{\mathrm{comm}}+t_{\mathrm{idle}}
+$$
+
+## LLM에서는 어디에 사용될까?
+- 랩에서 2대 Spark로 멀티노드 서빙 PoC
+- NCCL 경로를 제품 문서의 QSFP/ConnectX와 대조
+- 제116강 Serving 프로젝트의 하드웨어 전제
+- 제117강 최적화 실험의 “GPU count” 축
+
+## 실습 D — 메모리 부등식
+가상으로 $W$가 $M_{\mathrm{avail}}$의 70%일 때, 동시성 $B$를 키우면 어떤 항이 먼저 한계에 닿는지 쓰시오.
+
+## 실습 E — 토폴로지 라벨
+물리 케이블 / IP / NCCL / 엔진 TP 설정을 한 장의 레이어 그림으로 그리시오.
+
 
 ## 핵심 요약
 - DGX Spark는 GB10 Grace Blackwell 기반 데스크탑 AI 플랫폼이며, 공개 스펙은 **출처와 날짜를 붙여** 읽는다.

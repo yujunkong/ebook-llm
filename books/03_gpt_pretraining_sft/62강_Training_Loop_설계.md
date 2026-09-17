@@ -486,6 +486,128 @@ $$
 \|g\|_2=\bigl(\sum_i g_i^2\bigr)^{1/2}
 $$
 
+
+<!-- enrich-pass-1f64 -->
+## 수식 전개 — 스텝·토큰·시간
+
+한 스텝에서 처리하는 토큰 수（패딩 제외）를 $N_{\mathrm{step}}$라 하면
+
+$$
+N_{\mathrm{step}}
+=
+\sum_{b=1}^{B}\sum_{t=1}^{T} m_{b,t}
+$$
+
+입니다. 총 토큰 예산 $B_{\mathrm{tok}}$에 대해 필요 스텝은
+
+$$
+S
+\approx
+\frac{B_{\mathrm{tok}}}{N_{\mathrm{step}}}
+$$
+
+입니다. Gradient accumulation $K$가 있으면 옵티마이저 스텝은
+
+$$
+S_{\mathrm{opt}}
+=
+\left\lfloor\frac{S_{\mathrm{micro}}}{K}\right\rfloor
+$$
+
+로 줄어듭니다（제64강）.
+
+### Loss 집계
+
+토큰 평균 CE:
+
+$$
+L
+=
+\frac{\sum_{b,t} m_{b,t}\,(-\log p_{b,t}) }{\sum_{b,t} m_{b,t}}
+$$
+
+시퀀스 평균과 섞어 로그하지 마세요. 비교가 깨집니다.
+
+## Shape 표 — Train Step 텐서
+
+| 이름 | Shape | 비고 |
+|---|---|---|
+| `input_ids` | `(B, T)` | |
+| `labels` | `(B, T)` | 시프트 또는 동일+ignore |
+| `logits` | `(B, T, V)` | |
+| `loss` | `()` | scalar |
+| grad（파라미터） | 파라미터와 동일 | clip 전/후 기록 |
+
+## 구현 스케치 — 한 스텝의 뼈대
+
+```python
+def train_step(model, batch, opt, scaler=None, max_norm=1.0):
+    model.train()
+    opt.zero_grad(set_to_none=True)
+    logits = model(batch["input_ids"])
+    loss = token_ce(logits, batch["labels"], ignore_index=-100)
+
+    if scaler is None:
+        loss.backward()
+        grad_norm = torch.nn.utils.clip_grad_norm_(model.parameters(), max_norm)
+        opt.step()
+    else:
+        scaler.scale(loss).backward()
+        scaler.unscale_(opt)
+        grad_norm = torch.nn.utils.clip_grad_norm_(model.parameters(), max_norm)
+        scaler.step(opt)
+        scaler.update()
+    return {"loss": float(loss.detach()), "grad_norm": float(grad_norm)}
+```
+
+스케줄러 `step()` 위치는 API에 맞게 고정하고 로그로 검증합니다（제63강）.
+
+## 실패 모드 — Training Loop
+
+| 실패 | 증상 | 점검 |
+|---|---|---|
+| `zero_grad` 누락 | Loss 폭발·이상 | 매 스텝 확인 |
+| eval 모드로 학습 | Dropout off 상태로 train | `model.train()` |
+| 시드 미고정 | 재현 실패 | torch/numpy/cuda seed |
+| 로그만 micro-loss | 착시 | token-avg·accum 반영 |
+| clip 과도 | 학습 정체 | grad_norm 히스토그램 |
+
+## 실습 코드 — 토큰 예산 루프
+
+```python
+def train_by_token_budget(model, loader, opt, budget, log_every=50):
+    seen, step = 0, 0
+    while seen < budget:
+        for batch in loader:
+            out = train_step(model, batch, opt)
+            seen += int(batch["attention_mask"].sum())
+            step += 1
+            if step % log_every == 0:
+                print({"step": step, "tokens": seen, "loss": out["loss"]})
+            if seen >= budget:
+                break
+```
+
+Epoch 루프와 토큰 예산 루프를 혼용할 때는 **종료 조건이 무엇인지**를 config에 한 줄로 적으세요.
+
+## 수식 보강 — Grad clip
+
+전역 노름
+
+$$
+\|g\|_2
+=
+\sqrt{\sum_i \|g_i\|_2^2}
+$$
+
+가 `max_norm`을 넘으면
+
+$$
+g\leftarrow g\cdot \frac{\mathrm{max\_norm}}{\|g\|_2+\varepsilon}
+$$
+
+로 줄입니다. clip 비율이 매 스텝 1에 가깝면 max_norm이 너무 작을 수 있습니다.
+
 ## LLM에서는 어디에 사용될까?
 
 이번 62강에서 배운 개념은 이후 Transformer · GPT · 서빙 강의에서 반복해서 등장합니다. 각 수식·코드 블록을 “실제 모델의 어느 단계인가”와 연결해 다시 읽어 보세요.

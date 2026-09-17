@@ -265,6 +265,30 @@ print(A.sum(-1))
 
 복잡도 스케치: Self-Attention은 $O(T^2 d)$ 항이 있습니다.
 
+
+<!-- enrich-batch3-35 -->
+## Path length와 Gradient
+
+RNN 역전파는 시간 축으로 곱이 이어집니다.
+
+$$
+\frac{\partial L}{\partial h_1}=\frac{\partial L}{\partial h_T}\prod_{t=2}^{T}\frac{\partial h_t}{\partial h_{t-1}}
+$$
+
+곱이 작으면 vanishing, 크면 exploding. Attention은 $h_1$에서 $h_T$로 **직접 링크**를 만들어 경로를 짧게 합니다.
+
+$$
+\alpha_{T1}\propto \exp(q_T^\top k_1/\sqrt{d})
+$$
+
+```python
+import torch
+# 점수→가중치
+q = torch.randn(4); k = torch.randn(4, 8); # toy
+# 생략: 실제는 d_k 차원
+print(q.shape)
+```
+
 ## LLM에서는 어디에 사용될까?
 ### 9.1 Transformer 블록의 중심
 

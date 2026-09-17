@@ -406,6 +406,29 @@ $$
 
 대기 시간과 TTFT 제약을 함께 둡니다.
 
+
+<!-- enrich-batch3-104 -->
+## vLLM 핵심 식 — PagedAttention
+
+블록 테이블로 비연속 KV:
+
+$$
+\mathrm{KV}[b,j] \mapsto \mathrm{page}[\mathrm{block\_table}[b,j]]
+$$
+
+메모리 단편화 ↓, 공유 프롬프트 시 페이지 재사용.
+
+$$
+\mathrm{Mem}_{KV}\approx N_{\mathrm{pages}}\cdot \mathrm{page\ size}
+$$
+
+```python
+page = 16
+seq = 2000
+pages = (seq + page - 1)//page
+print(pages)
+```
+
 ## LLM에서는 어디에 사용될까?
 
 이번 104강에서 배운 개념은 이후 Transformer · GPT · 서빙 강의에서 반복해서 등장합니다. 각 수식·코드 블록을 “실제 모델의 어느 단계인가”와 연결해 다시 읽어 보세요.

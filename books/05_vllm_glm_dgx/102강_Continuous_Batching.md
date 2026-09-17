@@ -308,6 +308,28 @@ def decode_batch_step(model, token_batch, kv_list):
 
 요청별 남은 길이가 달라도, 매 스텝 활성 시퀀스 집합 $\mathcal{A}_t$에 대해 배치 decode합니다. 처리량은 $|\mathcal{A}_t|$와 메모리 한도에 좌우됩니다.
 
+
+<!-- enrich-batch3-102 -->
+## Continuous Batching 효율
+
+정적 배치 대비 유휴:
+
+$$
+\eta_{\mathrm{idle}}=1-\frac{\sum_i n_{\mathrm{active},i}}{B\cdot T_{\mathrm{slot}}}
+$$
+
+연속 배칭은 시퀀스 종료 즉시 새 요청을 넣어 $\eta_{\mathrm{idle}}$을 줄입니다.
+
+```python
+# 슬롯 점유율 스케치
+active = [1,1,0,1,1,0,1,1]
+print(sum(active)/len(active))
+```
+
+$$
+\mathrm{throughput}\uparrow \Leftarrow \eta_{\mathrm{idle}}\downarrow
+$$
+
 ## LLM에서는 어디에 사용될까?
 ### 9.1 지표와의 관계（정의만）
 
@@ -397,6 +419,24 @@ A(5), B(1), C(5), D(1), batch=2 가정으로 두 방식의 “C의 시작 시각
 
 6. **벤치 그래프 숫자를 맥락 없이 이식**  
    워크로드（입출력 길이 분포）가 반이다.
+
+## 수식 보강 — 처리량 근사 한 줄 더
+동시 인플라이트 $B$, 스텝당 평균 생성 토큰（시퀀스당）이 약 1일 때
+
+$$
+
+\mathrm{Throughput}_{\mathrm{tok}} \approx \frac{B}{\bar{t}_{\mathrm{step}}}
+$$
+
+$\bar{t}_{\mathrm{step}}$는 prefill 혼입·메모리 압박에 따라 변한다. Static batching의 패딩 낭비
+
+$$
+
+\eta_{\mathrm{pad}} = 1 - \frac{\sum_i L_i}{B\cdot L_{\max}}
+$$
+
+가 커질수록 동일 $B$라도 유용 계산 비율이 떨어진다. Continuous batching은 $B$의 **구성원을 스텝마다 교체**해 이 낭비를 줄이는 쪽에 가깝다.
+
 
 ## 핵심 요약
 - Static Batching은 배치 수명에 요청 수명을 묶기 쉽다.

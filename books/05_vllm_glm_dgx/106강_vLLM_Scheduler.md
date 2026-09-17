@@ -277,6 +277,42 @@ def mm1_wait(rho):
 print(mm1_wait(0.7), mm1_wait(0.95))
 ```
 
+
+<!-- enrich-batch4-106 -->
+## 스케줄 스텝 의사코드
+
+```python
+waiting, running = [], []
+def schedule(free_blocks):
+    # 1) finished 제거 2) preempt 3) admit
+    admitted = []
+    for req in list(waiting):
+        need = (req["len"] + 15)//16
+        if need <= free_blocks:
+            free_blocks -= need
+            admitted.append(req)
+            waiting.remove(req)
+    running.extend(admitted)
+    return running, free_blocks
+print(schedule(10))
+```
+
+### 공정성 vs 처리량
+
+$$
+\max \mathrm{TPS}
+\quad\text{vs}\quad
+\min \mathrm{starve}(i)
+$$
+
+긴 요청만 우대하면 짧은 요청 P99가 나빠집니다.
+
+## 선점 비용
+
+$$
+c_{\mathrm{preempt}}=c_{\mathrm{recompute\ prefill}}+c_{\mathrm{queue}}
+$$
+
 ## LLM에서는 어디에 사용될까?
 온콜에서 스케줄러 어휘가 바로 쓰인다.
 
@@ -344,6 +380,51 @@ ttft_p50/p99 (외부), throughput (외부)
 ```
 
 숫자 해석은 제107·118강. 여기서는 **스케줄 내부 상태와 외부 SLO를 같은 티켓에 붙인다**는 규율만 고정한다.
+
+
+## 워크드 예제 — 블록이 바닥날 때
+가정（교육용 숫자, 벤치 아님）: free blocks $F=4$, 블록당 토큰 $S=16$, running 시퀀스 2개가 각각 앞으로 40토큰을 더 쓸 예정.
+
+각 시퀀스의 추가 블록 수요 대략 $\lceil 40/16\rceil=3$ 이므로 합 6 > 4.  
+스케줄러 선택지:
+
+1. 신규 admission 중단  
+2. 한 시퀀스 preempt → 블록 회수  
+3. （지원 시）스왑  
+
+```text
+수요 합 > F  ⇒  선점·입장거절·스왑 중 하나
+수요 합 ≤ F  ⇒  decode 진행 가능（다른 예산 무시 시）
+```
+
+이 산수가 “정확한 엔진 내부”는 아니지만, **왜 preempt가 정상 경로인지**를 손으로 느끼게 한다.
+
+## 우선순위·SLA 메모
+실시간 챗은 TTFT에, 배치 요약은 Throughput에 가중치를 둔다. 같은 클러스터에 두 트래픽을 섞으면 스케줄러에 **클래스**가 필요해진다.
+
+$$
+
+\text{class} \in \{\mathrm{interactive}, \mathrm{batch}\}
+$$
+
+클래스별 $N_{\mathrm{seq}}$, prefill 예산 분리는 제품 정책이다. 구현 이름은 엔진 문서를 따른다.
+
+
+## 대기열과 TTFT（초간단 큐잉 직관）
+요청 도착률을 $\lambda$, 평균 서비스율（첫 토큰까지）을 $\mu$라 하면, 안정 조건 감각은 $\lambda < \mu$ 쪽이다.  
+waiting이 길게 쌓이면
+
+$$
+
+\mathrm{TTFT} \approx T_{\mathrm{queue}} + T_{\mathrm{prefill}}
+$$
+
+에서 $T_{\mathrm{queue}}$가 지배할 수 있다. 스케줄러 admission·prefill 예산은 $\mu$와 $T_{\mathrm{queue}}$에 동시에 손을 댄다.  
+**비주장:** M/M/1 공식을 프로덕션에 그대로 대입한다는 뜻은 아니다. 직관용 분해다.
+
+
+## 한 줄 복습
+Waiting은 입장 대기, Running은 실행 배치 후보다. Admission은 블록·시퀀스·토큰 예산 아래서만 일어난다. Prefill을 한꺼번에 넣으면 TTFT가, 선점이 잦으면 유효 처리량이 먼저 아프다. 외부 증상은 TTFT·TPOT·Throughput으로 읽고, 내부 상태는 큐 길이와 free blocks로 읽는다.
 
 
 ## 핵심 요약

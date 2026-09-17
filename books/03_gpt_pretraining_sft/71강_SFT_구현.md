@@ -338,6 +338,57 @@ loss = (m*nll).sum() / m.sum()
 print(float(loss))
 ```
 
+
+<!-- enrich-batch3-71 -->
+## 패딩·마스킹 함정
+
+$$
+L=\frac{\sum_t m_t\,\ell_t}{\sum_t m_t+\varepsilon}
+$$
+
+분모를 $T$로 두면 패딩이 많은 배치에서 손실이 왜곡됩니다.
+
+```python
+import torch
+ell = torch.tensor([1.0, 1.0, 0.2, 0.2])
+m = torch.tensor([0.0, 0.0, 1.0, 1.0])
+print(float((ell*m).sum()/m.sum()))
+```
+
+
+<!-- enrich-batch4-71 -->
+## 구현 체크리스트 — SFT
+
+1. Chat template 버전 고정
+2. `labels`에 prompt=-100
+3. EOS를 응답 끝에 명시
+4. eval은 동일 템플릿
+
+```python
+# label mask 검증
+labels = [-100,-100,11,12,13,2]  # 2=EOS 가정
+assert labels.count(-100) >= 1 and labels[-1] != -100
+print("mask ok", sum(1 for x in labels if x!=-100))
+```
+
+### 길이 편향
+
+$$
+L_{\mathrm{tok}}=\frac{1}{\sum m_t}\sum m_t\ell_t
+\quad\text{vs}\quad
+L_{\mathrm{seq}}=\sum m_t\ell_t
+$$
+
+시퀀스 합은 긴 답에 더 큰 가중을 줍니다.
+
+## 흔한 버그
+
+| 버그 | 증상 |
+|---|---|
+| mask 전부 1 | 프롬프트 암기·누수 |
+| EOS 누락 | 무한 생성 |
+| 템플릿 mismatch | eval 급락 |
+
 ## LLM에서는 어디에 사용될까?
 - Hugging Face `Trainer` / 각종 SFTTrainer가 `labels` 마스크를 자동·반자동으로 처리하는 경우가 많다.
 - 그래도 **템플릿·토크나이저·마스크**가 어긋나면 조용히 잘못된 학습이 된다. 자동을 믿기 전에 한 샘플의 `labels`를 decode해 보라.

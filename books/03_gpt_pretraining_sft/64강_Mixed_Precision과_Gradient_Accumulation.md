@@ -391,6 +391,28 @@ for micro in range(K):
 print("effective batch x", K)
 ```
 
+
+<!-- enrich-batch3-64 -->
+## FP16 오버플로와 스케일
+
+$$
+\mathrm{fp16\ max}\approx 65504
+$$
+
+$$
+s_{t+1}=
+\begin{cases}
+s_t/2 & \text{overflow}\\
+s_t\cdot 2 & \text{stable for N steps}
+\end{cases}
+$$
+
+```python
+import torch
+x = torch.tensor([1e5], dtype=torch.float16)
+print(x)  # inf 가능 — 스케일 필요성 직관
+```
+
 ## LLM에서는 어디에 사용될까?
 
 이번 64강에서 배운 개념은 이후 Transformer · GPT · 서빙 강의에서 반복해서 등장합니다. 각 수식·코드 블록을 “실제 모델의 어느 단계인가”와 연결해 다시 읽어 보세요.
