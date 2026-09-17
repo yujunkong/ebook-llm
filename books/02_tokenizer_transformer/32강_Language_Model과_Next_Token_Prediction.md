@@ -596,7 +596,7 @@ $P(x_{1:T})=\prod_{t=1}^{T} P(x_t\mid x_{<t})$
 
 ### 강의 이동
 
-- **이전 강:** [제31강. Embedding 토큰을 벡터로](31강_Embedding_토큰을_벡터로.md)
+- **이전 강:** [제31강. Embedding — 토큰을 벡터로](31강_Embedding_토큰을_벡터로.md)
 - **다음 강:** [제33강. Softmax와 Logit](33강_Softmax와_Logit.md)
 
 <!-- /LECTURE_NAV -->

@@ -358,6 +358,6 @@ RLVR은 검증 가능 보상이라는 신호 출처, Reasoning Training은 그 �
 ### 강의 이동
 
 - **이전 강:** [제93강. RLVR과 Verifiable Reward](93강_RLVR과_Verifiable_Reward.md)
-- **다음 강:** [제95강. 프로젝트 Preference RL 실습](95강_프로젝트_Preference_RL_실습.md)
+- **다음 강:** [제95강. 프로젝트 — Preference / RL 실습](95강_프로젝트_Preference_RL_실습.md)
 
 <!-- /LECTURE_NAV -->

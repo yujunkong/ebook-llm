@@ -514,6 +514,6 @@ GPU의 천장과 병목 종류를 보았다. 다음 질문은 **그 위에서 �
 ### 강의 이동
 
 - **이전 강:** [제110강. MTP와 Speculative Decoding](110강_MTP와_Speculative_Decoding.md)
-- **다음 강:** [제112강. Inference Engine 비교 vLLM TensorRT LLM SGLang](112강_Inference_Engine_비교_vLLM_TensorRT_LLM_SGLang.md)
+- **다음 강:** [제112강. Inference Engine 비교 — vLLM · TensorRT-LLM · SGLang](112강_Inference_Engine_비교_vLLM_TensorRT_LLM_SGLang.md)
 
 <!-- /LECTURE_NAV -->

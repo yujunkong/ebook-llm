@@ -676,6 +676,6 @@ np.argmax(logits, axis=-1)
 ### 강의 이동
 
 - **이전 강:** [제7강. 파일 입출력과 데이터 다루기](07강_파일_입출력과_데이터_다루기.md)
-- **다음 강:** [제9강. Scalar Vector Matrix Tensor](09강_Scalar_Vector_Matrix_Tensor.md)
+- **다음 강:** [제9강. Scalar, Vector, Matrix, Tensor](09강_Scalar_Vector_Matrix_Tensor.md)
 
 <!-- /LECTURE_NAV -->

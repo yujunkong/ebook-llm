@@ -504,7 +504,7 @@ $\log(\pi/\pi_{\mathrm{ref}})$의 참조 쪽도 같이 움직여 KL 닻·상대 
 
 ### 강의 이동
 
-- **이전 강:** [제90강. DPO Preference를 직접 학습하기](90강_DPO_Preference를_직접_학습하기.md)
+- **이전 강:** [제90강. DPO — Preference를 직접 학습하기](90강_DPO_Preference를_직접_학습하기.md)
 - **다음 강:** [제92강. GRPO](92강_GRPO.md)
 
 <!-- /LECTURE_NAV -->

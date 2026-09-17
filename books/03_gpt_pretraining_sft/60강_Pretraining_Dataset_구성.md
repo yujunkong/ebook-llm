@@ -487,7 +487,7 @@ Cleaning은 텍스트 안 잡음 제거(예: HTML 태그). Filtering은 문서 �
 
 ### 강의 이동
 
-- **이전 강:** [제59강. Temperature TopK TopP](59강_Temperature_TopK_TopP.md)
+- **이전 강:** [제59강. Temperature, Top-K, Top-P](59강_Temperature_TopK_TopP.md)
 - **다음 강:** [제61강. Tokenization Pipeline과 Dataset Packing](61강_Tokenization_Pipeline과_Dataset_Packing.md)
 
 <!-- /LECTURE_NAV -->

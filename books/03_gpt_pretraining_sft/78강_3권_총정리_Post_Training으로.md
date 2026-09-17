@@ -310,6 +310,6 @@ Pretraining과 SFT는 그대로 가져간다.
 ### 강의 이동
 
 - **이전 강:** [제77강. Pretraining과 SFT의 역할 정리](77강_Pretraining과_SFT의_역할_정리.md)
-- **다음 강:** [제79강. Post Training 지도](../04_rlhf_ppo_grpo/79강_Post_Training_지도.md)
+- **다음 강:** [제79강. Post-Training 지도](../04_rlhf_ppo_grpo/79강_Post_Training_지도.md)
 
 <!-- /LECTURE_NAV -->

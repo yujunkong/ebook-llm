@@ -229,7 +229,7 @@ SFT（●）. Pretrain은 △ 수준.
 
 ### 강의 이동
 
-- **이전 강:** [제76강. 프로젝트 Mini GPT SFT](76강_프로젝트_Mini_GPT_SFT.md)
-- **다음 강:** [제78강. 3권 총정리 Post Training으로](78강_3권_총정리_Post_Training으로.md)
+- **이전 강:** [제76강. 프로젝트 — Mini GPT + SFT](76강_프로젝트_Mini_GPT_SFT.md)
+- **다음 강:** [제78강. 3권 총정리 — Post-Training으로](78강_3권_총정리_Post_Training으로.md)
 
 <!-- /LECTURE_NAV -->

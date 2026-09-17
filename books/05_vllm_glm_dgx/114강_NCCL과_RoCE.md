@@ -356,6 +356,6 @@ RoCE는 RDMA 경로를 목표로 하고, TCP 경로는 소켓·CPU 개입이 커
 ### 강의 이동
 
 - **이전 강:** [제113강. Tensor Parallel](113강_Tensor_Parallel.md)
-- **다음 강:** [제115강. 2x DGX Spark 환경 구성](115강_2x_DGX_Spark_환경_구성.md)
+- **다음 강:** [제115강. 2× DGX Spark 환경 구성](115강_2x_DGX_Spark_환경_구성.md)
 
 <!-- /LECTURE_NAV -->

@@ -563,7 +563,7 @@ $$
 
 ### 강의 이동
 
-- **이전 강:** [제80강. 강화학습 기초 State Action Reward](80강_강화학습_기초_State_Action_Reward.md)
+- **이전 강:** [제80강. 강화학습 기초 — State, Action, Reward](80강_강화학습_기초_State_Action_Reward.md)
 - **다음 강:** [제82강. Policy Gradient](82강_Policy_Gradient.md)
 
 <!-- /LECTURE_NAV -->

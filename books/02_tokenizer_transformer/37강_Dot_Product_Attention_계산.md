@@ -695,7 +695,7 @@ K (T, d_k) --transpose--> K^T (d_k, T)
 
 ### 강의 이동
 
-- **이전 강:** [제36강. Query Key Value](36강_Query_Key_Value.md)
+- **이전 강:** [제36강. Query, Key, Value](36강_Query_Key_Value.md)
 - **다음 강:** [제38강. Softmax Attention과 작은 숫자 예제](38강_Softmax_Attention과_작은_숫자_예제.md)
 
 <!-- /LECTURE_NAV -->

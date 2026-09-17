@@ -401,6 +401,6 @@ User Guide/주문 SKU/실제 `lsblk` 등 장치 실측으로 확인한다.
 ### 강의 이동
 
 - **이전 강:** [제114강. NCCL과 RoCE](114강_NCCL과_RoCE.md)
-- **다음 강:** [제116강. 프로젝트 실제 LLM Serving](116강_프로젝트_실제_LLM_Serving.md)
+- **다음 강:** [제116강. 프로젝트 — 실제 LLM Serving](116강_프로젝트_실제_LLM_Serving.md)
 
 <!-- /LECTURE_NAV -->

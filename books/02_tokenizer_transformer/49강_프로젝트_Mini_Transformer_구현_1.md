@@ -487,6 +487,6 @@ $64 / 4 = 16$.
 ### 강의 이동
 
 - **이전 강:** [제48강. Causal Language Model 구조](48강_Causal_Language_Model_구조.md)
-- **다음 강:** [제50강. 프로젝트 Mini Transformer 구현 2](50강_프로젝트_Mini_Transformer_구현_2.md)
+- **다음 강:** [제50강. 프로젝트 — Mini Transformer 구현 (2)](50강_프로젝트_Mini_Transformer_구현_2.md)
 
 <!-- /LECTURE_NAV -->

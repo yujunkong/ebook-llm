@@ -356,7 +356,7 @@ Pretraining(base) 단계의 미니 산출물이다. 제70강에서는 Instructio
 
 ### 강의 이동
 
-- **이전 강:** [제68강. 프로젝트 Mini GPT Pretraining](68강_프로젝트_Mini_GPT_Pretraining.md)
+- **이전 강:** [제68강. 프로젝트 — Mini GPT Pretraining](68강_프로젝트_Mini_GPT_Pretraining.md)
 - **다음 강:** [제70강. Instruction Dataset 형식](70강_Instruction_Dataset_형식.md)
 
 <!-- /LECTURE_NAV -->

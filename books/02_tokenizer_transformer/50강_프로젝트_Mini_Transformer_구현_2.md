@@ -464,7 +464,7 @@ overfit 테스트에서 loss가 0.01까지 내려갔는데, 전체 데이터 학
 
 ### 강의 이동
 
-- **이전 강:** [제49강. 프로젝트 Mini Transformer 구현 1](49강_프로젝트_Mini_Transformer_구현_1.md)
+- **이전 강:** [제49강. 프로젝트 — Mini Transformer 구현 (1)](49강_프로젝트_Mini_Transformer_구현_1.md)
 - **다음 강:** [제51강. Attention 시각화](51강_Attention_시각화.md)
 
 <!-- /LECTURE_NAV -->

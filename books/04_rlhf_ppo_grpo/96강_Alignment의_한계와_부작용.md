@@ -305,7 +305,7 @@ Reward hacking（또는 Goodhart / proxy 과적합）.
 
 ### 강의 이동
 
-- **이전 강:** [제95강. 프로젝트 Preference RL 실습](95강_프로젝트_Preference_RL_실습.md)
-- **다음 강:** [제97강. 논문 실무 흐름 정리](97강_논문_실무_흐름_정리.md)
+- **이전 강:** [제95강. 프로젝트 — Preference / RL 실습](95강_프로젝트_Preference_RL_실습.md)
+- **다음 강:** [제97강. 논문·실무 흐름 정리](97강_논문_실무_흐름_정리.md)
 
 <!-- /LECTURE_NAV -->

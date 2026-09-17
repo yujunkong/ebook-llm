@@ -496,6 +496,6 @@ draft/verify 비용 증가와 수락 실패 시 낭비가 커져 오히려 느�
 ### 강의 이동
 
 - **이전 강:** [제109강. MoE](109강_MoE.md)
-- **다음 강:** [제111강. GPU 아키텍처 CUDA SM Memory Bandwidth](111강_GPU_아키텍처_CUDA_SM_Memory_Bandwidth.md)
+- **다음 강:** [제111강. GPU 아키텍처 — CUDA, SM, Memory Bandwidth](111강_GPU_아키텍처_CUDA_SM_Memory_Bandwidth.md)
 
 <!-- /LECTURE_NAV -->

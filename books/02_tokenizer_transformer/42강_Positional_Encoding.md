@@ -468,7 +468,7 @@ Sinusoidal/Learned absolute PE는 강력하지만 한계가 있다.
 
 ### 강의 이동
 
-- **이전 강:** [제41강. Multi Head Attention](41강_Multi_Head_Attention.md)
+- **이전 강:** [제41강. Multi-Head Attention](41강_Multi_Head_Attention.md)
 - **다음 강:** [제43강. RoPE](43강_RoPE.md)
 
 <!-- /LECTURE_NAV -->

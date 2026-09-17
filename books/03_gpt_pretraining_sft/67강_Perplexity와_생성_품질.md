@@ -510,6 +510,6 @@ Validation loss(평균 NLL)를 고정된 홀드아웃으로 재고, 그 지수�
 ### 강의 이동
 
 - **이전 강:** [제66강. Validation과 Evaluation](66강_Validation과_Evaluation.md)
-- **다음 강:** [제68강. 프로젝트 Mini GPT Pretraining](68강_프로젝트_Mini_GPT_Pretraining.md)
+- **다음 강:** [제68강. 프로젝트 — Mini GPT Pretraining](68강_프로젝트_Mini_GPT_Pretraining.md)
 
 <!-- /LECTURE_NAV -->

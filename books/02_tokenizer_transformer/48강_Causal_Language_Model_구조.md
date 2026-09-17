@@ -363,6 +363,6 @@ Loss는 잘 내려가는데 생성 문장이 엉망이다. Causal mask 관점에
 ### 강의 이동
 
 - **이전 강:** [제47강. Encoder와 Decoder](47강_Encoder와_Decoder.md)
-- **다음 강:** [제49강. 프로젝트 Mini Transformer 구현 1](49강_프로젝트_Mini_Transformer_구현_1.md)
+- **다음 강:** [제49강. 프로젝트 — Mini Transformer 구현 (1)](49강_프로젝트_Mini_Transformer_구현_1.md)
 
 <!-- /LECTURE_NAV -->

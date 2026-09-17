@@ -709,7 +709,7 @@ O = A @ V                # 오늘
 
 ### 강의 이동
 
-- **이전 강:** [제37강. Dot Product Attention 계산](37강_Dot_Product_Attention_계산.md)
-- **다음 강:** [제39강. Self Attention 구현](39강_Self_Attention_구현.md)
+- **이전 강:** [제37강. Dot-Product Attention 계산](37강_Dot_Product_Attention_계산.md)
+- **다음 강:** [제39강. Self-Attention 구현](39강_Self_Attention_구현.md)
 
 <!-- /LECTURE_NAV -->

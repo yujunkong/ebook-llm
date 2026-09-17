@@ -465,6 +465,6 @@ Attention이 토큰 사이를 섞으면, FFN은 **토큰마다** 비선형 변�
 ### 강의 이동
 
 - **이전 강:** [제43강. RoPE](43강_RoPE.md)
-- **다음 강:** [제45강. Feed Forward Network MLP](45강_Feed_Forward_Network_MLP.md)
+- **다음 강:** [제45강. Feed-Forward Network (MLP)](45강_Feed_Forward_Network_MLP.md)
 
 <!-- /LECTURE_NAV -->

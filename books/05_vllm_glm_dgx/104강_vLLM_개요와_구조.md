@@ -506,7 +506,7 @@ Continuous: 정적 배치의 idle/호위·늦은 입학. PagedAttention: 거대 
 
 ### 강의 이동
 
-- **이전 강:** [제103강. Quantization INT8 INT4 FP8](103강_Quantization_INT8_INT4_FP8.md)
+- **이전 강:** [제103강. Quantization — INT8, INT4, FP8](103강_Quantization_INT8_INT4_FP8.md)
 - **다음 강:** [제105강. PagedAttention](105강_PagedAttention.md)
 
 <!-- /LECTURE_NAV -->

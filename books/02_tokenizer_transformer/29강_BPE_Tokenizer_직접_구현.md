@@ -747,7 +747,7 @@ Tokenizer가 “조각”을 만들었다면, 30강은 “사전에 어떤 예�
 
 ### 강의 이동
 
-- **이전 강:** [제28강. Character Word Subword Tokenization](28강_Character_Word_Subword_Tokenization.md)
+- **이전 강:** [제28강. Character / Word / Subword Tokenization](28강_Character_Word_Subword_Tokenization.md)
 - **다음 강:** [제30강. Vocabulary와 Special Tokens](30강_Vocabulary와_Special_Tokens.md)
 
 <!-- /LECTURE_NAV -->
