@@ -1,0 +1,43 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<svg xmlns="http://www.w3.org/2000/svg" width="1200" height="680" viewBox="0 0 1200 680" role="img">
+  <title>Causal mask</title>
+  <defs>
+    <marker id="arrow" markerWidth="10" markerHeight="10" refX="8" refY="3" orient="auto">
+      <path d="M0,0 L8,3 L0,6 Z" fill="#1a1a1a"/>
+    </marker>
+  </defs>
+  <rect width="1200" height="680" fill="#f7f4ef"/>
+
+  <text x="60" y="56" font-family="Georgia, serif" font-size="28" fill="#1a1a1a">Fig 40-1. Causal Mask: 미래 토큰은 −∞</text>
+  <text x="60" y="96" font-size="18" fill="#555">GPT는 왼쪽(과거)만 보고 다음을 예측</text>
+  <text x="120" y="160" font-size="20">점수 S</text>
+  <g font-size="16" font-family="Helvetica, Arial, sans-serif">
+    <rect x="120" y="180" width="60" height="60" fill="#c6e5d3" stroke="#d0cbc3"/><text x="135" y="215">2</text>
+    <rect x="180" y="180" width="60" height="60" fill="#eee" stroke="#d0cbc3"/><text x="195" y="215">9</text>
+    <rect x="240" y="180" width="60" height="60" fill="#eee" stroke="#d0cbc3"/><text x="255" y="215">1</text>
+    <rect x="120" y="240" width="60" height="60" fill="#c6e5d3" stroke="#d0cbc3"/><text x="135" y="275">3</text>
+    <rect x="180" y="240" width="60" height="60" fill="#c6e5d3" stroke="#d0cbc3"/><text x="195" y="275">4</text>
+    <rect x="240" y="240" width="60" height="60" fill="#eee" stroke="#d0cbc3"/><text x="255" y="275">8</text>
+    <rect x="120" y="300" width="60" height="60" fill="#c6e5d3" stroke="#d0cbc3"/><text x="135" y="335">1</text>
+    <rect x="180" y="300" width="60" height="60" fill="#c6e5d3" stroke="#d0cbc3"/><text x="195" y="335">2</text>
+    <rect x="240" y="300" width="60" height="60" fill="#c6e5d3" stroke="#d0cbc3"/><text x="255" y="335">5</text>
+  </g>
+  <text x="420" y="260" font-size="36" fill="#b35c00">mask →</text>
+  <text x="620" y="160" font-size="20">마스킹 후</text>
+  <g font-size="14" font-family="Helvetica, Arial, sans-serif">
+    <rect x="620" y="180" width="70" height="60" fill="#c6e5d3" stroke="#d0cbc3"/><text x="640" y="215">2</text>
+    <rect x="690" y="180" width="70" height="60" fill="#333"/><text x="700" y="215" fill="#fff">−∞</text>
+    <rect x="760" y="180" width="70" height="60" fill="#333"/><text x="770" y="215" fill="#fff">−∞</text>
+    <rect x="620" y="240" width="70" height="60" fill="#c6e5d3" stroke="#d0cbc3"/><text x="640" y="275">3</text>
+    <rect x="690" y="240" width="70" height="60" fill="#c6e5d3" stroke="#d0cbc3"/><text x="710" y="275">4</text>
+    <rect x="760" y="240" width="70" height="60" fill="#333"/><text x="770" y="275" fill="#fff">−∞</text>
+    <rect x="620" y="300" width="70" height="60" fill="#c6e5d3" stroke="#d0cbc3"/><text x="640" y="335">1</text>
+    <rect x="690" y="300" width="70" height="60" fill="#c6e5d3" stroke="#d0cbc3"/><text x="710" y="335">2</text>
+    <rect x="760" y="300" width="70" height="60" fill="#c6e5d3" stroke="#d0cbc3"/><text x="710" y="335"></text>
+    <text x="780" y="335" fill="#1a1a1a">5</text>
+  </g>
+  <rect x="120" y="420" width="960" height="180" rx="8" fill="#fff" stroke="#d0cbc3"/>
+  <text x="150" y="480" font-size="20">Softmax(−∞)=0 → 미래 위치 가중치 0</text>
+  <text x="150" y="530" font-size="18" fill="#555">학습 목표 “다음 토큰 맞히기”와 같은 방향의 정보를 막음</text>
+
+</svg>

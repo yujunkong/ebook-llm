@@ -1,0 +1,23 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<svg xmlns="http://www.w3.org/2000/svg" width="1200" height="640" viewBox="0 0 1200 640" role="img">
+  <title>MSE vs Cross-Entropy intuition</title>
+  <defs>
+    <marker id="arrow" markerWidth="10" markerHeight="10" refX="8" refY="3" orient="auto">
+      <path d="M0,0 L8,3 L0,6 Z" fill="#1a1a1a"/>
+    </marker>
+  </defs>
+  <rect width="1200" height="640" fill="#f7f4ef"/>
+
+  <text x="60" y="56" font-family="Georgia, serif" font-size="28" fill="#1a1a1a">Fig 13-1. Loss = “틀린 정도”를 숫자 하나로</text>
+  <rect x="80" y="140" width="480" height="400" rx="8" fill="#fff" stroke="#d0cbc3" stroke-width="2"/>
+  <text x="110" y="190" font-size="24" font-family="Georgia, serif">회귀 MSE</text>
+  <text x="110" y="240" font-size="18">(예측 3.0 − 정답 5.0)² = 4</text>
+  <text x="110" y="290" font-size="18">오차 절대값 2 → 제곱 4</text>
+  <text x="110" y="360" font-size="16" fill="#555">연속 값에 잘 맞음</text>
+  <rect x="640" y="140" width="480" height="400" rx="8" fill="#fff" stroke="#d0cbc3" stroke-width="2"/>
+  <text x="670" y="190" font-size="24" font-family="Georgia, serif">분류 CE</text>
+  <text x="670" y="240" font-size="18">정답 확률 p=0.8 → −log(0.8)≈0.22</text>
+  <text x="670" y="290" font-size="18">p=0.1 → −log(0.1)≈2.30</text>
+  <text x="670" y="360" font-size="16" fill="#555">틀린 확신일수록 Loss↑ (LLM 기본)</text>
+
+</svg>

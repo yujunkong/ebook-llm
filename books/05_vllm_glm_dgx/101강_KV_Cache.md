@@ -485,6 +485,26 @@ $$
 공유 접두 $S_0$: $\mathrm{Bytes}_{\mathrm{shared}}\approx 2 L H_{kv} d S_0 b$ (엔진 지원 시).
 
 
+
+<!-- visual-example-101 -->
+## 숫자로 따라가기 — KV 메모리
+
+![그림 101-1](images/fig101-01.png)
+
+아주 거친 비례:
+
+$$
+\mathrm{Mem}_{\mathrm{KV}} \propto L \times T \times d_{\mathrm{h}} \times B
+$$
+
+| 바꾼 것 | 결과 감 |
+|---|---|
+| 서열 길이 $T$ ×2 | KV ≈ ×2 |
+| 배치 $B$ ×2 | KV ≈ ×2 |
+| 층 $L$ ×2 | KV ≈ ×2 |
+
+그래서 긴 컨텍스트·높은 동시성은 곧 **GPU 메모리 예산** 문제가 됩니다.
+
 ## LLM에서는 어디에 사용될까?
 
 이번 101강에서 배운 개념은 이후 Transformer · GPT · 서빙 강의에서 반복해서 등장합니다. 각 수식·코드 블록을 “실제 모델의 어느 단계인가”와 연결해 다시 읽어 보세요.

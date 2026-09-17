@@ -1,0 +1,20 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<svg xmlns="http://www.w3.org/2000/svg" width="1200" height="640" viewBox="0 0 1200 640" role="img">
+  <title>Cross entropy worked example</title>
+  <defs>
+    <marker id="arrow" markerWidth="10" markerHeight="10" refX="8" refY="3" orient="auto">
+      <path d="M0,0 L8,3 L0,6 Z" fill="#1a1a1a"/>
+    </marker>
+  </defs>
+  <rect width="1200" height="640" fill="#f7f4ef"/>
+
+  <text x="60" y="56" font-family="Georgia, serif" font-size="28" fill="#1a1a1a">Fig 34-1. Cross-Entropy: 정답 칸의 −log p</text>
+  <text x="60" y="96" font-size="18" fill="#555">정답 토큰이 index=0 일 때 L = −log p₀</text>
+  <rect x="80" y="150" width="1040" height="400" rx="8" fill="#fff" stroke="#d0cbc3"/>
+  <text x="120" y="220" font-size="22">p = [0.66, 0.24, 0.10],  정답=0</text>
+  <text x="120" y="280" font-size="22" fill="#0b6e4f">L = −log(0.66) ≈ 0.42   ← 괜찮은 예측</text>
+  <text x="120" y="360" font-size="22">만약 모델이 틀려 p₀=0.05 라면</text>
+  <text x="120" y="420" font-size="22" fill="#b35c00">L = −log(0.05) ≈ 3.00   ← 훨씬 큰 페널티</text>
+  <text x="120" y="500" font-size="18" fill="#555">학습은 L을 줄이도록 θ를 움직여 정답 확률을 올린다</text>
+
+</svg>

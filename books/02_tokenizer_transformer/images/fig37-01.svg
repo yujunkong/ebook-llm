@@ -1,0 +1,41 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<svg xmlns="http://www.w3.org/2000/svg" width="1200" height="720" viewBox="0 0 1200 720" role="img">
+  <title>Attention score toy 3x3</title>
+  <defs>
+    <marker id="arrow" markerWidth="10" markerHeight="10" refX="8" refY="3" orient="auto">
+      <path d="M0,0 L8,3 L0,6 Z" fill="#1a1a1a"/>
+    </marker>
+  </defs>
+  <rect width="1200" height="720" fill="#f7f4ef"/>
+
+  <text x="60" y="56" font-family="Georgia, serif" font-size="28" fill="#1a1a1a">Fig 37-1. Attention: QKᵀ / √d → Softmax → ×V</text>
+  <text x="60" y="96" font-size="18" fill="#555">토큰 3개, d_k=2 인 미니 예시 (값은 반올림)</text>
+  <!-- Q -->
+  <text x="80" y="150" font-size="20" font-family="Georgia, serif">Q</text>
+  <rect x="80" y="170" width="160" height="120" fill="#fff" stroke="#1d4e89" stroke-width="2"/>
+  <text x="100" y="210" font-size="16">1.0  0.0</text>
+  <text x="100" y="240" font-size="16">0.5  0.5</text>
+  <text x="100" y="270" font-size="16">0.0  1.0</text>
+  <text x="280" y="230" font-size="28">×</text>
+  <text x="320" y="150" font-size="20" font-family="Georgia, serif">Kᵀ</text>
+  <rect x="320" y="170" width="120" height="120" fill="#fff" stroke="#b35c00" stroke-width="2"/>
+  <text x="335" y="220" font-size="16">1 .5  0</text>
+  <text x="335" y="250" font-size="16">0 .5  1</text>
+  <text x="470" y="230" font-size="28">→</text>
+  <text x="520" y="150" font-size="20" font-family="Georgia, serif">S / √2</text>
+  <rect x="520" y="170" width="200" height="120" fill="#fff" stroke="#1a1a1a" stroke-width="2"/>
+  <text x="540" y="210" font-size="16">0.71 0.35 0.00</text>
+  <text x="540" y="240" font-size="16">0.53 0.50 0.35</text>
+  <text x="540" y="270" font-size="16">0.00 0.35 0.71</text>
+  <text x="80" y="360" font-size="20" font-family="Georgia, serif">Softmax(행) = A</text>
+  <rect x="80" y="380" width="280" height="120" fill="#fff" stroke="#0b6e4f" stroke-width="2"/>
+  <text x="100" y="420" font-size="16">0.46  0.32  0.22</text>
+  <text x="100" y="450" font-size="16">0.36  0.35  0.29</text>
+  <text x="100" y="480" font-size="16">0.22  0.32  0.46</text>
+  <text x="400" y="440" font-size="28">× V →</text>
+  <text x="520" y="360" font-size="18" fill="#555">각 행 합≈1: “어디에 얼마나 주목할지”</text>
+  <rect x="520" y="400" width="600" height="140" rx="8" fill="#fff" stroke="#d0cbc3"/>
+  <text x="550" y="450" font-size="18">출력 한 줄 = A의 한 행으로 V 행들을 가중합</text>
+  <text x="550" y="500" font-size="18" fill="#555">문맥이 비슷한 토큰끼리 점수가 커짐</text>
+
+</svg>

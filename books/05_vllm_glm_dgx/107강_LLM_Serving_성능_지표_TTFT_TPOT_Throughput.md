@@ -392,6 +392,22 @@ $$
 
 입니다. Throughput은 초당 생성 토큰 수 등으로 정의합니다.
 
+
+<!-- visual-example-107 -->
+## 숫자로 따라가기 — TTFT / TPOT / TPS
+
+동시 요청 없이 생성 100토큰, TTFT=0.2s, TPOT=0.03s:
+
+$$
+t\approx 0.2+99\times 0.03\approx 3.17\mathrm{s}
+$$
+
+$$
+\mathrm{TPS}\approx 100/3.17\approx 31.5
+$$
+
+SLA는 보통 TTFT·TPOT의 P95/P99로 겁니다.
+
 ## LLM에서는 어디에 사용될까?
 
 이번 107강에서 배운 개념은 이후 Transformer · GPT · 서빙 강의에서 반복해서 등장합니다. 각 수식·코드 블록을 “실제 모델의 어느 단계인가”와 연결해 다시 읽어 보세요.

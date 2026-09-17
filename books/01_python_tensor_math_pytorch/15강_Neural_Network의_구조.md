@@ -578,6 +578,18 @@ LLM은 같은 원리를 수천억 개로 확장한 것입니다. 구조의 원�
 
 ---
 
+
+<!-- visual-example-15 -->
+## 숫자로 따라가기 — Affine + 활성화
+
+$x=2$, $w=3$, $b=1$, $\mathrm{ReLU}(z)=\max(0,z)$:
+
+$$
+z=wx+b=7,\quad h=\mathrm{ReLU}(7)=7
+$$
+
+$w=-3$이면 $z=-5$, $h=0$ (음수 구간 차단).
+
 ## LLM에서는 어디에 사용될까?
 
 Transformer 블록 안에는 **Feed-Forward Network(FFN, 피드포워드 네트워크)**가 있습니다.  
