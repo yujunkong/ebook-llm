@@ -580,6 +580,15 @@ Loss는 Binary Cross Entropy를 쓰는 것이 자연스럽습니다(제13강 연
 
 ---
 
+## 수식 보강 — 층별 Forward
+
+$$
+\mathbf{z}^{(l)}=W^{(l)}\mathbf{a}^{(l-1)}+\mathbf{b}^{(l)},\quad
+\mathbf{a}^{(l)}=\sigma(\mathbf{z}^{(l)})
+$$
+
+$\mathbf{a}^{(0)}=\mathbf{x}$. 출력층 활성은 문제에 따라 softmax/항등입니다.
+
 ## LLM에서는 어디에 사용될까?
 
 ### 13.1 Training step의 전반부

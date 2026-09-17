@@ -405,6 +405,14 @@ print("intensity ~", arithmetic_intensity(flops * batch, w_bytes))
 5. “더 많은 SM / 더 큰 칩”이면 서빙이 무조건 나아진다고 본다.
 6. 통합 메모리 플랫폼에 HBM 가정을 그대로 이식한다.
 
+## 수식 보강 — 연산 강도
+
+$$
+\mathrm{Arithmetic\ Intensity}\approx\frac{\mathrm{FLOPs}}{\mathrm{Bytes\ moved}}
+$$
+
+Decode는 종종 memory-bound입니다(가중치·KV 재사용 대비 연산이 적음).
+
 ## LLM에서는 어디에 사용될까?
 
 이번 111강에서 배운 개념은 이후 Transformer · GPT · 서빙 강의에서 반복해서 등장합니다. 각 수식·코드 블록을 “실제 모델의 어느 단계인가”와 연결해 다시 읽어 보세요.

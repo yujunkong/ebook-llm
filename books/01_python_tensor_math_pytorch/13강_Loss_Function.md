@@ -542,6 +542,22 @@ print(F.cross_entropy(logits, target))     # Softmax+NLL을 한 번에
 
 ---
 
+## 수식 보강 — MSE와 교차 엔트로피
+
+회귀 MSE:
+
+$$
+L_{\mathrm{MSE}}=\frac{1}{N}\sum_{i=1}^N (y_i-\hat{y}_i)^2
+$$
+
+다중클래스 CE (정답 클래스 $y$):
+
+$$
+L_{\mathrm{CE}}=-\log p_y,\quad p=\mathrm{softmax}(z)
+$$
+
+언어모델은 매 토큰 CE의 평균입니다.
+
 ## LLM에서는 어디에 사용될까?
 
 ### 9.1 표준 목적

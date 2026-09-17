@@ -390,6 +390,14 @@ if __name__ == "__main__":
 `torch.nn.functional.scaled_dot_product_attention`은 Softmax·V·마스크까지 한 번에 처리하는 API다.  
 학습 목적이므로 지금은 점수만 분리한다.
 
+## 수식 보강 — Scaled Dot-Product
+
+$$
+\mathrm{Attention}(Q,K,V)=\mathrm{softmax}\Big(\frac{QK^\top}{\sqrt{d_k}}\Big)V
+$$
+
+스케일 $\sqrt{d_k}$는 내적 분산이 $d_k$에 비례해 커지는 것을 완화합니다.
+
 ## LLM에서는 어디에 사용될까?
 ### 9.1 매 Attention 층의 핵심 GEMM
 

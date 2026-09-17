@@ -468,6 +468,16 @@ $$
 
 Residual connection처럼 같은 텐서가 여러 곳으로 연결되면, Backward에서 Gradient가 **더해진다**.
 
+## 수식 보강 — 다변수 Chain Rule
+
+$L=f(u,v)$, $u=u(w)$, $v=v(w)$이면
+
+$$
+\frac{dL}{dw}=\frac{\partial f}{\partial u}\frac{du}{dw}+\frac{\partial f}{\partial v}\frac{dv}{dw}
+$$
+
+벡터-행렬로 일반화하면 역전파의 Jacobian 곱이 됩니다.
+
 ## LLM에서는 어디에 사용될까?
 ### 9.1 깊고 긴 연쇄
 

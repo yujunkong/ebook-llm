@@ -571,7 +571,7 @@ np.zeros((4, 8, 16), dtype=np.float32)
 `x = np.array([1.0, 2.0, 3.0, 4.0])`에 대해
 
 \[
-z = \frac{x - \mean(x)}{\mathrm{std}(x)}
+z = \frac{x - \mathrm{mean}(x)}{\mathrm{std}(x)}
 \]
 
 를 계산한다. (`std`가 0이 아니라고 가정)

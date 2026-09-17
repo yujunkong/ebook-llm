@@ -373,6 +373,16 @@ if __name__ == "__main__":
 
 `upper sum`이 0(또는 수치상 극소)이면 causal이 작동한 것이다.
 
+## 수식 보강 — Causal mask
+
+점수 $S=QK^\top/\sqrt{d_k}$에 대해 $j>i$이면 $S_{ij}=-\infty$ (또는 매우 작은 값)로 두어
+
+$$
+\alpha_{ij}=0\quad(j>i)
+$$
+
+가 되게 합니다. 미래 토큰을 보지 않습니다.
+
 ## LLM에서는 어디에 사용될까?
 ### 9.1 GPT / Causal LM의 기본 규칙
 

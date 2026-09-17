@@ -92,6 +92,35 @@ x  →  dequant(W0_q)로 행렬곱（또는 fused 커널）
 
 **설명:** QLoRA의 체감 이득은 “베이스+옵티마이저” 항을 잘라내는 데서 온다. Activation이 지배적이면 체감이 덜할 수 있다.
 
+### 4.4 메모리 항을 기호로
+
+학습 중 대략:
+
+$$
+
+\mathrm{Mem}
+\approx
+\underbrace{M_{\mathrm{W}}}_{\text{가중치}}
++
+\underbrace{M_{\mathrm{G}}}_{\text{그라디언트}}
++
+\underbrace{M_{\mathrm{opt}}}_{\text{옵티마이저}}
++
+\underbrace{M_{\mathrm{act}}}_{\text{activation}}
+
+$$
+
+| 항 | Full FT (FP16 감각) | QLoRA |
+|---|---|---|
+| $M_{\mathrm{W}}$ | $\approx 2N$ bytes | $\approx 0.5N$ (+메타) |
+| $M_{\mathrm{G}}$ | $\sim M_{\mathrm{W}}$ 수준 | LoRA만 ($\ll$) |
+| $M_{\mathrm{opt}}$ | Adam이면 $\sim 2\sim 8\times$ 가중치 감각 | LoRA만 |
+| $M_{\mathrm{act}}$ | $O(B T \cdot \ldots)$ | **거의 그대로** |
+
+$N$ = 파라미터 수. **설명용**이며 구현·오프로드·체크포인팅에 따라 달라진다.
+
+AdamW가 파라미터당 모멘트 2개를 FP32로 두면, Full FT에서 $M_{\mathrm{opt}}$가 $M_{\mathrm{W}}$를 압도하는 경우가 많다. QLoRA는 이 항을 어댑터 크기로 축소한다.
+
 ## NF4 아이디어（고수준）
 NF4(4-bit NormalFloat)는 “그냥 균등 격자”가 아니라, **정규분포에 가까운 가중치 분포**를 더 잘 표현하도록 양자화 레벨을 배치한 4-bit 형식이다.
 
@@ -114,6 +143,26 @@ NF4 느낌:         .|.|..|....|......    (0 근처 촘촘 — 개념도)
 > **설명:** 정규분포 가정이 잘 맞을수록, 같은 비트로 재구성 오차를 줄이려는 설계다.
 
 실무 라이브러리（예: `bitsandbytes` 계열）는 블록 단위 스케일(absmax 등)과 함께 NF4를 구현한다. 세부 커널은 버전·GPU에 따라 다르다.
+
+### 균등 vs 분위수 — 장난감 1D
+
+값 집합이 표준정규에 가깝다고 가정하고, 2-bit(4레벨)만으로 비교하는 **초소형** 비유:
+
+- 균등: $[-2,2]$를 4등분 → 경계 $-2,-1,0,1,2$. 중앙($0$ 근처)과 꼬리가 같은 폭.
+- 분위수: 표준정규의 25%, 50%, 75% 분위 근처에 경계를 더 촘촘히.
+
+실제 NF4는 4-bit(16레벨)와 정규화·절대최댓값 스케일이 결합된다.  
+블록 크기 $B_b$로 나눈 뒤:
+
+$$
+
+\hat{w}_i = s \cdot q_i,\quad
+q_i\in\mathrm{Codebook}_{\mathrm{NF4}},\quad
+s = \mathrm{scale}(w_{1:B_b})
+
+$$
+
+재구성 오차 $\|w-\hat{w}\|$를 줄이는 것이 목표(고수준).
 
 ## Double quantization 티저（선택）
 QLoRA 논문/구현에는 **양자화 상수 자체를 다시 양자화**하는 double quantization 아이디어가 나온다.
@@ -143,6 +192,43 @@ Backward:
 1. **저장은 4-bit**, 연산 직전에 고정도로 풀어 쓰는 패턴이 흔하다（fused 커널이면 경계가 흐려질 수 있음）.
 2. 그라디언트는 LoRA 쪽에 흐름 → 옵티마이저 상태도 작음.
 3. 베이스를 4-bit로 둔 채 **정확한 full FT**를 하는 것은 QLoRA의 목표가 아니다.
+
+### 수식 — QLoRA forward
+
+동결된 양자화 가중치 $W_0^{(q)}$, 스케일 등 메타데이터로 복원한 $\widetilde{W}_0$, LoRA $A,B$, 스케일 $\alpha/r$:
+
+$$
+
+y = x\,\widetilde{W}_0^\top + \frac{\alpha}{r}(x A^\top)B^\top
+
+$$
+
+(행벡터 관례. 구현의 transpose와 맞출 것.)
+
+그라디언트:
+
+$$
+
+\frac{\partial L}{\partial A},\ 
+\frac{\partial L}{\partial B}
+\quad\text{만 갱신},\qquad
+\frac{\partial L}{\partial W_0^{(q)}}=0
+$$
+
+$\widetilde{W}_0$는 저장본이 아니라 **연산용 일시 텐서**인 경우가 많다.
+
+### 손계산 — 메모리 비율만
+
+$N=7\times 10^9$, FP16 가중치 $2N$ bytes vs 4-bit $0.5N$ bytes → 비율 $1/4$.  
+LoRA를 $W_q,W_v$에 $r=8$, $C=4096$, $N_{\mathrm{layer}}=32$만 붙이면 학습 파라미터:
+
+$$
+
+32\cdot 2\cdot 8\cdot(4096+4096) = 4{,}194{,}304
+$$
+
+약 4M. Full $N$의 $\sim 0.06\%$ 수준.  
+Optimizer가 이 4M에만 붙으면, Full FT의 Adam 상태와 자릿수가 다르다.
 
 ## 학습 vs 추론 — 역할을 섞지 말 것
 | 단계 | 흔한 패턴 | 목적 |

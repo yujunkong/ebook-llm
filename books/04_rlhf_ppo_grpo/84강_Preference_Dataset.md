@@ -448,6 +448,16 @@ def collate_preference(batch, pad_id=0):
 - 프롬프트만 인코딩하고 응답을 빼먹는 버그 금지
 - 패딩 토큰이 점수에 섞이지 않게 mask 전달 (제85강)
 
+## 수식 보강 — 선호 확률 모델
+
+Bradley-Terry:
+
+$$
+P(y_w\succ y_l\mid x)=\sigma\bigl(r(x,y_w)-r(x,y_l)\bigr)
+$$
+
+RM/DPO의 출발점입니다.
+
 ## LLM에서는 어디에 사용될까?
 산업·연구 파이프라인에서의 위치:
 

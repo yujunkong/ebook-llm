@@ -304,6 +304,10 @@ def decode_batch_step(model, token_batch, kv_list):
 **설명:** 느린 루프는 개념용이다. 고성능 엔진은 배치를 **하나의 fused kernel**로 처리한다.  
 **사실:** vLLM이 내부에서 어떤 커널을 쓰는지는 버전·백엔드에 따라 다르며, 여기서 파일 단위로 단정하지 않는다.
 
+## 수식 보강 — Continuous batching
+
+요청별 남은 길이가 달라도, 매 스텝 활성 시퀀스 집합 $\mathcal{A}_t$에 대해 배치 decode합니다. 처리량은 $|\mathcal{A}_t|$와 메모리 한도에 좌우됩니다.
+
 ## LLM에서는 어디에 사용될까?
 ### 9.1 지표와의 관계（정의만）
 

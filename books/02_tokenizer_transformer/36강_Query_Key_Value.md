@@ -430,6 +430,14 @@ if __name__ == "__main__":
 실무에서는 Multi-Head를 위해 $d_k=d_{\mathrm{model}}/h$로 나누고,  
 때로는 `W` 하나를 크게 만든 뒤 `chunk`로 Q/K/V를 쪼개기도 한다. 원리는 같다.
 
+## 수식 보강 — QKV 투영
+
+$$
+Q=XW_Q,\ K=XW_K,\ V=XW_V
+$$
+
+$X\in\mathbb{R}^{T\times d}$, $W_Q\in\mathbb{R}^{d\times d_k}$ 등. 점수는 $QK^\top/\sqrt{d_k}$ (37강).
+
 ## LLM에서는 어디에 사용될까?
 ### 9.1 모든 Self-Attention 층의 입구
 
