@@ -477,6 +477,92 @@ assert metrics["format_ok"] > 0.8
 print(metrics)
 ```
 
+
+<!-- enrich-pass-1f64 -->
+## 수식 전개 — Mini SFT 목표
+
+프로젝트 손실은 response-mask CE입니다.
+
+$$
+L_{\mathrm{SFT}}
+=
+-\frac{1}{\sum m_t}\sum_t m_t\log p_\theta(x_t\mid x_{<t})
+$$
+
+Before/After 비교는 고정 프롬프트 집합 $E$에서
+
+$$
+S_{\mathrm{before}},\ S_{\mathrm{after}}
+=
+\frac{1}{|E|}\sum_{e\in E}s(e,\hat y)
+$$
+
+를 나란히 기록합니다. Loss만으로 성공 선언을 금지합니다.
+
+### LoRA（선택）연결
+
+$$
+W'=W+\frac{\alpha}{r}BA
+$$
+
+이면 저장량은 $r$에 비례해 작아집니다（제73강）. Mini에서는 full FT도 충분합니다.
+
+## Shape 표 — SFT 프로젝트
+
+| 항목 | Shape / 형식 |
+|---|---|
+| messages | chat list |
+| `input_ids` | `(B, T)` |
+| `labels` | `(B, T)` with `-100` |
+| logits | `(B, T, V)` |
+
+## 구현 스케치 — before/after 덤프
+
+```python
+def dump_generations(path, prompts, gen_fn, tag):
+    with open(path, "a", encoding="utf-8") as f:
+        for i, p in enumerate(prompts):
+            f.write(f"## {tag} {i}\n{p}\n---\n{gen_fn(p)}\n\n")
+```
+
+동일 `prompts.json`·동일 decoding으로 before/after를 남기면 제75강 harness와 연결됩니다.
+
+## 실패 모드 — Mini SFT 프로젝트
+
+| 실패 | 증상 | 처방 |
+|---|---|---|
+| mask 버그 | 지시 무시 | span assert |
+| 데이터 5개뿐·100 epoch | 암기 | epoch↓·다양성 |
+| 템플릿 불일치 | 형식 붕괴 | 단일 apply_fn |
+| eval 누수 | 만점 | private set |
+
+## 실습 코드 — 마스크 비율 로그
+
+```python
+def mask_ratio(labels, ignore_index=-100):
+    valid = (labels != ignore_index).sum().item()
+    total = labels.numel()
+    return valid / max(total, 1)
+```
+
+매 스텝 $\rho=\mathrm{mask\_ratio}$를 로깅하세요. 0이면 학습 신호가 없습니다.
+
+## 수식 보강 — 과적합 감시
+
+$$
+\Delta L = L_{\mathrm{train}}-L_{\mathrm{val}}
+$$
+
+가 크게 벌어지고 harness가 정체면 학습을 멈춥니다. 제75강 실패 유형 태그를 after 샘플에 붙이세요.
+
+### 토큰 유효성
+
+$$
+\rho=\frac{\sum 1[y\ne-100]}{BT}
+$$
+
+가 정상 범위인지 config 주석에 예상값을 적어 둡니다.
+
 ## LLM에서는 어디에 사용될까?
 
 이번 76강에서 배운 개념은 이후 Transformer · GPT · 서빙 강의에서 반복해서 등장합니다. 각 수식·코드 블록을 “실제 모델의 어느 단계인가”와 연결해 다시 읽어 보세요.

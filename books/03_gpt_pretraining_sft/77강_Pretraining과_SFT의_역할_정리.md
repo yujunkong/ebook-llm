@@ -449,6 +449,83 @@ $$
 
 $m_t$가 응답 마스크입니다. Pretraining은 보통 $m_t=1$ for all $t$.
 
+
+<!-- enrich-pass-1f64 -->
+## 역할 좌표 — 한 장 더
+
+Pretraining은 **세계/언어 통계**를, SFT는 **지시-응답 프로토콜**을 맡습니다. 같은 CE라도 기대하는 분포가 다릅니다.
+
+$$
+\theta_{\mathrm{PT}}
+=\arg\min_\theta
+\mathbb{E}_{x\sim\mathcal{D}_{\mathrm{PT}}}
+\big[-\sum_t\log p_\theta(x_t\mid x_{<t})\big]
+$$
+
+$$
+\theta_{\mathrm{SFT}}
+=\arg\min_\theta
+\mathbb{E}_{(c,r)\sim\mathcal{D}_{\mathrm{SFT}}}
+\big[-\sum_{t\in r}\log p_\theta(x_t\mid x_{<t})\big]
+$$
+
+### 능력 이양（정성）
+
+| 능력 | PT | SFT |
+|---|---|---|
+| 유창성·지식 스케치 | 주력 | 보존·소폭 조정 |
+| 형식 준수 | 약함 | 주력 |
+| 거절/안전 경계 | 거의 없음 | 데이터에 의존 |
+| 선호 미묘함 | 없음 | 부족 → 4권 |
+
+## 구현 스케치 — “어느 손실을 쓰나” 스위치
+
+```python
+def loss_for_stage(stage, logits, labels, prompt_mask=None):
+    if stage == "pt":
+        return token_ce(logits, labels)  # 거의 모든 토큰
+    if stage == "sft":
+        labels = labels.masked_fill(prompt_mask.bool(), -100)
+        return token_ce(logits, labels)
+    raise ValueError(stage)
+```
+
+## 실패 모드 — 역할 혼동
+
+| 잘못된 처방 | 왜 위험한가 | 올바른 좌표 |
+|---|---|---|
+| SFT만으로 지식 주입 | 환각·암기 | PT 데이터/검색 |
+| PT만으로 챗봇 | 지시 무시 | SFT/템플릿 |
+| Loss↓=정렬 완료 | 선호 미반영 | 4권 preference |
+| 벤치 만점=일반화 | 누수 가능 | private harness |
+
+## 실습 코드 — 마스크 비율로 단계 식별
+
+```python
+def stage_fingerprint(mask_ratio):
+    if mask_ratio > 0.9:
+        return "likely_pretrain_or_leak"
+    if 0.1 <= mask_ratio <= 0.7:
+        return "likely_sft"
+    return "check_pipeline"
+```
+
+절대 임계값은 데이터에 따라 다릅니다. **상대 비교**로 쓰세요.
+
+## 수식 보강 — 너무 먼 SFT（KL 스케치）
+
+참조 정책 $\pi_{\mathrm{ref}}$（보통 PT 또는 SFT 초기）에 대해
+
+$$
+\mathrm{KL}(\pi_\theta\|\pi_{\mathrm{ref}})
+$$
+
+가 과도하면 유창성이 손상될 수 있습니다. 4권의 KL 페널티·DPO가 이 자리를 채웁니다. 지금은 “SFT도 분포를 옮긴다”는 좌표만 기억하세요.
+
+$$
+\pi_{\mathrm{PT}}\;\xrightarrow{\mathrm{SFT}}\;\pi_{\mathrm{SFT}}\;\xrightarrow{\mathrm{pref}}\;\pi_{\mathrm{aligned}}
+$$
+
 ## LLM에서는 어디에 사용될까?
 
 이번 77강에서 배운 개념은 이후 Transformer · GPT · 서빙 강의에서 반복해서 등장합니다. 각 수식·코드 블록을 “실제 모델의 어느 단계인가”와 연결해 다시 읽어 보세요.

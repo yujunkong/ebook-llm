@@ -423,6 +423,92 @@ $$
 - SFT 템플릿과 special token 문서화
 - 평가셋은 학습 지시문과 분리
 
+
+<!-- enrich-pass-1f64 -->
+## 3권 맵 — 수식으로 한 번 더
+
+$$
+\begin{aligned}
+L_{\mathrm{PT}}&=-\sum_t\log p_\theta(x_t\mid x_{<t})\\
+L_{\mathrm{SFT}}&=-\sum_{t\in\mathcal{R}}\log p_\theta(x_t\mid x_{<t})\\
+\mathrm{PPL}&=\exp(L_{\mathrm{tok}})\\
+\eta_t&=\mathrm{warmup\_cosine}(t)\\
+g&=\frac1K\sum_{k=1}^K\nabla L_k
+\end{aligned}
+$$
+
+엔지니어링 축:
+
+| 축 | 강 | 한 줄 |
+|---|---|---|
+| 데이터 | 60~61, 70 | 코퍼스·패킹·instruction |
+| 루프 | 62~66 | step·AMP·ckpt·val |
+| 프로젝트 | 68, 76 | Mini PT / Mini SFT |
+| 정렬 예고 | 77~78 | 역할 → 4권 |
+
+## 구현 스케치 — “다음 권으로 가는 체크”
+
+```python
+READY_FOR_BOOK4 = {
+    "mini_pt_overfit_ok": False,
+    "mini_sft_mask_tested": False,
+    "private_harness_exists": False,
+    "ckpt_resume_ok": False,
+    "roles_pt_vs_sft_clear": False,
+}
+```
+
+모두 True일 필요는 없습니다. **False를 인지한 채** 79강으로 가는 것이 목표입니다.
+
+## 실패 모드 — 총정리에서 흔한 착각
+
+| 착각 | 교정 |
+|---|---|
+| PPL↓면 챗봇 완성 | SFT·템플릿·선호가 남음 |
+| SFT=RLHF | 4권에서 선호/RL |
+| LoRA만 있으면 충분 | 데이터·마스크가 우선 |
+| 공개 벤치만 | private harness |
+
+## 실습 코드 — 메타 로그 한 줄
+
+```python
+def book3_meta(cfg):
+    return {
+        "d_model": cfg.d_model,
+        "block_size": cfg.T,
+        "stage": cfg.stage,  # pt|sft
+        "mask_ratio_target": cfg.mask_ratio_target,
+    }
+```
+
+실험 폴더마다 이 JSON을 남기면 68/76 프로젝트가 비교 가능해집니다.
+
+## 수식 보강 — Post-Training 자리
+
+선호 데이터가 $(x,y_w,y_l)$일 때 다음 권의 방향은
+
+$$
+\pi_\theta(y_w\mid x) \;\succ\; \pi_\theta(y_l\mid x)
+$$
+
+쪽으로 정책을 옮기는 것입니다. 손실의 구체형（BT, PPO, DPO…）은 제79강 이후입니다.
+
+$$
+\max_\pi\ \mathbb{E}[r]-\beta\mathrm{KL}(\pi\|\pi_{\mathrm{ref}})
+$$
+
+는 “보상과 참조에서의 이탈 비용”이라는 **자리 표시**로만 기억하세요.
+
+## 연결 카드 — 5권까지의 멀고 가까운 길
+
+```text
+1권 텐서·최적화 기초
+2권 토크나이저·트랜스포머
+3권 GPT Pretrain + SFT   ← 지금 닫는 문
+4권 Preference / RL
+5권 vLLM·서빙·클러스터
+```
+
 ## LLM에서는 어디에 사용될까?
 
 이번 78강에서 배운 개념은 이후 Transformer · GPT · 서빙 강의에서 반복해서 등장합니다. 각 수식·코드 블록을 “실제 모델의 어느 단계인가”와 연결해 다시 읽어 보세요.

@@ -421,6 +421,92 @@ $$
 \widehat{r}=\frac{1}{n}\sum_i \mathbf{1}[\mathrm{refuse}_i]
 $$
 
+
+<!-- enrich-pass-1f64 -->
+## 수식 전개 — Harness 점수의 분해
+
+문항 유형 $k$의 가중치 $w_k$（$\sum_k w_k=1$）로 가중 평균을 둡니다.
+
+$$
+S
+=
+\sum_k w_k S_k,
+\qquad
+S_k
+=
+\frac{1}{|E_k|}\sum_{e\in E_k}s(e,\hat y_e)
+$$
+
+형식·내용·거절을 한 숫자로 섞지 말고, **유형별 $S_k$를 먼저** 보고 필요 시 $S$를 요약하세요.
+
+### 개선의 유의성（교육용）
+
+두 시스템 점수 차이 $\Delta=\hat S_A-\hat S_B$에 대해 거친 기준은
+
+$$
+|\Delta|
+\gtrsim
+2\sqrt{\mathrm{SE}_A^2+\mathrm{SE}_B^2}
+$$
+
+입니다. 작은 $M$에서는 “0.02 상승”을 제품 성공으로 포장하지 마세요.
+
+## Shape / 리포트 표
+
+| 필드 | 의미 |
+|---|---|
+| `ckpt_hash` | 모델 식별 |
+| `template_ver` | 채팅 템플릿 |
+| `decode` | temp/top_p/max_new |
+| `scores[]` | 문항별 점수 |
+| `tags[]` | 실패 유형 |
+
+## 구현 스케치 — 집계
+
+```python
+from collections import defaultdict
+
+def summarize(rows):
+    by = defaultdict(list)
+    for r in rows:
+        by[r.get("type", "all")].append(r["score"])
+    return {k: sum(v)/len(v) for k, v in by.items()}
+```
+
+## 실패 모드 — 평가 자체
+
+| 실패 | 증상 | 처방 |
+|---|---|---|
+| 문항 수 과소 | 점수 요동 | $M$ 확대·반복 |
+| judge drift | 날짜마다 점수 변동 | rubric·모델 고정 |
+| 학습셋 paraphrase만 | 가짜 일반화 | private 재작성 |
+| decoding 미고정 | 비교 불가 | config 잠금 |
+
+## 실습 코드 — paraphrase 세트
+
+```python
+def load_paraphrase_pairs(path):
+    # 각 항목: canonical_id, prompt_variants[]
+    import json
+    return [json.loads(l) for l in open(path, encoding="utf-8") if l.strip()]
+```
+
+같은 `canonical_id`에 대해 variant 간 점수 분산이 크면 지시 민감도（또는 overfitting）를 의합니다.
+
+## 수식 보강 — Style collapse 지표
+
+시작 bigram 확률의 최대값
+
+$$
+\pi_{\max}
+=
+\max_{u}\hat p(u),
+\qquad
+\hat p(u)=\frac{\#\text{opens with }u}{N}
+$$
+
+$\pi_{\max}$가 과도하면 style collapse 후보입니다.
+
 ## LLM에서는 어디에 사용될까?
 
 이번 75강에서 배운 개념은 이후 Transformer · GPT · 서빙 강의에서 반복해서 등장합니다. 각 수식·코드 블록을 “실제 모델의 어느 단계인가”와 연결해 다시 읽어 보세요.
