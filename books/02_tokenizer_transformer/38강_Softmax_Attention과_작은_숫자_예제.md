@@ -412,6 +412,28 @@ if __name__ == "__main__":
 
 `F.softmax(..., dim=-1)`의 `dim`이 틀리면 즉시 붕괴한다. 항상 Key 축인지 확인한다.
 
+
+<!-- visual-example-38 -->
+## 숫자로 따라가기 — Softmax → 가중합
+
+![그림 38-1](images/fig38-01.png)
+
+한 Query 행의 점수 $s=[2.0,\ 1.0,\ 0.1]$:
+
+$$
+e^{s}\approx[7.39,\ 2.72,\ 1.11],\quad
+\alpha=\mathrm{softmax}(s)\approx[0.66,\ 0.24,\ 0.10]
+$$
+
+| 기호 | 값 | 의미 |
+|---|---|---|
+| $s_j$ | $[2,1,0.1]$ | scaled score |
+| $\alpha_j$ | $[0.66,0.24,0.10]$ | 주목 가중치 (합$=1$) |
+| $v_j$ | Value 행들 | 문맥 벡터 |
+| $o$ | $\sum_j \alpha_j v_j$ | Attention 출력 |
+
+점수가 큰 키에 Value 질량이 더 실립니다. 37강의 $QK^{\top}/\sqrt{d_k}$ 다음에 오는 단계입니다.
+
 ## LLM에서는 어디에 사용될까?
 ### 9.1 Self-Attention 한 헤드의 본체
 

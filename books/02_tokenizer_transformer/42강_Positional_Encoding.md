@@ -369,6 +369,29 @@ Sinusoidal/Learned absolute PE는 강력하지만 한계가 있다.
 
 제43강에서 이 한계를 회전으로 돌파한다.
 
+
+<!-- visual-example-42 -->
+## 숫자로 따라가기 — Absolute PE
+
+![그림 42-1](images/fig42-01.png)
+
+같은 토큰 벡터 $\mathbf{v}$에 위치 벡터를 **더합니다**.
+
+$$
+\mathbf{h}_0=\mathbf{v}+\mathrm{PE}(0),\quad
+\mathbf{h}_3=\mathbf{v}+\mathrm{PE}(3)
+$$
+
+장난감 ($d=2$, 각도만 표시):
+
+| 위치 $t$ | $\mathrm{PE}(t)$ 예 | $\mathbf{h}_t$ 직관 |
+|---|---|---|
+| $0$ | $[\sin 0,\ \cos 0]=[0,1]$ | $\mathbf{v}$와 다른 방향 |
+| $1$ | $[\sin\theta,\ \cos\theta]$ | 한 칸 회전 |
+| $3$ | $[\sin 3\theta,\ \cos 3\theta]$ | 더 먼 위상 |
+
+Self-Attention은 순서를 모름 → PE가 “몇 번째인지”를 명시합니다. 현대 LLM은 종종 RoPE(43강)로 대체합니다.
+
 ## LLM에서는 어디에 사용될까?
 사실:
 

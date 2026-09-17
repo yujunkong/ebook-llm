@@ -1,0 +1,27 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<svg xmlns="http://www.w3.org/2000/svg" width="1200" height="720" viewBox="0 0 1200 720" role="img">
+  <title>Positional encoding</title>
+  <defs>
+    <marker id="arrow" markerWidth="10" markerHeight="10" refX="8" refY="3" orient="auto">
+      <path d="M0,0 L8,3 L0,6 Z" fill="#1a1a1a"/>
+    </marker>
+  </defs>
+  <rect width="1200" height="720" fill="#f7f4ef"/>
+
+  <text x="60" y="56" font-family="Georgia, serif" font-size="28" fill="#1a1a1a">Fig 42-1. Absolute PE: e_token + e_pos</text>
+  <text x="60" y="96" font-size="18" fill="#555">같은 토큰도 위치가 다르면 다른 벡터</text>
+  <rect x="100" y="200" width="280" height="120" rx="8" fill="#fff" stroke="#1d4e89" stroke-width="2"/>
+  <text x="140" y="270" font-size="22">e("cat") = v</text>
+  <text x="420" y="240" font-size="28">+</text>
+  <rect x="480" y="160" width="240" height="80" rx="8" fill="#fff" stroke="#b35c00" stroke-width="2"/>
+  <text x="520" y="210" font-size="18">PE(pos=0)</text>
+  <rect x="480" y="280" width="240" height="80" rx="8" fill="#fff" stroke="#b35c00" stroke-width="2"/>
+  <text x="520" y="330" font-size="18">PE(pos=3)</text>
+  <text x="760" y="240" font-size="28">→</text>
+  <rect x="820" y="160" width="280" height="80" rx="8" fill="#fff" stroke="#0b6e4f" stroke-width="2"/>
+  <text x="850" y="210" font-size="18">h₀ = v + PE₀</text>
+  <rect x="820" y="280" width="280" height="80" rx="8" fill="#fff" stroke="#0b6e4f" stroke-width="2"/>
+  <text x="850" y="330" font-size="18">h₃ = v + PE₃</text>
+  <text x="100" y="450" font-size="18" fill="#555">sin/cos 또는 learned table. 현대 LLM은 종종 RoPE(43강)로 대체</text>
+
+</svg>

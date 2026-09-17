@@ -435,15 +435,30 @@ $$
 
 
 <!-- visual-example-44 -->
-## 숫자로 따라가기 — Residual
+## 숫자로 따라가기 — Residual + Norm
 
-$h=3$, $F(h)=1$이면
+![그림 44-1](images/fig44-01.png)
+
+Residual:
 
 $$
-h' = h + F(h) = 4
+h'=h+F(h)
 $$
 
-기울기가 **+1 경로**로 바로 흐를 수 있어 깊은 망 학습이 쉬워집니다.
+| 기호 | 값 | 의미 |
+|---|---|---|
+| $h$ | $3$ | 블록 입력 |
+| $F(h)$ | $1$ | Attention/FFN 결과 |
+| $h'$ | $4$ | 잔차 합 |
+| $\partial h'/\partial h$ | $1+\partial F/\partial h$ | **+1 고속도로** |
+
+LayerNorm 맛보기: $\mathbf{x}=[1,2,3]$이면 평균 $2$, 분산 $2/3$,
+
+$$
+\hat{x}\approx[-1.22,\ 0,\ 1.22]
+$$
+
+(표준화 후 $\gamma,\beta$ 스케일). Pre-LN은 “Norm → 연산 → Residual” 순서입니다.
 
 ## LLM에서는 어디에 사용될까?
 사실:

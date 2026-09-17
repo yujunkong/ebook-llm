@@ -482,6 +482,36 @@ $$
 
 상대 위치 $m-n$이 내적에 인코딩됩니다.
 
+
+<!-- visual-example-43 -->
+## 숫자로 따라가기 — RoPE 회전
+
+![그림 43-1](images/fig43-01.png)
+
+2D에서 위치 $m$의 쿼리·위치 $n$의 키를 각도 $\theta$로 회전:
+
+$$
+\mathbf{q}'=R(m\theta)\mathbf{q},\quad
+\mathbf{k}'=R(n\theta)\mathbf{k}
+$$
+
+내적은 상대 위치에 의존합니다.
+
+$$
+(\mathbf{q}')^{\top}(\mathbf{k}')
+=
+\mathbf{q}^{\top} R\bigl((n-m)\theta\bigr)\mathbf{k}
+$$
+
+| 기호 | 의미 | 숫자 직관 |
+|---|---|---|
+| $m,n$ | 토큰 위치 | $0,1,2,\ldots$ |
+| $\theta$ | 주파수 상수 | 짝 차원마다 다름 |
+| $R(\cdot)$ | 2D 회전 | $\begin{bmatrix}\cos&-\sin\\ \sin&\cos\end{bmatrix}$ |
+| $n-m$ | 상대 거리 | Attention 점수에 심김 |
+
+절대 PE 표를 더하는 대신, Q/K를 돌려 **상대 위치**를 점수에 넣습니다.
+
 ## LLM에서는 어디에 사용될까?
 ### 9.1 사실
 

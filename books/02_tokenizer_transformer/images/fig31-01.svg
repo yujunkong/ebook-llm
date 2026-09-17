@@ -1,0 +1,25 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<svg xmlns="http://www.w3.org/2000/svg" width="1200" height="720" viewBox="0 0 1200 720" role="img">
+  <title>Embedding lookup</title>
+  <defs>
+    <marker id="arrow" markerWidth="10" markerHeight="10" refX="8" refY="3" orient="auto">
+      <path d="M0,0 L8,3 L0,6 Z" fill="#1a1a1a"/>
+    </marker>
+  </defs>
+  <rect width="1200" height="720" fill="#f7f4ef"/>
+
+  <text x="60" y="56" font-family="Georgia, serif" font-size="28" fill="#1a1a1a">Fig 31-1. Embedding = 행 선택 (lookup)</text>
+  <text x="60" y="96" font-size="18" fill="#555">id=2 → E의 3번째 행 [0.1, −0.2, 0.5]</text>
+  <text x="80" y="170" font-size="20" font-family="Georgia, serif">E (|V|×d)</text>
+  <rect x="80" y="190" width="320" height="200" fill="#fff" stroke="#1d4e89" stroke-width="2"/>
+  <text x="100" y="230" font-size="16">0:  0.0   0.1   0.0</text>
+  <text x="100" y="270" font-size="16">1: −0.3   0.2   0.1</text>
+  <rect x="95" y="290" width="290" height="40" fill="#e8f5ef" stroke="#0b6e4f" stroke-width="2"/>
+  <text x="100" y="318" font-size="16" fill="#0b6e4f">2:  0.1  −0.2   0.5  ← 선택</text>
+  <text x="100" y="370" font-size="16">3:  0.4   0.0  −0.1</text>
+  <text x="450" y="290" font-size="32">→</text>
+  <rect x="520" y="240" width="520" height="140" rx="8" fill="#fff" stroke="#0b6e4f" stroke-width="3"/>
+  <text x="560" y="300" font-size="24" font-family="Georgia, serif">e₂ = [0.1, −0.2, 0.5]</text>
+  <text x="560" y="350" font-size="18" fill="#555">학습은 이 행 벡터를 움직임 (one-hot × E와 동치)</text>
+
+</svg>

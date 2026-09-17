@@ -1,0 +1,23 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<svg xmlns="http://www.w3.org/2000/svg" width="1200" height="720" viewBox="0 0 1200 720" role="img">
+  <title>Next token</title>
+  <defs>
+    <marker id="arrow" markerWidth="10" markerHeight="10" refX="8" refY="3" orient="auto">
+      <path d="M0,0 L8,3 L0,6 Z" fill="#1a1a1a"/>
+    </marker>
+  </defs>
+  <rect width="1200" height="720" fill="#f7f4ef"/>
+
+  <text x="60" y="56" font-family="Georgia, serif" font-size="28" fill="#1a1a1a">Fig 32-1. Next-Token: p → −log p</text>
+  <text x="60" y="96" font-size="18" fill="#555">vocab {아, 이, 밥}, 정답=밥, p=[0.1, 0.2, 0.7]</text>
+  <rect x="100" y="180" width="280" height="200" rx="8" fill="#fff" stroke="#1d4e89" stroke-width="2"/>
+  <text x="130" y="230" font-size="20">아  0.10</text>
+  <text x="130" y="280" font-size="20">이  0.20</text>
+  <text x="130" y="330" font-size="20" fill="#0b6e4f">밥  0.70 ← 정답</text>
+  <text x="420" y="280" font-size="28">→</text>
+  <rect x="480" y="200" width="560" height="160" rx="8" fill="#fff" stroke="#b35c00" stroke-width="2"/>
+  <text x="520" y="270" font-size="24" font-family="Georgia, serif">L = −log 0.7 ≈ 0.357</text>
+  <text x="520" y="330" font-size="18" fill="#555">정답 확률↑ → Loss↓ (NTP 학습 목표)</text>
+  <text x="100" y="460" font-size="18" fill="#555">탐욕 디코딩도 argmax=밥. 학습은 모든 위치의 −log p(정답) 합을 줄임</text>
+
+</svg>
