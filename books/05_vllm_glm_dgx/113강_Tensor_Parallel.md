@@ -411,10 +411,7 @@ T_{\mathrm{comm}} \approx \alpha + \frac{\mathrm{Bytes}_{\mathrm{msg}}}{B_w}
 
 $$
 
-
-$$
 Decode에서 $M$이 작으면 $\mathrm{Bytes}/B_w$보다 **$\alpha\cdot L$** 누적이 두드러질 수 있다.  
-$$
 이것이 “NVLink에선 괜찮은 TP가 노드 간에선 아프다”는 이야기의 골격이다.
 
 ### 6b.3 계산 분할 이득（이상화）
@@ -463,10 +460,7 @@ T_{\mathrm{comm}}^{\mathrm{decode}} \gtrsim L\cdot \alpha_{\mathrm{eff}}
 $$
 
 $\alpha_{\mathrm{eff}}$가 커지면 목표 TPOT 예산을 통신이 먼저 잠식한다.  
-
-$$
 Prefill은 $M$이 커 $T_{\mathrm{compute}}$ 비중이 커서 TP 이득이 **상대적으로** 보이기 쉽다.
-$$
 
 ## DP×TP 메모리 감각
 

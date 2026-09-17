@@ -85,7 +85,7 @@ $$
 
 V^\pi(s) = \mathbb{E}_\pi\big[G_t \mid S_t=s\big]
 =
-\mathbb{E}_\pi[\sum_{k\ge0}\gamma^k r_{t+k}\,|\,S_t=s]
+\mathbb{E}_\pi\left[\sum_{k\ge0}\gamma^k r_{t+k}\,\Big|\,S_t=s\right]
 
 $$
 

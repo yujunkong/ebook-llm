@@ -61,7 +61,7 @@ $$
 
 $$
 
-L(\theta)=\mathbb{E}_{x\sim\mathcal{D}}[-\sum_{t}\log P_\theta(x_t\mid x_{<t})]
+L(\theta)=\mathbb{E}_{x\sim\mathcal{D}}\left[-\sum_{t}\log P_\theta(x_t\mid x_{<t})\right]
 
 $$
 

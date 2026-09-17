@@ -462,7 +462,7 @@ Self-Attention에서도 Softmax가 등장한다.
 
 $$
 
-\alpha = \operatorname{softmax}(\frac{QK^{\top}}{\sqrt{d}})
+\alpha = \operatorname{softmax}\left(\frac{QK^{\top}}{\sqrt{d}}\right)
 
 $$
 

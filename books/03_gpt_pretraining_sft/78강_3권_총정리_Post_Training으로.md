@@ -79,10 +79,7 @@ L_{\mathrm{PT}} = -\sum_t \log p_\theta(x_t\mid x_{<t})
 
 $$
 
-
-$$
 SFT（응답 집합 $\mathcal{R}$）:
-$$
 
 $$
 

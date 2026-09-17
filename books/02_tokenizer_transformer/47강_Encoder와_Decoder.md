@@ -161,27 +161,6 @@ $$
 
 이 차이가 아키텍처 이름의 실체다.
 
-## 복잡도·연결성으로 보는 세 가족
-시퀀스 길이 $T$(Encoder-Decoder면 $T_{\mathrm{enc}}, T_{\mathrm{dec}}$)에서 **한 층 Self/Cross Attention**의 score 원소 수:
-
-| 유형 | Score shape (개념) | 원소 수 |
-|---|---|---|
-| Encoder Self | $T\times T$ | $T^2$ (양방향) |
-| Decoder Causal Self | $T\times T$ (하삼각만 유효) | 유효 연결 $\approx T(T+1)/2$ |
-| Cross-Attention | $T_{\mathrm{dec}}\times T_{\mathrm{enc}}$ | $T_{\mathrm{dec}} T_{\mathrm{enc}}$ |
-
-Causal의 유효 연결 수:
-
-$$
-
-\sum_{i=1}^{T} i = \frac{T(T+1)}{2} = O(T^2)
-
-$$
-
-여전히 제곱이지만, 상수·희소 패턴이 다르다. Cross는 두 길이가 다르면 $T^2$가 아니라 **곱**이다.
-
-예: $T_{\mathrm{enc}}=100$, $T_{\mathrm{dec}}=30$ → cross score $3000$ vs encoder self $10000$.
-
 ## 작은 비교 예제
 문장: `BOS A B C` (학습 시 다음 토큰 예측)
 
@@ -197,86 +176,6 @@ Encoder-only (MLM 스케치):
 - 마스크 토큰 예측이지, 왼→오른쪽 생성이 기본 목표는 아님
 
 같은 “Transformer Block”이라도 **마스크와 손실**이 달라지면 제품이 달라진다.
-
-## 마스크 행렬을 숫자로 그리기
-$T=4$일 때 Causal 마스크(더하는 값, 패딩 무시):
-
-$$
-
-M_{\mathrm{causal}}
-=
-\begin{bmatrix}
-0 & -\infty & -\infty & -\infty \\
-0 & 0 & -\infty & -\infty \\
-0 & 0 & 0 & -\infty \\
-0 & 0 & 0 & 0
-\end{bmatrix}
-
-$$
-
-Encoder(패딩 없음)는 $M=0$인 $4\times 4$ 영행렬.
-
-Softmax 전에 score에 더하면:
-
-$$
-
-A = \mathrm{softmax}(S + M)
-$$
-
-미래 위치는 $e^{-\infty}=0$이 되어 가중합에서 사라진다.
-
-### Cross-Attention 작은 예
-
-Decoder 길이 2, Encoder 길이 3:
-
-$$
-
-Q\in\mathbb{R}^{2\times d},\quad
-K,V\in\mathbb{R}^{3\times d},\quad
-S = \frac{QK^\top}{\sqrt{d}}\in\mathbb{R}^{2\times 3}
-
-$$
-
-행 = “지금 생성 중인 디코더 위치”, 열 = “원문(인코더) 위치”.  
-번역에서 “이 출력 단어가 원문 어디에 대응하는가”를 소프트하게 고르는 그림이다.
-
-## 학습 목표 수식 비교
-**Causal LM (Decoder-only / GPT형)**
-
-$$
-
-\mathcal{L}
-=
--\sum_{t=1}^{T}\log p_\theta(x_t\mid x_{<t})
-
-$$
-
-**Masked LM (Encoder-only / BERT형, 스케치)**
-
-마스크 위치 집합 $\mathcal{M}$에 대해:
-
-$$
-
-\mathcal{L}
-=
--\sum_{t\in\mathcal{M}}\log p_\theta(x_t\mid x_{\setminus\mathcal{M}})
-
-$$
-
-($x_{\setminus\mathcal{M}}$은 마스크·교란된 입력 — 세부 변형 다양).
-
-**Encoder-Decoder (번역, 교사강제)**
-
-$$
-
-\mathcal{L}
-=
--\sum_{t=1}^{T_{\mathrm{dec}}}
-\log p_\theta(y_t\mid y_{<t},\, x_{1:T_{\mathrm{enc}}})
-
-$$
-
-세 식 모두 “다음/빈칸 토큰의 NLL”이지만, **조건에 들어가는 정보(과거만 / 양방향 / 원문+과거 타깃)**가 제품 차이를 만든다.
 
 ## 코드로 구조 스케치
 ```python
@@ -336,10 +235,7 @@ $$
 \mathrm{Attn}(Q,K,V)=\mathrm{softmax}\left(\frac{QK^\top}{\sqrt{d_k}}\right)V
 $$
 
-
-$$
 Shape 감각: $X_{\mathrm{dec}}\in\mathbb{R}^{T_\mathrm{dec}\times d}$, $X_{\mathrm{enc}}\in\mathbb{R}^{T_\mathrm{enc}\times d}$이면 점수 행렬은 $(T_\mathrm{dec}\times T_\mathrm{enc})$입니다.
-$$
 
 GPT처럼 decoder-only면 cross-attention이 없고 causal self-attention만 남습니다.
 
@@ -381,44 +277,6 @@ DecoderBlock = Causal Self + Cross + FFN → 원 논문 Decoder
 
 Cross-Attention만 새로 추가하면 Encoder-Decoder가 된다.  
 제49~50강 프로젝트는 먼저 Decoder-only를 완성한다.
-
-## 정보 흐름 다이어그램 (한 토큰 시점)
-Decoder-only, 위치 $t=3$ (0-index면 2)에서 허용되는 키:
-
-```text
-위치:  0    1    2    3    4
-       ✓    ✓    ✓    ✓    ✗(미래)
-```
-
-Encoder-only, 같은 위치에서:
-
-```text
-위치:  0    1    2    3    4
-       ✓    ✓    ✓    ✓    ✓
-```
-
-Encoder-Decoder의 Decoder 위치 $t$에서:
-
-```text
-Self (causal):  y_0..y_t 만
-Cross:          모든 encoder 위치 h_0..h_{T_enc-1} (패딩 제외)
-```
-
-이 세 그림만 그릴 수 있으면 “Transformer” 약어 혼동에서 절반 탈출한다.
-
-## 파라미터 공유·스택 깊이 (감각)
-원 논문식 기호: Encoder $N$층, Decoder $N$층.  
-Decoder-only GPT형은 보통 **한 종류의 블록**을 $N$번.  
-같은 $N$, 같은 $C$라도 Encoder-Decoder는 **두 스택**이라 총 블록 수가 $2N$에 가깝다(크로스·임베딩 별도).
-
-Rough 파라미터 감각(임베딩·헤드 제외, 층당 $\approx 12 C^2$ 가정, 제52강):
-
-| 구조 | 층 블록 수 | 대략 |
-|---|---|---|
-| Decoder-only | $N$ | $\sim 12 N C^2$ |
-| Encoder-Decoder | $N+N$ | $\sim 24 N C^2$ (+ cross 투영) |
-
-“항상 Decoder-only가 싸다/좋다”는 결론이 아니다. **과제에 맞는 입출력 포트**가 우선이다.
 
 ## 실습
 1. 길이 4 시퀀스에서 Encoder용 마스크(모두 0)와 Causal 마스크를 각각 출력하라.

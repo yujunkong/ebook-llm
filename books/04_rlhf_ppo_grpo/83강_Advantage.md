@@ -428,101 +428,6 @@ $$
 
 또는 실무에서 GAE 등으로 추정합니다. 정책경사는 $\nabla\log\pi\cdot A$ 형태로 분산을 줄입니다.
 
-## 정량 스케치 — Advantage 분산과 GAE 맛보기
-
-### 11b.1 분산 감소의 한 줄
-
-$\hat g = \nabla\log\pi\cdot (R-b)$에서 $b\approx\mathbb{E}[R\mid s]$이면
-
-$$
-
-\mathrm{Var}(\hat g) \;\text{가 줄어드는 경향}
-$$
-
-(정확한 최적이 baseline은 $\mathrm{Var}$를 최소화하는 $b$로, value가 그 근사다.)
-
-### 11b.2 숫자: 빼기 전후
-
-보상이 $R\in\{10, 10, 10, 0\}$이고 $\bar R=7.5$라 하자.
-
-| 형태 | 가중 | 대략 분산 감각 |
-|---|---|---|
-| $R$ | 10,10,10,0 | 큰 양수 편향 + 한 번의 0 |
-| $R-\bar R$ | 2.5,2.5,2.5,-7.5 | 평균 0, 상대 신호 |
-
-정책 그래디언트는 **상대적으로 더 나은 응답**을 밀어 올린다.
-
-### 11b.3 TD 잔차와 $\lambda$
-
-$$
-
-\delta_t=r_t+\gamma V(s_{t+1})-V(s_t)
-$$
-
-$$
-
-\hat A_t^{\mathrm{GAE}(\gamma,\lambda)}
-=
-\sum_{l=0}^{\infty}(\gamma\lambda)^l \delta_{t+l}
-$$
-
-- $\lambda\to 0$: 저분산·고편향(1-step)
-- $\lambda\to 1$: 고분산·저편향(MC에 가까움)
-
-LLM 토큰열에서는 $r_t$가 마지막에만 있는 **희소 보상**이 흔해, 구현이 outcome advantage로 단순화되기도 한다.
-
-### 11b.4 시퀀스 outcome advantage
-
-$$
-
-\hat A(x,y)=R(x,y)-V_\psi(x)
-\quad\text{또는}\quad
-R-\bar R_{\mathrm{batch}}
-$$
-
-토큰 $t$에 방송:
-
-$$
-
-\hat A_t=\hat A(x,y)
-$$
-
-GRPO는 $V_\psi$ 대신 그룹 mean/std(제92강).
-
-### 11b.5 PPO와의 곱
-
-제87강:
-
-$$
-
-\rho_t=\frac{\pi_\theta}{\pi_{\mathrm{old}}},\quad
-L=\mathbb{E}\big[\min(\rho_t\hat A_t,\mathrm{clip}(\rho_t)\hat A_t)\big]
-$$
-
-$\hat A$의 스케일이 clip 체감 lr을 바꾼다. Advantage 정규화(whitening)를 켜면 lr을 다시 본다.
-
-### 11b.6 손계산 — $Q-V$
-
-$V(s)=1.0$, $Q(s,a_1)=1.5$, $Q(s,a_2)=0.2$이면
-
-$$
-
-A(s,a_1)=0.5,\quad A(s,a_2)=-0.8
-$$
-
-$\pi$가 둘에 확률을 두고 있으면 $\mathbb{E}[A]=0$에 가깝게 맞춰진다.
-
-### 11b.7 배치 whitening
-
-$$
-
-\hat A_i \leftarrow \frac{\hat A_i-\mathrm{mean}(\hat A)}{\mathrm{std}(\hat A)+\varepsilon}
-$$
-
-장점: 스케일 안정.  
-단점: 배치 통계 의존, 배치가 작으면 잡음.
-
-
 ## LLM에서는 어디에 사용될까?
 
 이번 83강에서 배운 개념은 이후 Transformer · GPT · 서빙 강의에서 반복해서 등장합니다. 각 수식·코드 블록을 “실제 모델의 어느 단계인가”와 연결해 다시 읽어 보세요.
@@ -552,10 +457,7 @@ $A^\pi(s,a)$의 정의와 $\mathbb{E}_{a\sim\pi}[A]=0$이 성립하는 이유를
 
 ### 문제 2
 
-
-$$
 REINFORCE에 $V(s)$를 빼도 $\nabla J$의 기댓값이 남는 항등을 스케치하시오.
-$$
 
 ### 문제 3
 

@@ -141,8 +141,6 @@ r_φ ← minimize BT loss
 
 \[
 \max_\theta \;
-
-$$
 \mathbb{E}_{x\sim\mathcal{D},\, y\sim\pi_\theta(\cdot\mid x)}
 \big[r_\phi(x,y)\big]
 \;-\;
@@ -152,7 +150,6 @@ $$
 \mathrm{KL}\big(\pi_\theta(\cdot\mid x)\,\|\,\pi_{\mathrm{ref}}(\cdot\mid x)\big)
 \big]
 \]
-$$
 
 해석:
 
@@ -164,11 +161,8 @@ $\beta$가 크면 보수적(안전·안정), 작으면 공격적(보상 추격·
 유효 보상으로 합치기도 한다:
 
 \[
-
-$$
 R(x,y)=r_\phi(x,y)-\beta\log\frac{\pi_\theta(y\mid x)}{\pi_{\mathrm{ref}}(y\mid x)}
 \]
-$$
 
 (구현·추정 방식은 제88·89강에서 구체화.)
 
@@ -263,42 +257,30 @@ KL:      “학교 때 배우지 않은 이상한 요리”로 도망가지 않�
 ### 5.1 정책으로서의 LM
 
 \[
-
-$$
 \pi_\theta(y\mid x)=\prod_{t=1}^{|y|}\pi_\theta(y_t\mid x,y_{<t})
 \]
-$$
 
 로그 확률:
 
 \[
-
-$$
 \log\pi_\theta(y\mid x)=\sum_t \log\pi_\theta(y_t\mid x,y_{<t})
 \]
-$$
 
 PPO는 이 토큰 로그확률의 비율을 사용한다(제87강).
 
 ### 5.2 기대 보상 목표
 
 \[
-
-$$
 J(\theta)=\mathbb{E}_{x,y\sim\pi_\theta}[r_\phi(x,y)]
 \]
-$$
 
 그대로 올리면 KL 폭발 위험 → 페널티 포함:
 
 \[
 J_\beta(\theta)=
-
-$$
 \mathbb{E}[r_\phi(x,y)]
 -\beta\,\mathbb{E}_x\big[\mathrm{KL}(\pi_\theta\|\pi_{\mathrm{ref}})\big]
 \]
-$$
 
 ### 5.3 왜 “한 방 경사”로 안 끝내는가?
 
@@ -310,8 +292,6 @@ $y$가 이산·길고, 보상이 응답 끝에만 있으면 분산이 크다.
 롤아웃 샘플 $(x,y)$에 대해:
 
 \[
-
-$$
 \begin{aligned}
 r &\leftarrow r_\phi(x,y)\\
 A &\leftarrow \mathrm{Advantage}(r, V_\psi,\ldots)\\
@@ -319,16 +299,12 @@ A &\leftarrow \mathrm{Advantage}(r, V_\psi,\ldots)\\
 \mathbb{E}\big[\mathrm{PPO\text{-}clip}(\theta; A, \pi_{\theta_{\mathrm{old}}})\big]
 \end{aligned}
 \]
-$$
 
 Value는
 
 \[
-
-$$
 \min_\psi \mathbb{E}\big[(V_\psi(x)-R)^2\big]
 \]
-$$
 
 형태로 같이 학습하는 구현이 많다.
 

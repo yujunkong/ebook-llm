@@ -38,7 +38,7 @@ J(\theta)
 =
 \mathbb{E}_{\tau\sim\pi_\theta}\big[G_0(\tau)\big]
 =
-\mathbb{E}_{\tau\sim\pi_\theta}[\sum_{t=0}^{T}\gamma^t r_t]
+\mathbb{E}_{\tau\sim\pi_\theta}\left[\sum_{t=0}^{T}\gamma^t r_t\right]
 
 $$
 
@@ -113,9 +113,9 @@ $$
 
 \nabla_\theta J(\theta)
 =
-\mathbb{E}_\tau[
+\mathbb{E}_\tau\left[
 \sum_t \nabla_\theta\log\pi_\theta(a_t\mid s_t)\, G_t
-]
+\right]
 
 $$
 
@@ -431,153 +431,6 @@ $$
 $$
 
 LLM에서는 $a_t$가 토큰, $s_t$가 지금까지의 문맥입니다.
-
-## 정량 스케치 — $\mathbb{E}[\nabla\log\pi\cdot A]$ 까지
-
-### 11b.1 기댓값에서 샘플 평균으로
-
-단스텝:
-
-$$
-
-\nabla_\theta J(\theta)
-=
-\mathbb{E}_{s\sim d^\pi,\, a\sim\pi_\theta}\big[
-\nabla_\theta\log\pi_\theta(a\mid s)\, Q^\pi(s,a)
-\big]
-
-$$
-
-Advantage로 바꾸면(분산↓, 편향 없음 under mild conditions):
-
-$$
-
-\nabla_\theta J(\theta)
-=
-\mathbb{E}\big[
-\nabla_\theta\log\pi_\theta(a\mid s)\, A^\pi(s,a)
-\big]
-
-$$
-
-몬테카를로 $N$샘플:
-
-$$
-
-\widehat{\nabla J}
-=
-\frac{1}{N}\sum_{i=1}^{N}
-\nabla_\theta\log\pi_\theta(a_i\mid s_i)\, \hat A_i
-
-$$
-
-LLM 시퀀스에서는 $a_i$가 토큰열, $\hat A_i$가 시퀀스 스칼라(또는 토큰별)다.
-
-### 11b.2 로그확률 합과 그래디언트
-
-$$
-
-\log\pi_\theta(y\mid x)=\sum_{t=1}^{|y|}\log\pi_\theta(y_t\mid x,y_{<t})
-
-$$
-
-$$
-
-\nabla\log\pi_\theta(y\mid x)
-=
-\sum_{t=1}^{|y|}\nabla\log\pi_\theta(y_t\mid x,y_{<t})
-
-$$
-
-같은 시퀀스 보상 $R$를 쓰면
-
-$$
-
-R\cdot\nabla\log\pi(y\mid x)
-=
-\sum_t \big(R\cdot\nabla\log\pi(y_t\mid\ldots)\big)
-
-$$
-
-토큰마다 **같은 가중** $R$ — 크레딧 할당이 거친 이유다. Advantage·GAE가 다음 강의의 답이다.
-
-### 11b.3 Softmax 밴딧 분산 스케치
-
-행동 2개, $p=\pi(L)$, $R(L)=1$, $R(R)=0$일 때 $J=p$.
-
-한 샘플 REINFORCE의 $\partial/\partial p$ 추정은 $R\cdot \partial\log\pi(a)/\partial p$이다.
-
-- $a=L$: $\partial\log p/\partial p=1/p$, 기여 $1/p$
-- $a=R$: $\partial\log(1-p)/\partial p=-1/(1-p)$, 기여 $0$
-
-$p=0.1$이면 성공 시 기울기 추정 $10$, 실패 시 $0$ — **희소·고분산**.  
-$p=0.5$면 성공 시 $2$. 같은 $J$ 상승이라도 추정 분산이 $p$에 민감하다.
-
-### 11b.4 배치 SNR 감각
-
-신호 진폭이 대략 $\mathbb{E}[|A|]$, 노이즈가 $\mathrm{Std}(A\nabla\log\pi)$에 비례한다고 보면,
-
-$$
-
-\mathrm{SNR} \propto \frac{|\mathbb{E}[A\nabla\log\pi]|}{\sqrt{\mathrm{Var}(\cdot)/N}}
-$$
-
-$N$을 키우거나 $A$의 분산을 줄이면(SNR↑) 학습이 덜 흔들린다.  
-PPO clip·Advantage 정규화는 이 감각의 **실무 장치**다.
-
-### 11b.5 KL이 붙을 때
-
-$$
-
-J_{\mathrm{KL}}=
-\mathbb{E}[R]
--\beta\,\mathbb{E}\big[\mathrm{KL}(\pi_\theta(\cdot\mid x)\Vert\pi_{\mathrm{ref}}(\cdot\mid x))\big]
-$$
-
-그래디언트는 보상 항 + KL 항. 구현은 보상에서 $\beta\cdot\mathrm{kl}$을 빼거나 손실에 더한다(부호 규약 고정).
-
-### 11b.6 손계산 — 세 토큰
-
-$\log\pi=(-0.2,-0.5,-1.0)$, $R=2.0$이면 surrogate 스칼라(상승 목표):
-
-$$
-
-\sum_t \log\pi_t\cdot R = (-0.2-0.5-1.0)\cdot 2 = -3.4
-$$
-
-손실로 $-\sum\log\pi\cdot R$를 쓰면 $+3.4$.  
-$R$ 부호가 음수면 같은 토큰을 **억제**한다.
-
-### 11b.7 SFT와의 수식 정렬
-
-SFT:
-
-$$
-
-\mathcal{L}_{\mathrm{SFT}}=-\sum_t \log\pi_\theta(y_t^\star\mid\ldots)
-$$
-
-REINFORCE(상승을 손실로):
-
-$$
-
-\mathcal{L}_{\mathrm{RF}}=-\sum_t \log\pi_\theta(y_t\mid\ldots)\cdot R
-$$
-
-$R\equiv 1$, $y=y^\star$이면 형태가 같다.  
-**해석:** SFT는 “정답에 무게 1”, PG는 “샘플에 무게 $R$”.
-
-### 11b.8 온폴리시 샘플 수와 LLM
-
-프롬프트 $B$, 응답 길이 $L$ → 약 $B L$ 토큰의 logprob·그래디언트.
-
-$$
-
-\mathrm{Cost}_{\mathrm{step}} \propto B\cdot L\cdot(\mathrm{forward}+\mathrm{backward})
-$$
-
-분산을 줄이려 $B$만 키우면 메모리가 먼저 터진다. Advantage가 **같은 예산에서 SNR을 올리는** 쪽이다.
-
 
 ## LLM에서는 어디에 사용될까?
 ### 10.1 RLHF

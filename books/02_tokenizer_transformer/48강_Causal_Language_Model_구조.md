@@ -118,34 +118,6 @@ lm_head      : [2, 8, 1000]  = logits
 
 Loss는 위치마다 Cross Entropy를 구한 뒤 평균한다(제34강). Softmax는 Loss 함수 안에서 수치 안정적으로 처리하는 것이 일반적이다(`CrossEntropyLoss`는 logit을 받는다).
 
-## 결합 분포 분해 — 한 줄 더
-길이 $T$ 서열의 로그우도:
-
-$$
-
-\log P_\theta(x_{1:T})
-=
-\sum_{t=1}^{T}\log P_\theta(x_t\mid x_{<t})
-
-$$
-
-학습은 보통 미니배치에서 위 합(또는 평균)의 **음수**를 최소화한다.
-
-$$
-
-\mathcal{L}
-=
--\frac{1}{|\mathcal{B}|}\sum_{x\in\mathcal{B}}
-\sum_{t=1}^{T_x}
-\log P_\theta(x_t\mid x_{<t})
-
-$$
-
-(패딩 위치는 `ignore_index`로 제외하는 것이 흔하다.)
-
-생성은 같은 조건부의 **한 샘플 경로**를 고르는 일이다(제58강).  
-구조(이번 강)와 목표(제32·57강)와 디코딩(제58강)을 섞지 말 것.
-
 ## 모듈별 역할
 ### 6.1 Token Embedding
 
@@ -250,44 +222,6 @@ class CausalLM(nn.Module):
 
 `Block` 안에는 제41·44·45·46강 내용이 그대로 들어간다. CLM “전체”는 사실 **임베딩 + 블록 스택 + 헤드**다.
 
-## 파라미터 수 스케치
-대략(bias·Norm 무시):
-
-$$
-
-\begin{aligned}
-\#\mathrm{tok\_emb} &= V C \\
-\#\mathrm{pos\_emb} &= T_{\max} C \quad(\text{learned absolute일 때}) \\
-\#\mathrm{block} &\approx 12 C^2 \quad(\text{Attn 4투영}+ \text{FFN }8C^2\text{ 감각}) \\
-\#\mathrm{lm\_head} &= V C \quad(\text{tying이면 0 추가})
-\end{aligned}
-
-$$
-
-전체:
-
-$$
-
-\#\mathrm{params}
-\approx
-VC + T_{\max}C + N\cdot 12 C^2
-\quad(+\,VC\ \text{if not tied})
-
-$$
-
-**작은 예 (Mini):** $V=100$, $C=64$, $T_{\max}=32$, $N=2$, tying 사용.
-
-- emb: $100\cdot64=6400$
-- pos: $32\cdot64=2048$
-- blocks: $2\cdot12\cdot64^2 = 98304$
-- 합 $\approx 1.07\times 10^5$
-
-**조금 큰 예 (설명용):** $V=32000$, $C=768$, $N=12$, tying.
-
-- $VC = 2.46\times 10^7$
-- $N\cdot12 C^2 \approx 12\cdot12\cdot768^2 \approx 8.5\times 10^7$
-- 합 약 $1.1\times 10^8$ 수준(실제 GPT-2 small 스케일과 같은 **자릿수 감각**; 정확한 공식 파라미터 수와 일치한다고 단정하지 말 것)
-
 ## Encoder-Decoder와의 위치
 제47강에서 Encoder/Decoder를 구분했다. Causal LM(GPT 계열)은 보통 **Decoder-only**다.
 
@@ -321,51 +255,6 @@ context [1, t]
 ```
 
 제50강에서 greedy generate를 실제로 붙인다. Temperature·top-k 샘플링은 3권에서 확장한다.
-
-## 타깃 시프트 — 작은 숫자
-입력 ID:
-
-$$
-
-\mathbf{x} = [7,\ 3,\ 9,\ 1]
-$$
-
-타깃(다음 토큰):
-
-$$
-
-\mathbf{y} = [3,\ 9,\ 1,\ \langle\mathrm{EOS}\rangle]
-$$
-
-위치 $t=0$의 logit은 토큰 3을, $t=1$은 9를 맞춘다.  
-구현에서 `logits[:, :-1]`와 `targets[:, 1:]`로 맞추는 패턴이 흔하다.
-
-$$
-
-\mathcal{L}
-=
-\frac{1}{3}\sum_{t=0}^{2}
-\mathrm{CE}\big(\mathrm{softmax}(z_t),\, y_t\big)
-$$
-
-(마지막 EOS 설계·ignore는 데이터셋에 따름.)
-
-## Weight tying 수식
-임베딩 행렬 $W_e\in\mathbb{R}^{V\times C}$, 히든 $h_t\in\mathbb{R}^{C}$일 때 tying 시:
-
-$$
-
-z_t = h_t W_e^\top \in\mathbb{R}^{V}
-$$
-
-즉 logit $v$번 성분은 $h_t$와 $v$번째 토큰 임베딩의 내적이다.
-
-$$
-
-z_{t,v} = h_t^\top (W_e)_{v,:}
-$$
-
-**직관:** “다음 토큰으로 $v$를 고른다” ≈ “현재 상태가 $v$의 임베딩과 얼마나 비슷한가”.
 
 ## 자주 하는 실수
 1. **Causal mask 누락**  

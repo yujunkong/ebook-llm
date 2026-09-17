@@ -21,11 +21,6 @@ $$
 
 오늘은 공식을 **역할**로 분해한다.
 
-> **핵심**
->
-> Query는 “무엇을 찾을지”, Key는 “어떻게 찾아질지”, Value는 “무엇을 건네줄지”입니다.  
-> 세 역할이 갈라져야 Multi-Head·KV cache·Cross-Attention이 설명이 됩니다.
-
 ## 선수 개념
 - Embedding / 토큰 벡터 (31강)
 - 행렬곱·내적 (1권 10강)
@@ -696,63 +691,6 @@ X
 
 오늘은 왼쪽 가지(Q/K/V 생성)까지.  
 37강은 가운데 점수, 38강은 Softmax와 $O$, 39강은 모듈 구현, 40강은 마스크다.
-
-
----
-
-## 부록 L. 배치 Shape 전개
-
-$$
-
-X \in \mathbb{R}^{B \times T \times d},\quad
-W_Q \in \mathbb{R}^{d \times d_k}
-\Rightarrow
-Q = X W_Q \in \mathbb{R}^{B \times T \times d_k}
-
-$$
-
-예: $B=2$, $T=4$, $d=8$, $d_k=8$이면 $Q$는 `(2,4,8)`입니다.  
-헤드로 나누면 `(B, h, T, d_k)`가 되지만, 그것은 41강입니다.
-
-## 부록 M. 내적 점수 행렬의 원소
-
-$$
-
-(QK^\top)_{ij} = \sum_{u=1}^{d_k} Q_{iu} K_{ju} = \mathbf{q}_i \cdot \mathbf{k}_j
-
-$$
-
-$$
-
-QK^\top \in \mathbb{R}^{T \times T}
-\quad(\text{배치 있으면 } B\times T\times T)
-
-$$
-
-> ⚠️ **주의**
->
-> $K^\top$는 마지막 두 축을 전치한 것입니다. `(B,T,d_k)` → `(B,d_k,T)` 후 `Q @ K^T`.
-
-## 부록 N. 3토큰 × 2차원 추가 예제
-
-$$
-
-X=\begin{bmatrix}1&0\\1&1\\0&1\end{bmatrix},\ 
-W_Q=W_K=I,\ 
-W_V=\begin{bmatrix}1&0\\0&2\end{bmatrix}
-
-$$
-
-$$
-
-Q=K=X,\quad
-V=\begin{bmatrix}1&0\\1&2\\0&2\end{bmatrix},\quad
-QK^\top=\begin{bmatrix}1&1&0\\1&2&1\\0&1&1\end{bmatrix}
-
-$$
-
-행1(두 번째 토큰)의 점수는 `[1,2,1]`로 **자기 자신**이 가장 큽니다.  
-37~38강에서 스케일·Softmax를 얹으면 가중치가 됩니다.
 
 <!-- LECTURE_NAV -->
 

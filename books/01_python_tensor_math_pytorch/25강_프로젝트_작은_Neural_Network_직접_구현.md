@@ -162,10 +162,10 @@ BCE:
 
 $$
 
-L = -\frac{1}{N}\sum_{i=1}^{N}[
+L = -\frac{1}{N}\sum_{i=1}^{N}\left[
   y_i\log(\hat{p}_i+\varepsilon)
   +(1-y_i)\log(1-\hat{p}_i+\varepsilon)
-]
+\right]
 
 $$
 

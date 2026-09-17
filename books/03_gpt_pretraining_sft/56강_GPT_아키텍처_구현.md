@@ -167,10 +167,7 @@ $$
 
 $\mathbf{z}_t\in\mathbb{R}^{V}$가 logits다. Softmax는 Loss/디코딩 단계에서 적용한다.
 
-
-$$
 Weight tying 시 $W_{\mathrm{lm}}=W_{\mathrm{tok}}$ (전치 규약은 구현에 맞게).
-$$
 
 ## 작은 숫자로 shape 추적하기
 설정:

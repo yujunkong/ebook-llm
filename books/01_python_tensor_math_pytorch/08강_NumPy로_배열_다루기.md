@@ -238,14 +238,11 @@ print(np.dot(A, B)) # 2D에서는 @와 유사하게 쓰이는 경우 많음
 손으로 확인 (`A @ B`):
 
 \[
-
-$$
 \begin{bmatrix}1&2\\3&4\end{bmatrix}
 \begin{bmatrix}5&6\\7&8\end{bmatrix}
 =
 \begin{bmatrix}19&22\\43&50\end{bmatrix}
 \]
-$$
 
 선형층의 $y = xW + b$에서 $xW$가 바로 이런 곱의 확장이다.
 
@@ -335,22 +332,16 @@ logits        : (batch, seq, vocab)
 벡터 $x \in \mathbb{R}^{n}$, 행렬 $W \in \mathbb{R}^{n \times m}$에 대해
 
 \[
-
-$$
 y = xW \in \mathbb{R}^{m}
 \]
-$$
 
 NumPy에서는 보통 `x`를 shape `(n,)` 또는 `(1, n)`으로 두고 `x @ W`를 계산한다.
 
 배치가 있으면
 
 \[
-
-$$
 X \in \mathbb{R}^{B \times n}, \quad Y = XW \in \mathbb{R}^{B \times m}
 \]
-$$
 
 ```python
 B, n, m = 4, 3, 2
@@ -490,10 +481,7 @@ if __name__ == "__main__":
 
 ## 수식 보강 — 브로드캐스팅 · 축소 · Softmax 축
 
-
-$$
 NumPy/PyTorch의 축 연산은 수식으로 쓰면 명확합니다. 벡터 $\mathbf{x}\in\mathbb{R}^{n}$에 대해
-$$
 
 $$
 \mathrm{sum}(\mathbf{x}) = \sum_{i=1}^{n} x_i,
@@ -583,11 +571,8 @@ np.zeros((4, 8, 16), dtype=np.float32)
 `x = np.array([1.0, 2.0, 3.0, 4.0])`에 대해
 
 \[
-
-$$
 z = \frac{x - \mean(x)}{\mathrm{std}(x)}
 \]
-$$
 
 를 계산한다. (`std`가 0이 아니라고 가정)
 

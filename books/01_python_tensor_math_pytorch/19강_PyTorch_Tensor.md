@@ -173,20 +173,14 @@ CPU 상자와 CUDA 상자를 바로 더할 수 없는 이유가 이것이다.
 Tensor $T$의 rank-$k$는
 
 \[
-
-$$
 T \in \mathbb{R}^{n_1 \times n_2 \times \cdots \times n_k}
 \]
-$$
 
 배치 행렬곱:
 
 \[
-
-$$
 Y = X W^{\top},\quad X\in\mathbb{R}^{B\times d_{\mathrm{in}}},\; W\in\mathbb{R}^{d_{\mathrm{out}}\times d_{\mathrm{in}}}
 \]
-$$
 
 PyTorch에서는
 

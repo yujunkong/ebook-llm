@@ -338,14 +338,14 @@ def total_reward(r_rm, logp_pi, logp_ref, beta):
 $$
 
 \mathrm{KL}(\pi\Vert\pi_{\mathrm{ref}})
-=\mathbb{E}_{y\sim\pi}[\log\pi(y)-\log\pi_{\mathrm{ref}}(y)]
+=\mathbb{E}_{y\sim\pi}\left[\log\pi(y)-\log\pi_{\mathrm{ref}}(y)\right]
 
 $$
 
 $$
 
 \mathrm{KL}(\pi_{\mathrm{ref}}\Vert\pi)
-=\mathbb{E}_{y\sim\pi_{\mathrm{ref}}}[\log\pi_{\mathrm{ref}}(y)-\log\pi(y)]
+=\mathbb{E}_{y\sim\pi_{\mathrm{ref}}}\left[\log\pi_{\mathrm{ref}}(y)-\log\pi(y)\right]
 
 $$
 
@@ -356,10 +356,7 @@ $$
 | $\mathrm{KL}(\pi\Vert\pi_{\mathrm{ref}})$ | $\pi$ | $\pi$가 참조에 없는 모드를 켜면 비싸다. mode-seeking 경향과 자주 묶여 설명됨 |
 | $\mathrm{KL}(\pi_{\mathrm{ref}}\Vert\pi)$ | $\pi_{\mathrm{ref}}$ | 참조가 쓰던 질량을 $\pi$가 커버하지 못하면 비싸다. mass-covering 경향 |
 
-
-$$
 RLHF 샘플링이 $\pi$에서 이뤄지므로, **샘플 로그비** $\log\pi-\log\pi_{\mathrm{ref}}$로 forward 쪽을 근사하는 구현이 자연스럽다.  
-$$
 일부 논문·블로그는 reverse/Jensen–Shannon 등을 논의한다. 읽을 때 “어느 기댓값인가”만 확인하면 혼동이 줄어든다.
 
 작은 숫자로 방향 차이를 본다. $\pi_{\mathrm{ref}}=(0.9,0.1)$, $\pi=(0.5,0.5)$.
@@ -460,10 +457,7 @@ RM 점수가 길이 상관을 이미 가지면, KL 정의와 **이중으로** �
 
 ## FAQ
 **Q. KL이 0이면 완벽한가?**  
-
-$$
 A. $\pi=\pi_{\mathrm{ref}}$라는 뜻이다. 정렬 이득도 0에 가깝다. 목표는 0이 아니라 **예산 안의 이탈**이다.
-$$
 
 **Q. 토큰 KL과 시퀀스 KL 중 무엇을 로그에 찍나?**  
 A. 학습에 쓰는 정의와 **동일한 정의**를 찍는다. 다른 정의를 섞으면 튜닝이 불가능해진다.
@@ -472,10 +466,7 @@ A. 학습에 쓰는 정의와 **동일한 정의**를 찍는다. 다른 정의�
 A. 연구·실무에 변형이 있다. 초보 과정에서는 고정 참조로 원리를 먼저 익힌다. EMA는 닻의 의미를 바꾼다.
 
 **Q. DPO를 쓰면 이 강의는 쓸모없는가?**  
-
-$$
 A. 아니다. DPO의 $\beta\log(\pi/\pi_{\mathrm{ref}})$가 바로 이 KL-제약 최적성의 재매개다. 89강은 90강의 해석 열쇠다.
-$$
 
 ## LLM에서는 어디에 사용될까?
 
@@ -561,10 +552,7 @@ $\beta$가 너무 작거나 KL 추정이 빠졌을 가능성을 의심한다. $\
 
 ### 문제 5
 
-
-$$
 PPO clip은 **이전 정책 $\pi_{\mathrm{old}}$** 대비 한 업데이트의 비율을 제한한다. KL 페널티는 **SFT 참조 $\pi_{\mathrm{ref}}$** 로부터의 누적 이탈을 제한한다. 시간 척도와 기준점이 다르다.  
-$$
 90강 DPO는 최적 정책의 KL-제약 보상을 **선호 확률 모델로 재매개**하여, 별도 RM+RL 루프 없이 같은 정신을 손실에 넣는다. KL이 “개념적으로 사라지는” 것이 아니라 **식 안으로 흡수**된다.
 
 ### 문제 6

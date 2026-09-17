@@ -72,7 +72,7 @@ $$
 
 $$
 
-\pi_r(y\mid x)=\frac{1}{Z(x)}\,\pi_{\mathrm{ref}}(y\mid x)\,\exp(\frac{1}{\beta}r(x,y))
+\pi_r(y\mid x)=\frac{1}{Z(x)}\,\pi_{\mathrm{ref}}(y\mid x)\,\exp\left(\frac{1}{\beta}r(x,y)\right)
 
 $$
 
@@ -111,10 +111,10 @@ BT에 넣으면
 $$
 
 p^\star(y_w\succ y_l\mid x)
-=\sigma(
+=\sigma\left(
 \beta\log\frac{\pi^\star(y_w\mid x)}{\pi_{\mathrm{ref}}(y_w\mid x)}
 -\beta\log\frac{\pi^\star(y_l\mid x)}{\pi_{\mathrm{ref}}(y_l\mid x)}
-)
+\right)
 
 $$
 
@@ -123,12 +123,12 @@ $$
 $$
 
 \mathcal{L}_{\mathrm{DPO}}(\theta)
-=-\mathbb{E}_{(x,y_w,y_l)}[
-\log\sigma(
+=-\mathbb{E}_{(x,y_w,y_l)}\left[
+\log\sigma\left(
 \beta\log\frac{\pi_\theta(y_w\mid x)}{\pi_{\mathrm{ref}}(y_w\mid x)}
 -\beta\log\frac{\pi_\theta(y_l\mid x)}{\pi_{\mathrm{ref}}(y_l\mid x)}
-)
-]
+\right)
+\right]
 
 $$
 
@@ -338,10 +338,7 @@ $$
 ## 한계를 수식으로 느끼기
 DPO 그래디언트는 관측된 $(y_w,y_l)$ 지지 위에서만 직접 움직인다.  
 정책이 새 응답 $y_{\mathrm{new}}$를 탐험해도, 그 응답이 어떤 쌍에도 없으면 **그 방향의 선호 신호는 없다**.  
-
-$$
 PPO/GRPO는 $y_{\mathrm{new}}$에 RM/verifier 점수를 바로 붙일 수 있다. 이것이 “DPO가 가볍다”와 “탐색이 약할 수 있다”가 동시에 참인 이유다.
-$$
 
 ## FAQ
 **Q. Reward Model이 완전히 사라지나?**  
@@ -449,10 +446,7 @@ $\Delta_w=1.0$, $\Delta_l=-0.5$, $\beta=0.2$일 때 $z$와 $\sigma(z)$(소수 �
 
 ### 문제 3（개념）
 
-
-$$
 DPO에서 $\pi_{\mathrm{ref}}$를 $\pi_\theta$와 **동일한 살아 있는 가중치**로 두면 어떤 문제가 생기는가?
-$$
 
 ### 문제 4（비교）
 
@@ -480,7 +474,7 @@ $$
 r_w-r_l
 =\beta\log\frac{\pi_r(y_w)}{\pi_{\mathrm{ref}}(y_w)}+\beta\log Z
 -\beta\log\frac{\pi_r(y_l)}{\pi_{\mathrm{ref}}(y_l)}-\beta\log Z
-=\beta(\Delta_w-\Delta_l)
+=\beta\left(\Delta_w-\Delta_l\right)
 
 $$
 

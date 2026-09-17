@@ -43,10 +43,7 @@ LLM 코드베이스를 열면 Attention은 최적화된 fused kernel·FlashAtten
 6. (옵션) $O\leftarrow O W_O$
 
 단일 헤드에서는 흔히 $d_k=d_v=d_{\mathrm{model}}$로 둔다.  
-
-$$
 Multi-Head는 41강에서 $d_k=d_{\mathrm{model}}/h$로 나눈다.
-$$
 
 ### 3.2 Self의 의미 재확인
 

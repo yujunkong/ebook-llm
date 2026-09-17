@@ -101,22 +101,16 @@ for iter = 1..N:
 
 ## 수학적으로 이해하기 — 코드 대응
 \[
-
-$$
 \rho=\exp(\log\pi_\theta-\log\pi_{\mathrm{old}})
 \]
-$$
 
 ```python
 ratio = torch.exp(logp - logp_old)
 ```
 
 \[
-
-$$
 L=-\mathrm{mean}\min(\rho A,\mathrm{clip}(\rho)A)
 \]
-$$
 
 ```python
 loss = -torch.min(ratio * adv, clipped_ratio * adv).mean()
@@ -140,8 +134,6 @@ eps      = 0.2
 \]
 
 \[
-
-$$
 \mathrm{clip}(\rho)=1.2
 \]
 
@@ -152,7 +144,6 @@ $$
 \[
 \mathcal{L}=-1.8
 \]
-$$
 
 같은 상황에서 `eps=0.5`면 clip 상한 1.5,
 
@@ -421,112 +412,10 @@ def demo():
 확률비 $r_t(\theta)=\pi_\theta(a_t\mid s_t)/\pi_{\theta_{\mathrm{old}}}(a_t\mid s_t)$에 대해
 
 $$
-L^{\mathrm{CLIP}}(\theta)=\mathbb{E}_t[\min\big(r_t(\theta)A_t,\ \mathrm{clip}(r_t(\theta),1-\varepsilon,1+\varepsilon)A_t\big)]
+L^{\mathrm{CLIP}}(\theta)=\mathbb{E}_t\left[\min\big(r_t(\theta)A_t,\ \mathrm{clip}(r_t(\theta),1-\varepsilon,1+\varepsilon)A_t\big)\right]
 $$
 
 $A_t$는 advantage, $\varepsilon$는 클립 폭입니다. 정책이 한 번에 너무 크게 바뀌지 않게 막는 장치입니다.
-
-## 정량 스케치 — clip 목표와 메트릭
-
-### 11b.1 목표 재기술
-
-$$
-
-L^{\mathrm{CLIP}}(\theta)
-=
-\mathbb{E}_t[
-\min\big(
-\rho_t(\theta)\hat A_t,\;
-\mathrm{clip}(\rho_t(\theta),1-\varepsilon,1+\varepsilon)\hat A_t
-\big)
-]
-$$
-
-$$
-
-\rho_t(\theta)=\exp\big(\log\pi_\theta(a_t\mid s_t)-\log\pi_{\mathrm{old}}(a_t\mid s_t)\big)
-$$
-
-상승 목표를 손실로 쓸 때 $L=-\,L^{\mathrm{CLIP}}$.
-
-### 11b.2 Clip fraction
-
-$$
-
-\mathrm{clip\_frac}
-=
-\mathbb{E}\big[\mathbf{1}(|\rho-1|>\varepsilon)\big]
-$$
-
-매 스텝 $\approx 1$이면 업데이트가 너무 크거나 $\varepsilon$가 너무 작다.  
-항상 $0$이면 clip이 사실상 꺼진 것 — 반드시 좋은 것은 아니다.
-
-### 11b.3 Approx KL
-
-토큰 평균 근사 예:
-
-$$
-
-\widehat{\mathrm{KL}}
-\approx
-\mathbb{E}_t\big[\log\pi_\theta-\log\pi_{\mathrm{old}}\big]
-$$
-
-또는 $((\rho-1)-\log\rho)$ 형태.  
-급증하면 정책이 old에서 너무 멀어짐 → lr·$\varepsilon$·β 점검.
-
-### 11b.4 숫자: $A>0$, $\rho$ 과다
-
-$A=1.0$, $\varepsilon=0.2$, $\rho=1.8$이면
-
-$$
-
-\rho A=1.8,\quad
-\mathrm{clip}(\rho)A=1.2,\quad
-\min=1.2
-$$
-
-비클립보다 **보수적**. 같은 $A$에 $\rho=1.1$이면 $\min=1.1$(클립 비활성).
-
-### 11b.5 숫자: $A<0$
-
-$A=-1$, $\rho=0.5$, $\varepsilon=0.2$ → clip 하한 $0.8$.
-
-$$
-
-\rho A=-0.5,\quad
-\mathrm{clip}(\rho)A=-0.8,\quad
-\min=-0.8
-$$
-
-$\min$이 더 음수인 쪽을 고르므로, **나쁜 행동을 과하게 억제하는 방향의 큰 스텝**을 잘라 보수화한다(직관: 87강 표와 함께 복습).
-
-### 11b.6 Value 손실（있을 때）
-
-$$
-
-L_V=\mathbb{E}\big[(V_\psi(s_t)-\hat R_t)^2\big]
-$$
-
-또는 value clip 변형. 총손실:
-
-$$
-
-L=L_{\mathrm{policy}}+c_v L_V-c_e H[\pi]
-$$
-
-계수는 팀 규약. 토이 구현은 policy만으로도 clip 계약을 검증할 수 있다.
-
-### 11b.7 롤아웃 토큰 예산
-
-$$
-
-N_{\mathrm{rollout}}\approx B\cdot L_{\mathrm{gen}}
-$$
-
-같은 데이터로 $K$ epoch 돌리면 재사용 배수 $K$.  
-$K$가 크면 $\rho$가 1에서 멀어져 clip_frac↑. early stop·$K$ 축소.
-
 
 ## LLM에서는 어디에 사용될까?
 Full stack 대응표:
@@ -702,10 +591,7 @@ $\rho=1$, unclipped 항은 $A$ 그대로.
 
 ### 문제 5
 
-
-$$
 reference 대비 KL 페널티($\beta\mathrm{KL}$).
-$$
 
 ### 문제 6
 
