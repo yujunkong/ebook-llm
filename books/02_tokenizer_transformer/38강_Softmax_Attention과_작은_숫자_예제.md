@@ -19,6 +19,11 @@ $$
 짧아서 위험하다. Softmax 축, Value 곱 순서, 마스크 위치를 한 번만 헷갈려도 조용히 틀린다.  
 작은 숫자로 한 바퀴 돌리면, 이후 구현·디버깅이 압도적으로 쉬워진다.
 
+> **핵심**
+>
+> Softmax Attention은 점수 행을 확률로 바꿔 Value를 가중합합니다.  
+> $\mathbf{o}_i=\sum_j\alpha_{ij}\mathbf{v}_j$, $\sum_j\alpha_{ij}=1$.
+
 ## 선수 개념
 - Softmax (33강)
 - Q/K/V (36강)
@@ -130,6 +135,11 @@ Attention 가중치는 이후 Loss(34강)까지 이어지는 경로의 일부다
 지금은 순전파 숫자에 집중한다.
 
 ## 작은 숫자로 직접 계산하기
+
+> **핵심**
+>
+> Softmax → 가중합까지 한 행을 끝까지 계산해야 Attention이 “보인다”고 할 수 있습니다.
+
 ### 6.1 예제 1 — 2토큰 완전 계산
 
 37강 설정 B를 이어받는다.
@@ -686,6 +696,48 @@ O = A @ V                # 오늘
 ```
 
 이 세 줄만 손에 익으면 Transformer 책의 절반이 열린다.
+
+
+---
+
+## 부록. Softmax 안정화 항등
+
+$$
+
+\mathrm{softmax}(\mathbf{s})_j
+=
+\frac{e^{s_j-m}}{\sum_u e^{s_u-m}},\quad m=\max_u s_u
+
+$$
+
+## 부록. $T=3$ 한 행 완전 전개
+
+$\mathbf{s}=[1,\ 0,\ -1]$:
+
+$$
+
+e^{1}\approx 2.718,\ e^{0}=1,\ e^{-1}\approx 0.368,\ \sum\approx 4.086
+
+$$
+
+$$
+
+\alpha \approx [0.665,\ 0.245,\ 0.090]
+
+$$
+
+$$
+
+V=\begin{bmatrix}1&0\\0&1\\1&1\end{bmatrix}
+\Rightarrow
+\mathbf{o}\approx 0.665[1,0]+0.245[0,1]+0.090[1,1]=[0.755,\ 0.335]
+
+$$
+
+> ⚠️ **주의**
+>
+> Attention $\alpha$의 Softmax 축과 LM Head 어휘 Softmax 축은 다릅니다.
+
 
 <!-- LECTURE_NAV -->
 

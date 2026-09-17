@@ -23,6 +23,10 @@
 위치 “밥을”을 예측할 때, 마스크 없이 “먹었다”를 보면 너무 쉽다.  
 Causal Mask는 **왼쪽(과거·현재)만** 보게 강제한다.
 
+> **핵심**
+>
+> Causal Mask는 Softmax **이전**에 미래 점수를 $-\infty$로 가려 $i$가 $j>i$를 못 보게 합니다.
+
 ## 선수 개념
 - Self-Attention 점수 $S$ (37강)
 - Softmax Attention (38강)
@@ -154,6 +158,11 @@ $$
 논리합으로 합친다. 오늘은 causal만 집중.
 
 ## 작은 숫자로 직접 계산하기
+
+> **핵심**
+>
+> 마스크 전후 Softmax를 나란히 보면 “치트(미래 보기)”가 숫자로 드러납니다.
+
 ### 6.1 예제 A — $T=3$, 단순한 점수
 
 마스크 전 점수 (이미 scaled라고 가정):
@@ -659,6 +668,47 @@ $$
 ```
 
 출력단(33–34)과 문맥단(35–40)이 만났고, 이제 문맥단을 다중 헤드로 확장한다.
+
+
+---
+
+## 부록 Q. $T=4$ 하삼각 마스크
+
+$$
+
+M=
+\begin{bmatrix}
+0 & -\infty & -\infty & -\infty \\
+0 & 0 & -\infty & -\infty \\
+0 & 0 & 0 & -\infty \\
+0 & 0 & 0 & 0
+\end{bmatrix}
+
+$$
+
+$$
+
+\tilde{S}=S+M
+
+$$
+
+## 부록 R. Softmax 후 엄밀한 0
+
+$s=[2,-\infty,-\infty]$ → $\alpha=[1,\ 0,\ 0]$.
+
+> ⚠️ **주의**
+>
+> Softmax 뒤에 미래를 0으로 지우면 행 합이 1 미만이 됩니다.
+
+## 부록 S. LLM Shape
+
+$$
+
+S\in\mathbb{R}^{B\times h\times T\times T},\quad
+M\in\mathbb{R}^{1\times 1\times T\times T}
+
+$$
+
 
 <!-- LECTURE_NAV -->
 

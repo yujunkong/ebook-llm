@@ -36,6 +36,10 @@ LLM 관점에서는 더 직접적이다.
 Transformer Block의 첫 핵심 연산이 바로 MHA다.  
 제46강에서 블록을 조립할 때, 오늘은 그 안쪽의 “Attention 엔진”을 완성한다.
 
+> **핵심**
+>
+> Multi-Head는 $d_{\mathrm{model}}$을 $h$개 부분 공간으로 나눠 병렬 Attention한 뒤 concat+$W^O$로 합칩니다.
+
 ## 선수 개념
 이미 알고 있어야 하는 것:
 
@@ -292,6 +296,11 @@ $$
 `(B, T, h, d_k)` → `(B, h, T, d_k)`로 바꾸는 패턴을 몸과 손에 익힌다.
 
 ## 작은 숫자로 직접 계산하기
+
+> **핵심**
+>
+> 헤드를 나눈 뒤에도 각 헤드는 38~40강과 같은 Softmax Attention입니다. concat+$W^O$만 추가됩니다.
+
 목표는 “거대한 모델”이 아니라 **split → attend → concat → $W^O$**를 손으로 한 바퀴 도는 것이다.
 
 ### 6.1 설정
@@ -760,6 +769,72 @@ MHA는 “토큰 사이 관계를 여러 눈으로 본다”.
 …
 제48강: Causal LM 전체 지도
 ```
+
+
+---
+
+## 부록. 두 헤드 미니 수치 ($h=2$, $d_k=2$, $T=2$)
+
+$$
+
+Q_1=\begin{bmatrix}1&0\\0&1\end{bmatrix},\ 
+K_1=Q_1,\ 
+V_1=I
+
+$$
+
+$$
+
+Q_2=\begin{bmatrix}0&1\\1&0\end{bmatrix},\ 
+K_2=I,\ 
+V_2=\begin{bmatrix}2&0\\0&2\end{bmatrix}
+
+$$
+
+$$
+
+S_1=\frac{I}{\sqrt{2}},\quad
+A_1\approx\begin{bmatrix}0.670&0.330\\0.330&0.670\end{bmatrix},\quad
+O_1\approx A_1
+
+$$
+
+$$
+
+S_2=\frac{1}{\sqrt{2}}\begin{bmatrix}0&1\\1&0\end{bmatrix},\quad
+A_2\approx\begin{bmatrix}0.330&0.670\\0.670&0.330\end{bmatrix}
+
+$$
+
+$$
+
+O_2=A_2 V_2\approx\begin{bmatrix}0.660&1.340\\1.340&0.660\end{bmatrix}
+
+$$
+
+$$
+
+[O_1\|O_2]\in\mathbb{R}^{2\times 4}\xrightarrow{W^O}\mathbb{R}^{2\times 4}
+
+$$
+
+> ⚠️ **주의**
+>
+> Softmax는 헤드마다 따로 적용합니다.
+
+## 부록. Shape 암기 카드
+
+$$
+
+\begin{aligned}
+X&\in\mathbb{R}^{B\times T\times d}\\
+Q&\xrightarrow{\mathrm{split}}\mathbb{R}^{B\times h\times T\times d_k}\\
+S,A&\in\mathbb{R}^{B\times h\times T\times T}\\
+O&=W^O(\mathrm{concat\ heads})\in\mathbb{R}^{B\times T\times d}
+\end{aligned}
+
+$$
+
 
 <!-- LECTURE_NAV -->
 
