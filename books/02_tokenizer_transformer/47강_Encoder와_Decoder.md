@@ -356,8 +356,8 @@ $$
 정답 스케치: (1) Enc-Dec + cross (2) Enc-only MLM (3) Dec-only CLM.
 
 파라미터 비교 손계산: $C=512,N=6$.  
-Dec-only $pprox12\cdot6\cdot512^2=1.89	imes10^7$.  
-Enc-Dec 두 스택 $pprox3.77	imes10^7$(+cross 투영 $2\cdot512^2$ 수준 추가).
+Dec-only $\approx12\cdot6\cdot512^2=1.89\times10^7$.  
+Enc-Dec 두 스택 $\approx3.77\times10^7$(+cross 투영 $2\cdot512^2$ 수준 추가).
 
 ## LLM에서는 어디에 사용될까?
 사실:
@@ -420,6 +420,22 @@ Cross-Attention만 새로 추가하면 Encoder-Decoder가 된다.
 
 5. **제목의 Decoder와 GPT Decoder-only를 혼동**  
    원 논문 Decoder는 Encoder 메모리를 본다. GPT는 그 메모리가 없다.
+
+
+## 수식 카드 — Encoder/Decoder
+
+$$
+M^{\mathrm{enc}}_{ij}=0,\quad
+M^{\mathrm{dec}}_{ij}=\begin{cases}0&j\le i\\-\infty&j>i\end{cases}
+$$
+
+$$
+Q_{\mathrm{cross}}=X_{\mathrm{dec}}W^Q,\ 
+K=H_{\mathrm{enc}}W^K,\ 
+V=H_{\mathrm{enc}}W^V
+$$
+
+유효 causal 엣지 $\frac{T(T+1)}{2}$. Cross 원소 $T_d T_e$.
 
 ## 핵심 요약
 - Encoder는 양방향 Self-Attention으로 입력 맥락을 만든다.

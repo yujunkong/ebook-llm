@@ -381,6 +381,19 @@ Pretraining → (  ①  ) → (  ②  preference  )
 5. **Pretraining을 건너뛰고 작은 모델에 SFT만**  
    미니 실험은 가능하지만, “지식”과 “형식”을 혼동하지 말 것.
 
+
+## 수식 카드 — SFT
+
+$$
+\mathcal{L}_{\mathrm{SFT}}=-\sum_{t\in\mathcal{T}_{\mathrm{resp}}}\log p_\theta(x_t\mid x_{<t})
+$$
+
+$$
+p(a\mid u)=\prod_{t\in a}p(x_t\mid x_{<t})
+$$
+
+응답 토큰만 손실. 형식 전환이 1차 목표.
+
 ## 핵심 요약
 - Base LM은 문서 이어쓰기에 강하고, Assistant는 지시 수행에 맞춰 추가 학습된다.
 - Instruction Tuning(주로 SFT)은 “(지시→응답)” 분포를 가르친다.

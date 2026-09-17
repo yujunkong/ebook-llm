@@ -384,6 +384,20 @@ $\mathcal{L}_t=-\log\mathrm{softmax}(z)_y$.
 
 이번 48강에서 배운 개념은 이후 Transformer · GPT · 서빙 강의에서 반복해서 등장합니다. 각 수식·코드 블록을 “실제 모델의 어느 단계인가”와 연결해 다시 읽어 보세요.
 
+
+## 수식 카드 — Causal LM
+
+$$
+P(x_{1:T})=\prod_t P(x_t\mid x_{<t}),\quad
+\mathrm{logits}=W_U\,\mathrm{LN}(\mathrm{Blocks}(E_x+P))
+$$
+
+$$
+\#\mathrm{params}\approx VC+T_{\max}C+12NC^2
+$$
+
+Shape: `[B,T]→[B,T,C]→[B,T,V]`.
+
 ## 핵심 요약
 - Causal LM은 token embed (+pos) → $N$ Transformer blocks → lm_head로 구성된 Decoder-only 언어 모델이다.
 - 주 shape 관례는 `[B, T, C]`이며, logit은 `[B, T, V]`다.

@@ -389,6 +389,17 @@ SVD 해석(설명): $\Delta W$의 상위 특잇값 방향만 연다 — 학습�
 
 이번 73강에서 배운 개념은 이후 Transformer · GPT · 서빙 강의에서 반복해서 등장합니다. 각 수식·코드 블록을 “실제 모델의 어느 단계인가”와 연결해 다시 읽어 보세요.
 
+
+## 수식 카드 — LoRA
+
+$$
+W=W_0+\frac{\alpha}{r}BA,\quad
+\#=r(d_{\mathrm{in}}+d_{\mathrm{out}}),\quad
+\mathrm{rank}(BA)\le r
+$$
+
+Freeze $W_0$, train $A,B$, merge for inference.
+
 ## 핵심 요약
 - LoRA는 $\Delta W \approx BA$（또는 $\frac{\alpha}{r}BA$）로 저랭크 갱신만 학습한다.
 - 파라미터 수는 대략 $r(d_{\mathrm{in}}+d_{\mathrm{out}})$이며, full 대비 크게 줄어든다.

@@ -393,6 +393,16 @@ $$
 
 이번 55강에서 배운 개념은 이후 Transformer · GPT · 서빙 강의에서 반복해서 등장합니다. 각 수식·코드 블록을 “실제 모델의 어느 단계인가”와 연결해 다시 읽어 보세요.
 
+
+## 수식 카드 — GPT
+
+$$
+p_\theta(x_t\mid x_{<t})=\mathrm{softmax}(W_U h_t)_{x_t}
+$$
+
+Decoder-only Causal LM + Pretraining (+ optional SFT).  
+제품명 ≠ 아키텍처.
+
 ## 핵심 요약
 - GPT는 이 책에서 **Decoder-only Causal LM + (대규모) Pretraining** 계열을 가리킨다.
 - 본체 배선은 2권의 Causal LM과 동일하다: embed → Block×N → lm_head.

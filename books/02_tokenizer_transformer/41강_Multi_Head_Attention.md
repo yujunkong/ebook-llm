@@ -228,7 +228,7 @@ X  (T × d_model)
 
 ### 4.3 파라미터가 늘어나는 지점
 
-큰 $W^Q,W^K,W^V,W^O$를 각각 $d_{	ext{model}}	imes d_{	ext{model}}$로 두면 Single-Head full-$d_k$와 파라미터 규모가 비슷하다. Multi-Head의 이득은 예산을 폭발시키는 것이 아니라 **같은 예산으로 여러 부분 공간을 쓰는 것**에 가깝다.
+큰 $W^Q,W^K,W^V,W^O$를 각각 $d_{	ext{model}}\times d_{	ext{model}}$로 두면 Single-Head full-$d_k$와 파라미터 규모가 비슷하다. Multi-Head의 이득은 예산을 폭발시키는 것이 아니라 **같은 예산으로 여러 부분 공간을 쓰는 것**에 가깝다.
 
 ## 수학적으로 이해하기
 ### 5.1 Head별 수식

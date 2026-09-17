@@ -394,6 +394,18 @@ torch.manual_seed(0)
 6. **EOS를 디코더만의 문제로 착각**  
    데이터에 EOS가 거의 없으면 모델이 끝내는 법을 못 배운다(제60~61강 연결).
 
+
+## 수식 카드 — Decoding
+
+$$
+x_t^{\mathrm{greedy}}=\arg\max_v z_{t,v},\quad
+x_t^{\mathrm{sample}}\sim\mathrm{Categorical}(\mathrm{softmax}(z_t))
+$$
+
+$$
+P(x_{t_0+1:t_0+K}\mid x_{1:t_0})=\prod_k P(x_{t_0+k}\mid x_{<t_0+k})
+$$
+
 ## 핵심 요약
 - 생성은 같은 GPT forward의 마지막 logit에 **디코딩 규칙**을 적용한 루프다
 - Greedy는 argmax, Sampling은 Categorical 제비뽑기다
