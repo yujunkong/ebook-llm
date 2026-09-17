@@ -540,6 +540,8 @@ notes_nccl:
 <!-- visual-example-113 -->
 ## 숫자로 따라가기 — Tensor Parallel
 
+![그림 113-1](images/fig113-01.png)
+
 가중치 행렬을 GPU 2장에 반반:
 
 $$

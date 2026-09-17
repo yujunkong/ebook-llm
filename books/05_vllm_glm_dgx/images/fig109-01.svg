@@ -1,0 +1,14 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<svg xmlns="http://www.w3.org/2000/svg" width="1200" height="680" viewBox="0 0 1200 680" role="img">
+  <rect width="1200" height="680" fill="#f7f4ef"/>
+  <text x="60" y="56" font-family="Georgia, serif" font-size="28" fill="#1a1a1a">Fig 109-1. MoE Top-2 혼합</text>
+  <text x="60" y="96" font-size="18" fill="#555">E=8 중 상위 2명, g=[0.7, 0.3]</text>
+  <rect x="150" y="180" width="300" height="140" rx="8" fill="#0b6e4f"/>
+  <text x="200" y="250" fill="#fff" font-size="22">F1 · 0.7</text>
+  <rect x="550" y="180" width="300" height="140" rx="8" fill="#1d4e89"/>
+  <text x="600" y="250" fill="#fff" font-size="22">F2 · 0.3</text>
+  <text x="900" y="260" font-size="36" fill="#b35c00">→ y</text>
+  <rect x="80" y="400" width="1040" height="200" rx="8" fill="#fff" stroke="#d0cbc3"/>
+  <text x="110" y="460" font-size="20">y = 0.7 F1(x) + 0.3 F2(x)</text>
+  <text x="110" y="530" font-size="18" fill="#555">총 파라미터는 커도, 한 forward에 쓰는 건 활성 전문가뿐</text>
+</svg>

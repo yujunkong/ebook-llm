@@ -396,6 +396,8 @@ print(torch.allclose(a, b))
 <!-- visual-example-57 -->
 ## 숫자로 따라가기 — Next-token CE
 
+![그림 57-1](images/fig57-01.png)
+
 시퀀스 `나는 / 학생 / 이다` (id: 7, 3, 9)를 한 토큰씩 예측한다고 합시다.
 
 | 위치 | 조건 | 맞힐 것 | 예: $p$ | $-\log p$ |

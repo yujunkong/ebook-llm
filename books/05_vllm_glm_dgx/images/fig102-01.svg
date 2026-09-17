@@ -1,0 +1,18 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<svg xmlns="http://www.w3.org/2000/svg" width="1200" height="680" viewBox="0 0 1200 680" role="img">
+  <rect width="1200" height="680" fill="#f7f4ef"/>
+  <text x="60" y="56" font-family="Georgia, serif" font-size="28" fill="#1a1a1a">Fig 102-1. Static vs Continuous Batching</text>
+  <text x="60" y="96" font-size="18" fill="#555">슬롯 8개, static은 끝난 자리도 대기 / continuous는 즉시 채움</text>
+  <text x="100" y="170" font-size="20" font-family="Georgia, serif">Static (한 스텝 점유)</text>
+  <g>
+    <rect x="100" y="200" width="50" height="40" fill="#0b6e4f"/><rect x="160" y="200" width="50" height="40" fill="#0b6e4f"/>
+    <rect x="220" y="200" width="50" height="40" fill="#ccc"/><rect x="280" y="200" width="50" height="40" fill="#0b6e4f"/>
+    <rect x="340" y="200" width="50" height="40" fill="#0b6e4f"/><rect x="400" y="200" width="50" height="40" fill="#ccc"/>
+    <rect x="460" y="200" width="50" height="40" fill="#0b6e4f"/><rect x="520" y="200" width="50" height="40" fill="#0b6e4f"/>
+  </g>
+  <text x="100" y="280" font-size="18">active=[1,1,0,1,1,0,1,1] → 점유율 6/8=0.75</text>
+  <text x="100" y="340" font-size="20" font-family="Georgia, serif">η_idle = 1 − 점유율 = 0.25</text>
+  <rect x="80" y="400" width="1040" height="200" rx="8" fill="#fff" stroke="#d0cbc3"/>
+  <text x="110" y="460" font-size="20">Continuous: 끝난 슬롯에 새 요청을 바로 넣어 idle↓</text>
+  <text x="110" y="530" font-size="18" fill="#555">throughput ↑ ⇐ η_idle ↓</text>
+</svg>

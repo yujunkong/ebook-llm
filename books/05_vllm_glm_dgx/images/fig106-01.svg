@@ -1,0 +1,17 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<svg xmlns="http://www.w3.org/2000/svg" width="1200" height="680" viewBox="0 0 1200 680" role="img">
+  <rect width="1200" height="680" fill="#f7f4ef"/>
+  <text x="60" y="56" font-family="Georgia, serif" font-size="28" fill="#1a1a1a">Fig 106-1. Scheduler admit 조건</text>
+  <text x="60" y="96" font-size="18" fill="#555">running&lt;N_seq 이고 남은 블록 ≥ 필요 블록</text>
+  <rect x="100" y="160" width="450" height="200" rx="8" fill="#fff" stroke="#0b6e4f" stroke-width="2"/>
+  <text x="140" y="230" font-size="20">running=3 / N_seq=8</text>
+  <text x="140" y="280" font-size="20">free blocks=40, need=10</text>
+  <text x="140" y="330" font-size="18" fill="#0b6e4f">→ admit OK</text>
+  <rect x="620" y="160" width="450" height="200" rx="8" fill="#fff" stroke="#b35c00" stroke-width="2"/>
+  <text x="660" y="230" font-size="20">running=8 / N_seq=8</text>
+  <text x="660" y="280" font-size="20">or free=5, need=20</text>
+  <text x="660" y="330" font-size="18" fill="#b35c00">→ wait / preempt</text>
+  <rect x="80" y="420" width="1040" height="180" rx="8" fill="#fff" stroke="#d0cbc3"/>
+  <text x="110" y="480" font-size="20">admit ⇔ (|running|&lt;N_seq) ∧ (blocks_free ≥ blocks_need)</text>
+  <text x="110" y="540" font-size="18" fill="#555">선점 비용 ≈ recompute prefill + queue 대기</text>
+</svg>

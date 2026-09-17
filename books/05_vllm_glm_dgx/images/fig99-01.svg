@@ -1,0 +1,17 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<svg xmlns="http://www.w3.org/2000/svg" width="1200" height="680" viewBox="0 0 1200 680" role="img">
+  <rect width="1200" height="680" fill="#f7f4ef"/>
+  <text x="60" y="56" font-family="Georgia, serif" font-size="28" fill="#1a1a1a">Fig 99-1. Training vs Inference 자원</text>
+  <rect x="100" y="160" width="450" height="280" rx="8" fill="#fff" stroke="#1d4e89" stroke-width="2"/>
+  <text x="220" y="220" font-size="22" font-family="Georgia, serif">Training</text>
+  <text x="140" y="280" font-size="18">가중치 + 활성화</text>
+  <text x="140" y="320" font-size="18">+ 그라디언트 + 옵티마</text>
+  <text x="140" y="380" font-size="16" fill="#555">목표: Loss↓</text>
+  <rect x="620" y="160" width="450" height="280" rx="8" fill="#fff" stroke="#0b6e4f" stroke-width="2"/>
+  <text x="740" y="220" font-size="22" font-family="Georgia, serif">Inference</text>
+  <text x="660" y="280" font-size="18">가중치 + KV cache</text>
+  <text x="660" y="320" font-size="18">배치=요청/연속배치</text>
+  <text x="660" y="380" font-size="16" fill="#555">목표: 토큰 생성</text>
+  <rect x="80" y="500" width="1040" height="120" rx="8" fill="#fff" stroke="#d0cbc3"/>
+  <text x="110" y="570" font-size="18">같은 체크포인트라도 쓰는 방정식·메모리 구성이 다르다</text>
+</svg>

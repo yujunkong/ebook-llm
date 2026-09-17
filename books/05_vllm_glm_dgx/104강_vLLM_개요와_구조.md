@@ -429,6 +429,25 @@ pages = (seq + page - 1)//page
 print(pages)
 ```
 
+<!-- visual-example-104 -->
+## 숫자로 따라가기 — KV 페이지 수
+
+![그림 104-1](images/fig104-01.png)
+
+페이지 크기 $16$토큰, 시퀀스 길이 $2000$.
+
+$$
+N_{\mathrm{pages}}=\left\lceil\frac{2000}{16}\right\rceil=125
+$$
+
+| 기호 | 값 |
+|---|---|
+| page size | 16 |
+| seq len | 2000 |
+| pages | 125 |
+
+vLLM은 연속 배열 대신 **페이지 단위로 KV를 할당**해 조각을 줄입니다.
+
 ## LLM에서는 어디에 사용될까?
 
 이번 104강에서 배운 개념은 이후 Transformer · GPT · 서빙 강의에서 반복해서 등장합니다. 각 수식·코드 블록을 “실제 모델의 어느 단계인가”와 연결해 다시 읽어 보세요.

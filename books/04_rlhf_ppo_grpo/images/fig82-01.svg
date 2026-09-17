@@ -1,0 +1,15 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<svg xmlns="http://www.w3.org/2000/svg" width="1200" height="680" viewBox="0 0 1200 680" role="img">
+  <rect width="1200" height="680" fill="#f7f4ef"/>
+  <text x="60" y="56" font-family="Georgia, serif" font-size="28" fill="#1a1a1a">Fig 82-1. Policy Gradient 한 스텝</text>
+  <text x="60" y="96" font-size="18" fill="#555">∇J ≈ E[ ∇logπ(a|s) · Â ]</text>
+  <rect x="100" y="180" width="450" height="160" rx="8" fill="#0b6e4f"/>
+  <text x="140" y="250" fill="#fff" font-size="20">Â = +2, logπ↑ 방향</text>
+  <text x="140" y="300" fill="#e8f5f0" font-size="18">좋은 행동 확률↑</text>
+  <rect x="620" y="180" width="450" height="160" rx="8" fill="#b35c00"/>
+  <text x="660" y="250" fill="#fff" font-size="20">Â = −2, logπ↓ 방향</text>
+  <text x="660" y="300" fill="#fff" font-size="18">나쁜 행동 확률↓</text>
+  <rect x="80" y="400" width="1040" height="200" rx="8" fill="#fff" stroke="#d0cbc3"/>
+  <text x="110" y="460" font-size="20">예: logπ=-1.2, Â=+2 → 기여 ≈ ∇logπ · 2</text>
+  <text x="110" y="530" font-size="18" fill="#555">보상의 부호가 정책 업데이트의 방향을 정한다</text>
+</svg>

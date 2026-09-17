@@ -411,6 +411,8 @@ $$
 <!-- visual-example-99 -->
 ## 숫자로 따라가기 — Train vs Infer
 
+![그림 99-1](images/fig99-01.png)
+
 | | 학습 | 추론 |
 |---|---|---|
 | 목표 | Loss↓ | 토큰 생성 |

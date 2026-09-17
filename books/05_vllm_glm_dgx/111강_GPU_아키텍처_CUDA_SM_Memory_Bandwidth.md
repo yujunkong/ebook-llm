@@ -446,6 +446,24 @@ def roofline(ai, peak_flops=1e14, bw=2e12):
 print(roofline(1), roofline(100))
 ```
 
+<!-- visual-example-111 -->
+## 숫자로 따라가기 — Roofline
+
+![그림 111-1](images/fig111-01.png)
+
+피크 연산 $\pi=10^{14}$ FLOP/s, 대역폭 $\beta=2\times 10^{12}$ B/s.
+
+$$
+\mathrm{Perf}\le\min(\pi,\;\beta\cdot I),\quad I=\frac{\mathrm{FLOPs}}{\mathrm{Bytes}}
+$$
+
+| $I$ (AI) | $\beta\cdot I$ | 병목 |
+|---|---|---|
+| $1$ | $2\times 10^{12}$ | memory |
+| $100$ | $2\times 10^{14}$ → 캡 $\pi$ | compute |
+
+LLM decode는 보통 **산술 강도 $I$가 낮아** 메모리 지붕에 붙습니다.
+
 ## 핵심 요약
 - CUDA 실행은 Grid → Block → Warp → Thread로 펼쳐지고, **SM**이 그 공장이다.
 - LLM decode는 종종 **memory-bound** 쪽에 기울며, 배치·양자화·캐시가 산술강도를 바꾼다.

@@ -396,6 +396,8 @@ $$
 <!-- visual-example-107 -->
 ## 숫자로 따라가기 — TTFT / TPOT / TPS
 
+![그림 107-1](images/fig107-01.png)
+
 동시 요청 없이 생성 100토큰, TTFT=0.2s, TPOT=0.03s:
 
 $$
