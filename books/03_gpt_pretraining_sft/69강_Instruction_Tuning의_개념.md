@@ -497,3 +497,4 @@ Pretraining(base) 단계의 미니 산출물이다. 제70강에서는 Instructio
 - **다음 강:** [70강. Instruction Dataset 형식](70강_Instruction_Dataset_형식.md)
 
 <!-- /LECTURE_NAV -->
+
