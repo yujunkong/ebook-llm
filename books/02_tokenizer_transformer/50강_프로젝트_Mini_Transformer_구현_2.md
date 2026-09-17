@@ -1,19 +1,13 @@
-# 2권. Tokenizer와 Transformer
+# 제50강. 프로젝트 — Mini Transformer 구현 (2)
 
-## 제50강. 프로젝트 — Mini Transformer 구현 (2)
+> **학습 목표**
+> - `data.py`로 텍스트를 토큰 시퀀스·미니배치 `(x, y)`로 만든다.
+> - `train.py`에서 Cross Entropy로 학습하고 loss 감소를 확인한다.
+> - greedy `generate`로 프롬프트 뒤 문자를 이어 쓴다.
+> - 실패 시 shape / mask / 타깃 시프트 / eval 모드를 체계적으로 디버깅한다.
 
-### 1. 이번 강의에서 배울 것
-
-제49강에서 세운 Mini Transformer 뼈대에 **데이터 · 학습 루프 · greedy 생성**을 붙인다. 이번 강의(2부)가 끝나면 “작은 텍스트를 외우며 다음 글자를 이어 쓰는” 장난감 LM이 동작해야 한다.
-
-이 강의를 마치면 다음을 할 수 있어야 한다.
-
-- `data.py`로 텍스트를 토큰 시퀀스·미니배치 `(x, y)`로 만든다.
-- `train.py`에서 Cross Entropy로 학습하고 loss 감소를 확인한다.
-- greedy `generate`로 프롬프트 뒤 문자를 이어 쓴다.
-- 실패 시 shape / mask / 타깃 시프트 / eval 모드를 체계적으로 디버깅한다.
-
-### 2. 왜 이것을 배우는가
+---
+## 1. 왜 이것을 배우는가
 
 Forward만 되는 모델은 아직 “언어 모델”이 아니다. 언어 모델은 **Loss가 정의되고, 파라미터가 갱신되며, 생성 API가 닫히는** 순간 완성된다.
 
@@ -30,7 +24,7 @@ Forward만 되는 모델은 아직 “언어 모델”이 아니다. 언어 모�
 
 지금 CPU 미니 규모로 이 루프를 한 번 완주해야, 이후 데이터셋만 커져도 당황하지 않는다.
 
-### 3. 프로젝트 상태 확인 (1부에서 이어짐)
+## 2. 프로젝트 상태 확인 (1부에서 이어짐)
 
 디렉터리는 동일하다.
 
@@ -46,7 +40,7 @@ ch49_mini_transformer/
 
 1부 smoke test가 실패하면 2부를 시작하지 않는다. `logits.shape == (B, T, V)`를 다시 확인하라.
 
-### 4. 학습 데이터 — 아주 작은 텍스트
+## 3. 학습 데이터 — 아주 작은 텍스트
 
 완벽한 위키피디아가 필요 없다. **반복 패턴이 있는 짧은 텍스트**가 미니 LM에 더 친절하다.
 
@@ -72,7 +66,7 @@ mini transformer mini transformer
 - 너무 짧으면(수 십 자) 금방 암기하지만, 파이프라인 검증에는 충분하다.
 - 너무 길면 CPU에서 느리다. 처음엔 **1~5KB**면 넉넉하다.
 
-### 5. `data.py` — 배치 만들기
+## 4. `data.py` — 배치 만들기
 
 Next-token 학습의 핵심은 **한 칸 시프트**다.
 
@@ -94,16 +88,13 @@ import torch
 
 from tokenizer import CharTokenizer
 
-
 def load_text(path: str | Path) -> str:
     return Path(path).read_text(encoding="utf-8")
-
 
 def build_tokenizer_and_data(text: str):
     tok = CharTokenizer.from_text(text)
     data = torch.tensor(tok.encode(text), dtype=torch.long)
     return tok, data
-
 
 def get_batch(
     data: torch.Tensor,
@@ -123,7 +114,6 @@ def get_batch(
     x = torch.stack([data[i : i + block_size] for i in starts])
     y = torch.stack([data[i + 1 : i + 1 + block_size] for i in starts])
     return x.to(device), y.to(device)
-
 
 if __name__ == "__main__":
     # 파일 없으면 인라인 텍스트로 테스트
@@ -147,7 +137,7 @@ decode y0: 'o be or not to b'
 
 `y`가 `x`보다 한 글자씩 앞서 있음을 눈으로 확인한다. 이 확인을 건너뛰면 Loss 디버깅이 어려워진다.
 
-### 6. Loss — logits와 타깃 연결
+## 5. Loss — logits와 타깃 연결
 
 `CrossEntropyLoss`는 보통 `(N, V)` logit과 `(N,)` 클래스 인덱스를 기대한다. `[B,T,V]`를 펼친다.
 
@@ -161,9 +151,9 @@ loss = F.cross_entropy(
 
 제34강 내용 그대로다. Softmax는 Loss 안에서 처리되므로 `softmax`를 미리 씌우지 않는다.
 
-### 7. `train.py` — 학습 루프와 greedy 생성
+## 6. `train.py` — 학습 루프와 greedy 생성
 
-#### 7.1 Greedy generate
+### 6.1 Greedy generate
 
 ```python
 # ch49_mini_transformer/train.py
@@ -178,7 +168,6 @@ import torch.nn.functional as F
 from config import MiniConfig
 from data import build_tokenizer_and_data, get_batch, load_text
 from model import MiniTransformer
-
 
 @torch.no_grad()
 def generate_greedy(
@@ -204,7 +193,7 @@ def generate_greedy(
 - 예측은 **마지막 위치** logit만 사용한다.
 - `argmax`는 greedy다. temperature 샘플링은 3권에서.
 
-#### 7.2 학습 메인
+### 6.2 학습 메인
 
 ```python
 def train(
@@ -250,7 +239,6 @@ def train(
     print(tok.decode(out[0].tolist()))
     return model, tok
 
-
 def main():
     parser = argparse.ArgumentParser()
     parser.add_argument("--input", type=str, default="", help="path to input.txt")
@@ -267,7 +255,6 @@ def main():
     print("device:", device, "| chars:", len(text))
     train(text, steps=args.steps, device=device)
 
-
 if __name__ == "__main__":
     main()
 ```
@@ -281,7 +268,7 @@ python train.py --steps 800
 python train.py --input input.txt --steps 1000
 ```
 
-### 8. 예상 출력
+## 7. 예상 출력
 
 환경마다 숫자는 다르다. **경향**이 맞으면 성공이다.
 
@@ -311,7 +298,7 @@ to be or not to be that is the question
 
 문자 vocab가 20이면 $\ln 20 \approx 3.0$ 근처가 초기 CE의 대략적 감각이다. 엄밀한 하한은 아니므로 “근처”로만 보라.
 
-### 9. 한 배치 overfit 테스트 (강력 추천)
+## 8. 한 배치 overfit 테스트 (강력 추천)
 
 전체 루프 전에, **고정된 배치 하나**만 반복 학습해 보라.
 
@@ -329,7 +316,7 @@ for step in range(200):
 
 충분히 작은 모델·배치에서 loss가 거의 0 근처로 안 내려가면, 데이터 문제가 아니라 **구현 버그** 확률이 높다.
 
-### 10. 체크포인트 저장 (선택)
+## 9. 체크포인트 저장 (선택)
 
 ```python
 torch.save(
@@ -344,7 +331,7 @@ torch.save(
 
 불러올 때는 같은 `MiniConfig`·tokenizer 맵으로 모델을 재구성한 뒤 `load_state_dict`한다. 1권 제21·25강 패턴과 같다.
 
-### 11. 디버깅 순서
+## 10. 디버깅 순서
 
 ```text
 1) data.py에서 x/y decode가 한 글자 시프트인지
@@ -364,7 +351,7 @@ torch.save(
 | 생성 즉시 반복  Junk | 학습 부족 또는 데이터 너무 짧음 |
 | 생성 시 크래시 | `T > block_size` crop 누락 |
 
-### 12. 완성 체크리스트 (2부)
+## 11. 완성 체크리스트 (2부)
 
 - [ ] `python data.py`가 x/y shape와 decode를 인쇄한다
 - [ ] `python train.py --steps 800`이 loss 감소 로그를 남긴다
@@ -372,29 +359,29 @@ torch.save(
 - [ ] (선택) `mini_ckpt.pt` 저장·로드
 - [ ] (선택) weight tying on/off loss 비교 메모
 
-### 13. 도전 과제 (2부)
+## 12. 도전 과제 (2부)
 
-#### 도전 1 — Validation split
+### 도전 1 — Validation split
 
 데이터 뒤 10%를 val로 고정하고, `print_every`마다 val loss를 함께 출력하라. train만 내려가고 val이 올라가면 암기 신호다.
 
-#### 도전 2 — Temperature 샘플링
+### 도전 2 — Temperature 샘플링
 
 `argmax` 대신 `logits / T` 후 `multinomial`로 샘플링하라. `T=1`과 `T=0.5` 차이를 관찰한다. (사실: temperature는 분포 평탄도를 바꾼다. “항상 품질 +N%” 같은 주장은 하지 말 것.)
 
-#### 도전 3 — 단어 단위 tokenizer
+### 도전 3 — 단어 단위 tokenizer
 
 공백 분리 vocab로 바꿔 같은 `model.py`를 재사용하라. `vocab_size`만 커진다.
 
-#### 도전 4 — 학습 곡선 저장
+### 도전 4 — 학습 곡선 저장
 
 step별 loss를 `losses.txt`에 쓰고, (선택) matplotlib로 꺾은선을 그려라. 제51강 시각화와 연결된다.
 
-#### 도전 5 — 스크립트 정리
+### 도전 5 — 스크립트 정리
 
 `train.py`에서 generate를 `generate.py`로 분리하고, `python generate.py --ckpt mini_ckpt.pt --prompt "to be"` 형태로 실행되게 하라.
 
-### 14. 이 프로젝트가 증명하는 것
+## 13. 이 프로젝트가 증명하는 것
 
 끝난 뒤 다음 문장을 말할 수 있어야 한다.
 
@@ -402,7 +389,7 @@ step별 loss를 `losses.txt`에 쓰고, (선택) matplotlib로 꺾은선을 그�
 
 이것이 2권의 실전 관문이다. 규모만 키우면 3권 Mini GPT / Pretraining으로 이어진다.
 
-### 15. 핵심 정리
+## 14. 핵심 정리
 
 - 2부는 `data.py`(시프트 배치) + `train.py`(루프·greedy)다.
 - Loss는 `logits[B,T,V]`와 `y[B,T]`의 Cross Entropy다.
@@ -410,7 +397,7 @@ step별 loss를 `losses.txt`에 쓰고, (선택) matplotlib로 꺾은선을 그�
 - 한 배치 overfit 테스트로 구현 버그를 먼저 걸러라.
 - 성공 기준은 완벽한 문장이 아니라 **loss 감소 + 패턴을 흉내 내는 생성**이다.
 
-### 16. 핵심 용어
+## 15. 핵심 용어
 
 | 용어 | 의미 |
 |---|---|
@@ -422,53 +409,52 @@ step별 loss를 `losses.txt`에 쓰고, (선택) matplotlib로 꺾은선을 그�
 | AdamW | 미니 LM에 흔히 쓰는 Optimizer |
 | Checkpoint | `state_dict` + 설정 + tokenizer 맵 |
 
-### 17. 복습 문제
-
-#### 문제 1 (개념)
+## 16. 연습 문제
+### 문제 1 (개념)
 
 `y = data[i+1 : i+1+T]`인 이유를 Next Token Prediction으로 설명하시오.
 
-#### 문제 2 (코드)
+### 문제 2 (코드)
 
 `logits[:, -1, :]`만 사용하는 생성 단계에서, 학습 때 모든 위치 logit을 쓰는 이유와 모순되지 않는가?
 
-#### 문제 3 (실험)
+### 문제 3 (실험)
 
 초기 loss가 $\ln V$보다 훨씬 작다면 의심할 만한 버그 하나를 쓰시오.
 
-#### 문제 4 (연결)
+### 문제 4 (연결)
 
 제48강 weight tying을 켠 채로 학습할 때 저장해야 할 가중치 별칭 이슈를 한 문장으로 쓰시오.
 
-#### 문제 5 (디버깅)
+### 문제 5 (디버깅)
 
 overfit 테스트에서 loss가 0.01까지 내려갔는데, 전체 데이터 학습 후 generate가 프롬프트와 무관한 이유 후보 두 가지를 쓰시오.
 
 ---
 
-### 정답 및 해설
+## 정답 및 해설
 
-#### 문제 1
+### 문제 1
 
 위치 $t$의 출력이 $x_{t+1}$을 맞추도록 감독 신호를 주기 위해, 타깃 시퀀스를 한 칸 앞으로 둔다.
 
-#### 문제 2
+### 문제 2
 
 모순 없음. 학습은 모든 위치를 병렬 감독해 샘플 효율을 높이고, 생성은 이미 확정된 prefix 뒤의 **다음 한 토큰**만 필요할 뿐이다. 같은 forward 함수를 쓴다.
 
-#### 문제 3
+### 문제 3
 
 예: 타깃이 입력과 동일(시프트 누락)해 “복사”로 쉽게 맞추는 경우, 또는 데이터 누수·마스크 커닝.
 
-#### 문제 4
+### 문제 4
 
 `state_dict`에 같은 storage가 두 키로 잡히거나 로드 시 한쪽만 복원될 수 있으므로, 저장/로드 후 `lm_head.weight is tok_emb.weight`(또는 동등성)를 재확인한다.
 
-#### 문제 5
+### 문제 5
 
 예: (1) 프롬프트 문자가 train 분포 밖 (2) `model.train()` 상태로 dropout이 켜짐 (3) crop/디바이스 불일치 (4) tokenizer 맵 불일치.
 
-### 18. 다음 강의와 연결
+## 17. 다음 강의와 연결
 
 동작하는 Mini Transformer를 손에 넣었다. **제51강. Attention 시각화**에서는 학습된(또는 작은 예제) Attention 가중치를 그림으로 읽어, 모델이 “어디에 주목하는지”를 관찰한다.
 
@@ -478,7 +464,7 @@ overfit 테스트에서 loss가 0.01까지 내려갔는데, 전체 데이터 학
 
 ### 강의 이동
 
-- **이전 강:** [제49강. 프로젝트 — Mini Transformer 구현 (1)](49강_프로젝트_Mini_Transformer_구현_1.md)
+- **이전 강:** [제49강. 프로젝트 Mini Transformer 구현 1](49강_프로젝트_Mini_Transformer_구현_1.md)
 - **다음 강:** [제51강. Attention 시각화](51강_Attention_시각화.md)
 
 <!-- /LECTURE_NAV -->

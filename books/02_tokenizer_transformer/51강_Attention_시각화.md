@@ -1,19 +1,13 @@
-# 2권. Tokenizer와 Transformer
+# 제51강. Attention 시각화
 
-## 제51강. Attention 시각화
+> **학습 목표**
+> - Attention 가중치의 shape `[B, n_head, T, T]`를 해석한다.
+> - 작은 예제(수동 또는 학습 모델)에서 행렬을 표·히트맵으로 나타낸다.
+> - Causal mask가 만드는 하삼각 패턴을 그림에서 식별한다.
+> - 시각화의 한계(해석 과신)를 구분한다.
 
-### 1. 이번 강의에서 배울 것
-
-Mini Transformer가 “돌아가기” 시작했다. 이번 강의에서는 Attention 가중치 행렬을 **눈으로 읽어** Self-Attention이 무엇을 하는지 관찰한다.
-
-이 강의를 마치면 다음을 할 수 있어야 한다.
-
-- Attention 가중치의 shape `[B, n_head, T, T]`를 해석한다.
-- 작은 예제(수동 또는 학습 모델)에서 행렬을 표·히트맵으로 나타낸다.
-- Causal mask가 만드는 **하삼각 패턴**을 그림에서 식별한다.
-- 시각화의 한계(해석 과신)를 구분한다.
-
-### 2. 왜 이것을 배우는가
+---
+## 1. 왜 이것을 배우는가
 
 수식만 보면 Attention은 $\mathrm{softmax}(QK^\top / \sqrt{d})V$일 뿐이다. 그러나 디버깅과 직관에는 **행렬을 보는 습관**이 도움이 된다.
 
@@ -23,7 +17,7 @@ Mini Transformer가 “돌아가기” 시작했다. 이번 강의에서는 Atte
 
 다만 시각화는 **설명 도구**이지 증명서가 아니다. “이 head가 문법 전담이다”처럼 단정하는 해석은 이 강의의 목표가 아니다.
 
-### 3. 먼저 알아야 할 개념
+## 2. 먼저 알아야 할 개념
 
 1. Softmax Attention (제38강)
 2. Causal Mask (제40강)
@@ -32,12 +26,14 @@ Mini Transformer가 “돌아가기” 시작했다. 이번 강의에서는 Atte
 
 matplotlib이 있으면 히트맵이 편하다. 없어도 **숫자 표 인쇄**만으로 충분하다.
 
-### 4. Attention 가중치가 의미하는 것
+## 3. Attention 가중치가 의미하는 것
 
 위치 $i$(query)가 위치 $j$(key)를 얼마나 보는지:
 
 $$
+
 A_{i,j} = \mathrm{softmax}_j \left( \frac{q_i \cdot k_j}{\sqrt{d}} \right)
+
 $$
 
 행렬 $A \in \mathbb{R}^{T \times T}$에서
@@ -47,7 +43,7 @@ $$
 
 Causal LM에서는 $j > i$인 곳이 0에 가깝다(마스크).
 
-### 5. 작은 수동 예제 — 표로 보기
+## 4. 작은 수동 예제 — 표로 보기
 
 토큰 4개, head 1개라고 가정하자. 마스크 적용 후 가중치가 다음과 같다고 하자(설명용 숫자).
 
@@ -67,15 +63,14 @@ D      0.05   0.15   0.20   0.60
 
 이 표만으로도 “인과 마스크 + 행 softmax”가 눈에 들어온다.
 
-### 6. 코드 — Softmax Attention 가중치 추출
+## 5. 코드 — Softmax Attention 가중치 추출
 
-#### 6.1 순수 PyTorch 미니 함수
+### 5.1 순수 PyTorch 미니 함수
 
 ```python
 import math
 import torch
 import torch.nn.functional as F
-
 
 def attention_weights(q, k, causal: bool = True):
     """q,k: [B, H, T, D] → weights [B, H, T, T]"""
@@ -86,7 +81,6 @@ def attention_weights(q, k, causal: bool = True):
         mask = torch.tril(torch.ones(T, T, device=q.device, dtype=torch.bool))
         att = att.masked_fill(~mask, float("-inf"))
     return F.softmax(att, dim=-1)
-
 
 # 데모: 랜덤 Q,K
 torch.manual_seed(0)
@@ -110,7 +104,7 @@ torch.Size([1, 2, 5, 5])
 
 상삼각(미래)이 0인지 확인한다.
 
-#### 6.2 Mini Transformer에서 꺼내기
+### 5.2 Mini Transformer에서 꺼내기
 
 제49강에서 저장해 둔 훅이 있다면:
 
@@ -123,7 +117,7 @@ print(attn[0, 0])
 
 훅이 없다면 `CausalSelfAttention.forward`에 한 줄 추가한다(제49강 선택 섹션).
 
-### 7. matplotlib 히트맵 (선택)
+## 6. matplotlib 히트맵 (선택)
 
 설치되어 있으면 다음으로 그림 파일을 남길 수 있다.
 
@@ -132,7 +126,6 @@ print(attn[0, 0])
 import matplotlib.pyplot as plt
 import numpy as np
 import torch
-
 
 def plot_attention(weights: torch.Tensor, tokens: list[str], path: str = "attn.png"):
     """weights: [T, T] (한 헤드)"""
@@ -150,7 +143,6 @@ def plot_attention(weights: torch.Tensor, tokens: list[str], path: str = "attn.p
     fig.tight_layout()
     fig.savefig(path, dpi=150)
     print("saved", path)
-
 
 if __name__ == "__main__":
     # 가짜 하삼각 예제
@@ -173,7 +165,7 @@ def print_attn(A, tokens):
         print(f"{tokens[i]:>4} {vals}")
 ```
 
-### 8. Multi-Head를 나란히 보기
+## 7. Multi-Head를 나란히 보기
 
 헤드마다 패턴이 다를 수 있다.
 
@@ -192,7 +184,7 @@ for h in range(attn.size(0)):
 
 **사실과 해석 구분:** “첫 토큰에 무게가 보인다”는 관찰(사실·측정)이고, “따라서 이 head는 문장 경계를 담당한다”는 **가설**이다. 가설은 추가 실험 없이 단정하지 않는다.
 
-### 9. 학습 전후 비교 실험
+## 8. 학습 전후 비교 실험
 
 제50강 체크포인트가 있다면:
 
@@ -202,7 +194,7 @@ for h in range(attn.size(0)):
 
 미니 데이터에서는 “언어학적으로 아름다운” 패턴보다 **마스크 준수 + 반복 구간에 무게**가 보이면 충분하다.
 
-### 10. 시각화의 한계
+## 9. 시각화의 한계
 
 주의할 함정:
 
@@ -215,7 +207,7 @@ for h in range(attn.size(0)):
 4. **도구 의존**  
    예쁜 그림이 올바른 구현을 보장하지 않는다. 단위 테스트(상삼각 0)가 우선이다.
 
-### 11. 실습 체크리스트
+## 10. 실습 체크리스트
 
 - [ ] 랜덤 Q,K로 causal 가중치 상삼각이 0인지 확인
 - [ ] 토큰 라벨이 있는 표 또는 히트맵 1장 생성
@@ -223,7 +215,7 @@ for h in range(attn.size(0)):
 - [ ] (선택) 학습 전후 PNG 비교
 - [ ] 관찰 한 줄을 “사실”과 “해석”으로 나눠 메모
 
-### 12. 핵심 정리
+## 11. 핵심 정리
 
 - Attention 시각화는 `[T,T]` 가중치에서 행=query, 열=key를 읽는 연습이다.
 - Causal LM에서는 하삼각 패턴이 기본이다.
@@ -231,7 +223,7 @@ for h in range(attn.size(0)):
 - 그림은 디버깅·직관용이며, 과해석을 경계한다.
 - matplotlib은 선택; 표 인쇄만으로도 학습 목표는 달성한다.
 
-### 13. 핵심 용어
+## 12. 핵심 용어
 
 | 용어 | 의미 |
 |---|---|
@@ -242,53 +234,52 @@ for h in range(attn.size(0)):
 | Attention sink | 특정 위치(종종 앞쪽)에 무게가 쏠리는 현상(관찰 용어) |
 | Head diversity | 헤드마다 다른 패턴을 보이는 성질 |
 
-### 14. 복습 문제
-
-#### 문제 1 (개념)
+## 13. 연습 문제
+### 문제 1 (개념)
 
 Attention 행렬에서 행의 합이 대략 1인 이유를 쓰시오.
 
-#### 문제 2 (디버깅)
+### 문제 2 (디버깅)
 
 히트맵 상삼각에 0.2 같은 값이 보인다. 무엇을 의심하는가?
 
-#### 문제 3 (shape)
+### 문제 3 (shape)
 
 `n_head=4`, `T=16`일 때 한 층의 `last_attn` shape를 쓰시오. (B=1)
 
-#### 문제 4 (해석 훈련)
+### 문제 4 (해석 훈련)
 
 “Head 2가 마침표에 강하게 반응한다”를 사실 문장과 가설 문장으로 각각 다시 쓰시오.
 
-#### 문제 5 (연결)
+### 문제 5 (연결)
 
 제52강 복잡도 논의에서, $T \times T$ 행렬을 실제로 materialize하는 것이 문제가 되는 이유를 한 문장으로 예고하시오.
 
 ---
 
-### 정답 및 해설
+## 정답 및 해설
 
-#### 문제 1
+### 문제 1
 
 각 query마다 key 축에 softmax를 적용하므로 확률 분포가 되어 합이 1이다.
 
-#### 문제 2
+### 문제 2
 
 Causal mask 누락·잘못된 broadcast·mask crop 실수.
 
-#### 문제 3
+### 문제 3
 
 `[1, 4, 16, 16]`.
 
-#### 문제 4
+### 문제 4
 
 사실 예: “샘플 X에서 head 2의 가중치가 마침표 열에 0.7 이상 집중되었다.” / 가설 예: “따라서 head 2는 문장 경계를 담당한다.” (후자는 미검증)
 
-#### 문제 5
+### 문제 5
 
 길이가 커지면 $T^2$ 메모리·연산이 급증하여 긴 컨텍스트에서 병목이 된다.
 
-### 15. 다음 강의와 연결
+## 14. 다음 강의와 연결
 
 그림을 봤다면 이제 **비용**을 본다. **제52강. 계산 복잡도와 메모리**에서는 Attention의 $O(T^2)$ 성격과 KV 메모리 미리보기를 다룬다.
 
@@ -298,7 +289,7 @@ Causal mask 누락·잘못된 broadcast·mask crop 실수.
 
 ### 강의 이동
 
-- **이전 강:** [제50강. 프로젝트 — Mini Transformer 구현 (2)](50강_프로젝트_Mini_Transformer_구현_2.md)
+- **이전 강:** [제50강. 프로젝트 Mini Transformer 구현 2](50강_프로젝트_Mini_Transformer_구현_2.md)
 - **다음 강:** [제52강. 계산 복잡도와 메모리](52강_계산_복잡도와_메모리.md)
 
 <!-- /LECTURE_NAV -->

@@ -1,21 +1,15 @@
-# 1권. Python · Tensor · 수학 · PyTorch
+# 제8강. NumPy로 배열 다루기
 
-## 제8강. NumPy로 배열 다루기
+> **학습 목표**
+> - NumPy가 무엇인지, 왜 LLM/딥러닝에서 먼저 배우는지 설명한다
+> - ndarray를 만들고 shape, dtype을 읽는다
+> - 인덱싱·슬라이싱으로 부분 배열을 꺼낸다
+> - 원소별 연산과 벡터화(vectorization)의 의미를 안다
+> - Broadcasting의 기본 규칙을 작은 예로 확인한다
+> - NumPy 배열이 이후 Tensor로 어떻게 이어지는지 연결한다
 
-### 1. 이번 강의에서 배울 것
-
-파일에서 데이터를 읽는 법을 배웠다. 이번 강의부터는 **수치 계산의 기본 단위인 배열**을 다룬다.
-
-이 강의를 마치면 다음을 할 수 있어야 한다.
-
-- **NumPy**가 무엇인지, 왜 LLM/딥러닝에서 먼저 배우는지 설명한다
-- **ndarray**를 만들고 **shape**, **dtype**을 읽는다
-- 인덱싱·슬라이싱으로 부분 배열을 꺼낸다
-- 원소별 연산과 **벡터화(vectorization)**의 의미를 안다
-- **Broadcasting**의 기본 규칙을 작은 예로 확인한다
-- NumPy 배열이 이후 **Tensor**로 어떻게 이어지는지 연결한다
-
-### 2. 왜 이것을 배우는가
+---
+## 1. 왜 이것을 배우는가
 
 순수 Python 리스트로도 숫자는 다룰 수 있다. 다만 LLM이 요구하는 규모에서는 부족하다.
 
@@ -40,9 +34,9 @@ NumPy ndarray  --개념적으로 확장→  PyTorch Tensor (GPU·자동미분)
 
 8강은 “텐서로 가기 전의 마지막 징검다리”이다.
 
-### 3. 먼저 알아야 할 개념
+## 2. 먼저 알아야 할 개념
 
-#### 3.1 Array와 ndarray
+### 2.1 Array와 ndarray
 
 **Array(배열)**는 같은 종류의 값을 격자처럼 늘어놓은 자료구조이다.  
 NumPy의 핵심 객체는 **ndarray(N-dimensional array)**이다.
@@ -51,7 +45,7 @@ NumPy의 핵심 객체는 **ndarray(N-dimensional array)**이다.
 - 2차원: 행렬
 - 3차원 이상: 배치·채널·시퀀스 등을 함께 담는 구조
 
-#### 3.2 Vectorization
+### 2.2 Vectorization
 
 **Vectorization(벡터화)**는 파이썬 루프 대신, 배열 전체에 대한 연산을 한 번에 표현·실행하는 방식이다.
 
@@ -67,7 +61,7 @@ out = xs * 2
 
 가독성과 속도가 동시에 좋아지는 경우가 많다.
 
-#### 3.3 설치와 import
+### 2.3 설치와 import
 
 가상환경에서:
 
@@ -84,9 +78,9 @@ print(np.__version__)
 
 관례적으로 `numpy`를 `np`로 줄여 쓴다.
 
-### 4. 핵심 개념 설명
+## 3. 핵심 개념 설명
 
-#### 4.1 배열 만들기
+### 3.1 배열 만들기
 
 ```python
 import numpy as np
@@ -118,7 +112,7 @@ x = rng.normal(size=(2, 3))      # 정규분포 샘플
 
 LLM 실험에서 **시드 고정**은 재현성의 기본이다.
 
-#### 4.2 shape, dtype, ndim, size
+### 3.2 shape, dtype, ndim, size
 
 ```python
 x = np.array([[1, 2, 3], [4, 5, 6]], dtype=np.float32)
@@ -146,7 +140,7 @@ ids = np.array([2, 3, 4], dtype=np.int64)
 logits = np.array([2.0, 5.0, 1.0], dtype=np.float32)
 ```
 
-#### 4.3 reshape와 차원 다루기
+### 3.3 reshape와 차원 다루기
 
 ```python
 v = np.arange(6)          # shape (6,)
@@ -176,7 +170,7 @@ print(x[:, np.newaxis].shape)  # (3, 1)
 
 배치 차원·컬럼 벡터를 만들 때 자주 쓴다.
 
-#### 4.4 인덱싱과 슬라이싱
+### 3.4 인덱싱과 슬라이싱
 
 ```python
 m = np.array([[10, 20, 30],
@@ -204,7 +198,7 @@ print(m[rows, 1])   # [20, 80]
 
 토큰 ID로 embedding 테이블에서 행을 고르는 연산이, 개념적으로 이런 “인덱스로 행 선택”에 해당한다. (실제로는 Tensor 연산으로 구현)
 
-#### 4.5 원소별 연산과 집계
+### 3.5 원소별 연산과 집계
 
 ```python
 a = np.array([1.0, 2.0, 3.0])
@@ -230,7 +224,7 @@ print(m.max())
 **axis**는 “어느 축을 따라 접을까”이다.  
 딥러닝에서 `mean(dim=-1)` 같은 표현을 만날 때, 이미 여기서 연습한 감각이 그대로 쓰인다.
 
-#### 4.6 행렬 곱
+### 3.6 행렬 곱
 
 원소별 곱 `*`와 행렬 곱은 다르다.
 
@@ -254,9 +248,9 @@ print(np.dot(A, B)) # 2D에서는 @와 유사하게 쓰이는 경우 많음
 \begin{bmatrix}19&22\\43&50\end{bmatrix}
 \]
 
-선형층의 \(y = xW + b\)에서 \(xW\)가 바로 이런 곱의 확장이다.
+선형층의 $y = xW + b$에서 $xW$가 바로 이런 곱의 확장이다.
 
-#### 4.7 Broadcasting 입문
+### 3.7 Broadcasting 입문
 
 **Broadcasting(브로드캐스팅)**은 모양이 다른 배열을, 일정한 규칙 아래에서 마치 모양이 맞는 것처럼 연산하는 기능이다.
 
@@ -299,7 +293,7 @@ y = x + b
 Broadcasting은 편하지만, 의도치 않은 확장이 버그가 되기도 한다.  
 항상 `shape`를 출력해 확인하는 습관이 필요하다.
 
-#### 4.8 복사와 뷰 (짧게)
+### 3.8 복사와 뷰 (짧게)
 
 ```python
 a = np.arange(4)
@@ -316,7 +310,7 @@ c = a.copy()
 
 슬라이싱 결과를 수정할 때는 “원본과 메모리를 공유하는가?”를 한 번 생각한다.
 
-### 5. 직관적으로 이해하기
+## 4. 직관적으로 이해하기
 
 NumPy 배열을 **엑셀 시트 + 고속 계산기**로 생각하자.
 
@@ -339,9 +333,9 @@ logits        : (batch, seq, vocab)
 
 이름은 PyTorch에서 더 자주 보지만, **모양을 읽고 축을 기준으로 생각**하는 훈련은 NumPy에서 시작한다.
 
-### 6. 수학적으로 조금 더
+## 5. 수학적으로 조금 더
 
-벡터 \(x \in \mathbb{R}^{n}\), 행렬 \(W \in \mathbb{R}^{n \times m}\)에 대해
+벡터 $x \in \mathbb{R}^{n}$, 행렬 $W \in \mathbb{R}^{n \times m}$에 대해
 
 \[
 y = xW \in \mathbb{R}^{m}
@@ -365,7 +359,7 @@ print(Y.shape)  # (4, 2)
 
 이 한 줄이 신경망 “선형 변환”의 최소 형태이다.
 
-### 7. 작은 숫자 예제 — logits에서 최댓값 고르기
+## 6. 작은 숫자 예제 — logits에서 최댓값 고르기
 
 배치 크기 2, 어휘 크기 4인 logits:
 
@@ -396,7 +390,7 @@ print(pred_ids.shape)    # (2,)
 
 생성·평가에서 “가장 높은 점수의 토큰을 고른다(greedy decoding)”의 축소판이다.
 
-### 8. 코드로 종합하기
+## 7. 코드로 종합하기
 
 ```python
 # numpy_llm_sketch.py
@@ -406,21 +400,17 @@ from __future__ import annotations
 
 import numpy as np
 
-
 def lookup_embeddings(ids: np.ndarray, table: np.ndarray) -> np.ndarray:
     """ids: (batch, seq) int, table: (vocab, hidden) → (batch, seq, hidden)"""
     return table[ids]
-
 
 def mean_pool(x: np.ndarray) -> np.ndarray:
     """(batch, seq, hidden) → (batch, hidden)  단순 평균 풀링"""
     return x.mean(axis=1)
 
-
 def linear(x: np.ndarray, weight: np.ndarray, bias: np.ndarray) -> np.ndarray:
     """x: (batch, in), weight: (in, out), bias: (out,)"""
     return x @ weight + bias  # bias는 broadcasting
-
 
 def main() -> None:
     rng = np.random.default_rng(0)
@@ -450,7 +440,6 @@ def main() -> None:
     print("logits shape:", logits.shape)
     print("pred ids:", pred)
 
-
 if __name__ == "__main__":
     main()
 ```
@@ -467,7 +456,7 @@ if __name__ == "__main__":
 
 실제 Transformer는 mean pool 대신 훨씬 풍부한 Attention·블록을 쓰지만, “배열 모양이 변환된다”는 사고방식은 동일하다.
 
-### 9. 리스트와 NumPy의 속도 감각 (선택 실험)
+## 8. 리스트와 NumPy의 속도 감각 (선택 실험)
 
 ```python
 # speed_feel.py
@@ -476,7 +465,6 @@ if __name__ == "__main__":
 
 import time
 import numpy as np
-
 
 def main() -> None:
     n = 1_000_000
@@ -494,14 +482,13 @@ def main() -> None:
     print(f"list:  {t_list:.4f}s")
     print(f"numpy: {t_np:.4f}s")
 
-
 if __name__ == "__main__":
     main()
 ```
 
 절대 수치보다 “NumPy가 같은 일을 훨씬 짧게 끝내는 경우가 많다”는 경험이면 충분하다.
 
-### 10. 실제 LLM에서는 어떻게 사용하는가
+## 9. 실제 LLM에서는 어떻게 사용하는가
 
 | NumPy 개념 | LLM/PyTorch에서의 대응 |
 |---|---|
@@ -534,9 +521,9 @@ if __name__ == "__main__":
 GPU·자동미분이 필요해지는 순간 Tensor로 넘어가고,  
 그 전까지는 NumPy로 shape와 연산을 단단히 익히는 것이 효율적이다.
 
-### 11. 실습
+## 10. 실습
 
-#### 실습 1 — shape 읽기
+### 실습 1 — shape 읽기
 
 다음 배열의 `shape`, `dtype`, `ndim`을 출력한다.
 
@@ -546,7 +533,7 @@ np.zeros((4, 8, 16), dtype=np.float32)
 
 이 shape를 `(batch, seq, hidden)`으로 가정하고 각 축의 의미를 한 줄씩 적어 본다.
 
-#### 실습 2 — 정규화
+### 실습 2 — 정규화
 
 `x = np.array([1.0, 2.0, 3.0, 4.0])`에 대해
 
@@ -556,19 +543,19 @@ z = \frac{x - \mean(x)}{\mathrm{std}(x)}
 
 를 계산한다. (`std`가 0이 아니라고 가정)
 
-#### 실습 3 — 배치 matmul
+### 실습 3 — 배치 matmul
 
 `X` shape `(8, 16)`, `W` shape `(16, 32)`일 때 `Y = X @ W`의 shape를 예측하고 코드로 확인한다.
 
-#### 실습 4 — broadcasting 편향
+### 실습 4 — broadcasting 편향
 
 `logits` shape `(2, 5)`에 bias shape `(5,)`를 더하고, `(2,)` bias를 더하려 하면 어떻게 되는지 확인한다.
 
-#### 실습 5 — 미니 임베딩 lookup
+### 실습 5 — 미니 임베딩 lookup
 
 `table` shape `(10, 3)`를 만들고 `ids = np.array([[1, 2], [0, 9]])`로 조회한 결과 shape를 확인한다.
 
-### 12. 자주 하는 실수
+## 11. 자주 하는 실수
 
 1. **`*`와 `@`를 혼동한다**  
    `*`는 원소별, `@`는 행렬 곱이다. 선형층에서는 대개 `@`.
@@ -588,7 +575,7 @@ z = \frac{x - \mean(x)}{\mathrm{std}(x)}
 6. **Python list와 ndarray를 섞어 연산한다**  
    가능해도 의도가 흐려진다. 수치 계산 구간에서는 ndarray로 통일한다.
 
-### 13. 핵심 정리
+## 12. 핵심 정리
 
 - NumPy ndarray는 다차원 숫자 배열이며 LLM 수치 계산의 기초이다
 - shape/dtype을 읽는 능력이 Tensor 이해의 출발점이다
@@ -597,7 +584,7 @@ z = \frac{x - \mean(x)}{\mathrm{std}(x)}
 - `x @ W + b`, indexing lookup, argmax는 신경망·생성의 직접 재료이다
 - NumPy는 PyTorch Tensor로 개념이 자연스럽게 확장된다
 
-### 14. 핵심 용어
+## 13. 핵심 용어
 
 | 용어 | 의미 |
 |---|---|
@@ -612,17 +599,16 @@ z = \frac{x - \mean(x)}{\mathrm{std}(x)}
 | matmul (`@`) | 행렬 곱 |
 | argmax | 최댓값의 인덱스 |
 
-### 15. 복습 문제
-
-#### 문제 1 (개념)
+## 14. 연습 문제
+### 문제 1 (개념)
 
 Python list 대신 NumPy를 쓰는 이유를 “규모”와 “표기” 측면에서 두 문장으로 쓰시오.
 
-#### 문제 2 (shape)
+### 문제 2 (shape)
 
 `np.arange(24).reshape(2, 3, 4)`의 `ndim`과 `size`는?
 
-#### 문제 3 (연산)
+### 문제 3 (연산)
 
 ```python
 A = np.array([[1, 2], [3, 4]])
@@ -631,50 +617,50 @@ B = np.array([[5, 6], [7, 8]])
 
 `A * B`와 `A @ B`의 결과를 쓰시오.
 
-#### 문제 4 (broadcasting)
+### 문제 4 (broadcasting)
 
 shape `(3, 1)`과 `(1, 4)`를 더하면 결과 shape는 무엇인가?
 
-#### 문제 5 (코드)
+### 문제 5 (코드)
 
 `logits` shape `(4, 1000)`에서 각 행의 최댓값 인덱스를 구하는 한 줄을 쓰시오.
 
-#### 문제 6 (연결)
+### 문제 6 (연결)
 
 Embedding lookup이 `table[ids]` 형태와 닮은 이유와, 이후 Tensor에서 이 연산이 중요한 이유를 설명하시오.
 
 ---
 
-### 정답 및 해설
+## 정답 및 해설
 
-#### 문제 1
+### 문제 1
 
 수백만~수억 원소를 파이썬 루프로 다루기 어렵기 때문이다. 또한 벡터/행렬 연산을 수식에 가까운 짧은 코드로 표현할 수 있다.
 
-#### 문제 2
+### 문제 2
 
 `ndim=3`, `size=24`
 
-#### 문제 3
+### 문제 3
 
 - `A * B` → `[[5, 12], [21, 32]]`
 - `A @ B` → `[[19, 22], [43, 50]]`
 
-#### 문제 4
+### 문제 4
 
 `(3, 4)`
 
-#### 문제 5
+### 문제 5
 
 ```python
 np.argmax(logits, axis=-1)
 ```
 
-#### 문제 6
+### 문제 6
 
 토큰 ID가 곧 “표에서 몇 번째 행을 가져올까”라는 인덱스이기 때문이다. 언어 모델은 이산 토큰을 연속 벡터로 바꾸기 위해 embedding lookup을 거의 항상 사용한다.
 
-### 16. 다음 강의와 연결
+## 15. 다음 강의와 연결
 
 이전 **제7강. 파일 입출력과 데이터 다루기**에서 디스크의 데이터를 불러왔고, 이번 강의에서 그 숫자를 배열로 계산하는 법을 익혔다.
 
@@ -690,6 +676,6 @@ np.argmax(logits, axis=-1)
 ### 강의 이동
 
 - **이전 강:** [제7강. 파일 입출력과 데이터 다루기](07강_파일_입출력과_데이터_다루기.md)
-- **다음 강:** [제9강. Scalar, Vector, Matrix, Tensor](09강_Scalar_Vector_Matrix_Tensor.md)
+- **다음 강:** [제9강. Scalar Vector Matrix Tensor](09강_Scalar_Vector_Matrix_Tensor.md)
 
 <!-- /LECTURE_NAV -->

@@ -1,22 +1,14 @@
-# 2권. Tokenizer와 Transformer
+# 제29강. BPE Tokenizer 직접 구현
 
-## 제29강. BPE Tokenizer 직접 구현
+> **학습 목표**
+> - BPE의 학습(merge)과 추론(encode)이 어떻게 다른지
+> - Merge Table(병합 표)이 무엇인지, 왜 순서가 중요한지
+> - 초소형 코퍼스에서 pair 빈도를 세고 병합을 반복하는 절차
+> - encode / decode를 직접 작성하고, 결과가 왕복되는지 검증하기
+> - GPT식 Byte-level BPE가 같은 아이디어의 어디에 해당하는지
 
-### 1. 이번 강의에서 배울 것
-
-28강에서 Subword가 필요한 이유를 봤다. 이제 가장 널리 쓰이는 알고리즘 중 하나인 **BPE(Byte Pair Encoding)**를 **작은 코퍼스로 직접 구현**한다.
-
-이 강의를 마치면 다음을 말할 수 있어야 한다.
-
-- BPE의 학습(merge)과 추론(encode)이 어떻게 다른지
-- **Merge Table(병합 표)**이 무엇인지, 왜 순서가 중요한지
-- 초소형 코퍼스에서 pair 빈도를 세고 병합을 반복하는 절차
-- encode / decode를 직접 작성하고, 결과가 왕복되는지 검증하기
-- GPT식 Byte-level BPE가 같은 아이디어의 어디에 해당하는지
-
-이번 강의는 2권에서 가장 “손과 코드”가 많이 가는 Tokenizer 핵심 강의이다.
-
-### 2. 왜 이것을 배우는가
+---
+## 1. 왜 이것을 배우는가
 
 라이브러리(`tiktoken`, `sentencepiece`, Hugging Face `tokenizers`)만 쓰면 `encode`는 한 줄이다.  
 그러나 다음 질문이 남는다.
@@ -28,10 +20,10 @@
 BPE를 한 번 구현해 두면:
 
 1. Tokenizer 버그(공백, 바이트, special token)를 디버깅할 수 있다.
-2. Embedding 행 수 \(V\)가 어디서 오는지 설명한다.
+2. Embedding 행 수 $V$가 어디서 오는지 설명한다.
 3. “토큰 효율”을 개선하려면 **코퍼스와 merge 횟수**를 손봐야 한다는 감각이 생긴다.
 
-### 3. 먼저 알아야 할 개념
+## 2. 먼저 알아야 할 개념
 
 - Token / Vocabulary / OOV (27·28강)
 - Python `dict`, `Counter`, 문자열 슬라이싱
@@ -41,9 +33,9 @@ BPE를 한 번 구현해 두면:
 BPE 학습은 신경망 학습이 아니다. **통계적 병합 규칙 학습**이다.  
 Gradient도 Loss도 없다. 그래도 LLM 파이프라인의 입구를 결정한다.
 
-### 4. 핵심 개념 설명
+## 3. 핵심 개념 설명
 
-#### 4.1 BPE (Byte Pair Encoding)
+### 3.1 BPE (Byte Pair Encoding)
 
 **BPE(Byte Pair Encoding, 바이트 쌍 인코딩)**는 원래 데이터 압축 기법에서 출발해, NLP에서는 **빈도가 높은 기호 쌍을 반복적으로 병합**해 Subword Vocabulary를 만드는 알고리즘이다.
 
@@ -61,7 +53,7 @@ Gradient도 Loss도 없다. 그래도 LLM 파이프라인의 입구를 결정한
 - **Merge Table**: `(a, b) → ab` 병합을 적용한 **순서 목록**
 - **Vocabulary**: 최종적으로 살아남은 기호(토큰) 집합
 
-#### 4.2 왜 “쌍”을 합치는가
+### 3.2 왜 “쌍”을 합치는가
 
 언어에는 반복되는 덩어리가 있다.
 
@@ -77,7 +69,7 @@ lo + w → low
 - 문장 길이가 과도하게 길어지는 것을 완화한다
 - 희귀 단어도 익숙한 조각의 조합으로 표현한다
 
-#### 4.3 Training vs Encoding
+### 3.3 Training vs Encoding
 
 | 단계 | 입력 | 출력 | 하는 일 |
 |---|---|---|---|
@@ -88,7 +80,7 @@ lo + w → low
 실수 포인트: 인코딩 중에 “지금 문장에서 제일 잦은 쌍”을 다시 고르지 않는다.  
 **학습 때 고정된 전역 merge 순서**를 따른다.
 
-#### 4.4 Word-end Marker `</w>`
+### 3.4 Word-end Marker `</w>`
 
 교육용 BPE 구현에서는 단어 끝을 표시하기 위해 `</w>`를 붙이는 경우가 많다.
 
@@ -103,7 +95,7 @@ lo + w → low
 
 실전 GPT-2식 Byte-level BPE는 공백을 `Ġ` 같은 기호로 표현하는 등 **다른 경계 처리**를 쓴다. 아이디어는 같다: **경계를 기호로 드러낸다**.
 
-#### 4.5 Merge Table (병합 표)
+### 3.5 Merge Table (병합 표)
 
 **Merge Table**은 우선순위가 있는 병합 규칙 목록이다.
 
@@ -124,7 +116,7 @@ lo + w → low
 
 순서를 바꾸면 분할 결과가 달라질 수 있다. 그래서 Tokenizer 파일에는 merges가 **순서 그대로** 저장된다.
 
-### 5. 직관적으로 이해하기
+## 4. 직관적으로 이해하기
 
 어린아이가 글자를 익히는 과정에 비유할 수 있다.
 
@@ -135,49 +127,59 @@ lo + w → low
 BPE는 “의미”를 이해하지 않는다. **빈도**만 본다.  
 그래도 자연언어의 통계가 의미를 어느 정도 반영하기 때문에, 결과 조각이 종종 접두·접미·어근처럼 보인다.
 
-### 6. 수학적으로 / 절차적으로 이해하기
+## 5. 수학적으로 / 절차적으로 이해하기
 
 코퍼스를 단어 빈도 맵으로 둔다.
 
 $$
+
 \text{word\_freq}(w) = \text{코퍼스에서 단어 } w \text{의 등장 횟수}
+
 $$
 
 각 단어를 기호열로 둔다.
 
 $$
+
 w = (s_1, s_2, \ldots, s_n)
-$$
-
-인접 쌍 \((s_i, s_{i+1})\)의 전역 빈도:
 
 $$
+
+인접 쌍 $(s_i, s_{i+1})$의 전역 빈도:
+
+$$
+
 \text{count}(a,b)
 =
 \sum_{w} \text{word\_freq}(w) \cdot \#\{i : (s_i,s_{i+1})=(a,b)\}
+
 $$
 
 매 스텝:
 
 $$
+
 (a^\star, b^\star)
 =
 \arg\max_{(a,b)} \text{count}(a,b)
+
 $$
 
-모든 단어 기호열에서 \(a^\star b^\star\)를 하나의 기호로 치환한다.
+모든 단어 기호열에서 $a^\star b^\star$를 하나의 기호로 치환한다.
 
-이를 \(N_{\text{merge}}\)번 반복한다.
+이를 $N_{\text{merge}}$번 반복한다.
 
 초기 vocab 크기(대략 알파벳+`</w>`)에 merge 횟수를 더하면 최종 vocab 크기의 감각이 나온다.
 
 $$
+
 |V| \approx |V_0| + N_{\text{merge}}
+
 $$
 
 (실제로는 special token, byte fallback 등으로 더 늘어난다.)
 
-### 7. 작은 숫자로 직접 계산하기
+## 6. 작은 숫자로 직접 계산하기
 
 초소형 코퍼스:
 
@@ -195,7 +197,7 @@ newer: 3
 wider: 2
 ```
 
-#### 7.1 초기 분할
+### 6.1 초기 분할
 
 ```text
 low:    l o w </w>           ×5
@@ -204,7 +206,7 @@ newer:  n e w e r </w>       ×3
 wider:  w i d e r </w>       ×2
 ```
 
-#### 7.2 첫 번째 빈번 쌍 찾기 (스케치)
+### 6.2 첫 번째 빈번 쌍 찾기 (스케치)
 
 몇 가지 쌍만 세어 보자.
 
@@ -251,7 +253,7 @@ wider: w i d er </w>
 
 손으로 전부 따라가는 것보다 **코드를 실행해 merge 목록을 인쇄**하는 편이 정확하다. 다음 절의 구현이 그 역할을 한다.
 
-### 8. 코드로 구현하기 — 학습
+## 7. 코드로 구현하기 — 학습
 
 아래는 의존성 없는 교육용 BPE이다. 실전 성능·유니코드 엣지케이스보다 **알고리즘 투명성**을 우선한다.
 
@@ -266,7 +268,6 @@ from typing import Dict, List, Tuple
 
 Pair = Tuple[str, str]
 
-
 def get_word_freqs(corpus: str) -> Dict[str, int]:
     """공백 기준 단어 빈도. 교육용으로 소문자만 가정."""
     freqs: Dict[str, int] = Counter()
@@ -275,11 +276,9 @@ def get_word_freqs(corpus: str) -> Dict[str, int]:
             freqs[word] += 1
     return dict(freqs)
 
-
 def word_to_symbols(word: str) -> List[str]:
     """단어 → 초기 기호열 (끝에 </w>)."""
     return list(word) + ["</w>"]
-
 
 def get_pair_counts(splits: Dict[str, List[str]], freqs: Dict[str, int]) -> Counter:
     """모든 단어 기호열에서 인접 쌍 빈도를 누적."""
@@ -289,7 +288,6 @@ def get_pair_counts(splits: Dict[str, List[str]], freqs: Dict[str, int]) -> Coun
         for i in range(len(seq) - 1):
             counts[(seq[i], seq[i + 1])] += f
     return counts
-
 
 def merge_pair(pair: Pair, splits: Dict[str, List[str]]) -> Dict[str, List[str]]:
     """모든 단어 기호열에서 pair를 하나의 기호로 병합."""
@@ -308,7 +306,6 @@ def merge_pair(pair: Pair, splits: Dict[str, List[str]]) -> Dict[str, List[str]]
                 i += 1
         new_splits[word] = out
     return new_splits
-
 
 def train_bpe(corpus: str, num_merges: int) -> Tuple[List[Pair], Dict[str, int]]:
     """
@@ -346,12 +343,10 @@ def train_bpe(corpus: str, num_merges: int) -> Tuple[List[Pair], Dict[str, int]]
     vocab = {tok: i for i, tok in enumerate(sorted(vocab_tokens))}
     return merges, vocab
 
-
 DEMO_CORPUS = """
 low low low low lowest
 newer newer wider wider newer
 """
-
 
 if __name__ == "__main__":
     merges, vocab = train_bpe(DEMO_CORPUS, num_merges=10)
@@ -363,7 +358,7 @@ if __name__ == "__main__":
 
 실행하면 merge 순서가 인쇄된다. 이 목록이 Tokenizer의 “유전자”이다.
 
-### 9. 코드로 구현하기 — Encode / Decode
+## 8. 코드로 구현하기 — Encode / Decode
 
 ```python
 # bpe_codec.py
@@ -374,7 +369,6 @@ from __future__ import annotations
 from typing import Dict, List, Tuple
 
 Pair = Tuple[str, str]
-
 
 def apply_merges_to_word(symbols: List[str], merges: List[Pair]) -> List[str]:
     """한 단어 기호열에 merge를 우선순위대로 적용."""
@@ -392,7 +386,6 @@ def apply_merges_to_word(symbols: List[str], merges: List[Pair]) -> List[str]:
                 i += 1
         seq = out
     return seq
-
 
 class BPETokenizer:
     def __init__(self, merges: List[Pair], vocab: Dict[str, int]):
@@ -439,7 +432,6 @@ class BPETokenizer:
             words.append(buf)
         return " ".join(words)
 
-
 # 빠른 자가 검증 예시 (train_bpe와 연결)
 if __name__ == "__main__":
     from bpe_train import DEMO_CORPUS, train_bpe
@@ -461,7 +453,7 @@ if __name__ == "__main__":
 `"widest"`처럼 학습 때 없던 단어도, `w`, `i`, `d`, `est</w>` 같은 조각으로 분해되면 `<unk>` 없이 처리될 수 있다.  
 이것이 28강에서 말한 Subword의 OOV 내성이다.
 
-### 10. 한 파일로 합친 미니 실험
+## 9. 한 파일로 합친 미니 실험
 
 학습·인코딩·왕복 검증을 한 스크립트로 묶는다.
 
@@ -471,7 +463,6 @@ from collections import Counter
 from typing import Dict, List, Tuple
 
 Pair = Tuple[str, str]
-
 
 def train_and_roundtrip() -> None:
     corpus = (
@@ -550,12 +541,11 @@ def train_and_roundtrip() -> None:
     for w, seq in sorted(splits.items()):
         print(f"  {w:5s} → {seq}")
 
-
 if __name__ == "__main__":
     train_and_roundtrip()
 ```
 
-### 11. Byte-level BPE로 가는 다리
+## 10. Byte-level BPE로 가는 다리
 
 교육용 구현은 “단어 문자 + `</w>`”에서 시작했다.  
 GPT-2식 **Byte-level BPE**는 대략 다음이 다르다.
@@ -583,7 +573,7 @@ GPT-2식 **Byte-level BPE**는 대략 다음이 다르다.
 
 실전 Tokenizer를 읽을 때 `merges.txt` / `tokenizer.json`이 보이면, 오늘 구현한 목록의 대형 버전이라고 보면 된다.
 
-### 12. 실제 LLM에서는 어떻게 사용하는가
+## 11. 실제 LLM에서는 어떻게 사용하는가
 
 사전학습 준비 파이프라인 (단순화):
 
@@ -609,11 +599,11 @@ text_out = tokenizer.decode(input_ids + [next_id])
 
 1. **모델과 Tokenizer는 함께 버전 관리**한다.
 2. merge 순서를 바꾸면 같은 텍스트의 id가 바뀌어 Embedding이 무의미해진다.
-3. vocab size \(V\)가 바뀌면 출력 Linear 층 `[d, V]`도 다시 맞춰야 한다.
+3. vocab size $V$가 바뀌면 출력 Linear 층 `[d, V]`도 다시 맞춰야 한다.
 
-### 13. 실습
+## 12. 실습
 
-#### 실습 1. merge 횟수 실험
+### 실습 1. merge 횟수 실험
 
 `DEMO_CORPUS`에서 `num_merges`를 5, 10, 20으로 바꿔 보고:
 
@@ -623,7 +613,7 @@ text_out = tokenizer.decode(input_ids + [next_id])
 
 을 표로 정리하시오.
 
-#### 실습 2. 왕복 검증
+### 실습 2. 왕복 검증
 
 학습 코퍼스에 있는 문장과 없는 문장 각각에 대해:
 
@@ -633,7 +623,7 @@ decode(encode(text))
 
 가 얼마나 원문에 가까운지 비교하시오. (소문자화 때문에 완벽히 같지는 않을 수 있다.)
 
-#### 실습 3. tie-break 바꾸기
+### 실습 3. tie-break 바꾸기
 
 동점 pair가 있을 때:
 
@@ -642,11 +632,11 @@ decode(encode(text))
 
 를 각각 적용해 merge 순서가 달라지는지 확인하시오. 인코딩 결과가 달라지면 그 예를 하나 적으시오.
 
-#### 실습 4. (도전) 바이트 초기화
+### 실습 4. (도전) 바이트 초기화
 
 `list(word)` 대신 `list(word.encode("utf-8"))`처럼 바이트에서 시작해, 한글 한 단어가 어떻게 쪼개지는지 관찰하시오.
 
-### 14. 자주 하는 실수
+## 13. 자주 하는 실수
 
 1. **인코딩 중에 pair 빈도를 다시 계산해 병합**  
    학습과 추론을 섞은 오류이다. 추론은 고정 merges만 적용한다.
@@ -666,7 +656,7 @@ decode(encode(text))
 6. **실전 Tokenizer와 교육용 BPE를 동일시**  
    정규화, regex pre-tokenize, byte map, special tokens가 추가된다.
 
-### 15. 핵심 정리
+## 14. 핵심 정리
 
 - BPE는 빈도 높은 인접 쌍을 반복 병합해 Subword를 만든다.
 - 학습 결과물은 **순서 있는 Merge Table**과 Vocabulary이다.
@@ -675,7 +665,7 @@ decode(encode(text))
 - GPT의 Byte-level BPE는 초기 단위가 바이트인 같은 가족이다.
 - LLM에서 Tokenizer 아티팩트는 모델 가중치만큼 중요한 인터페이스이다.
 
-### 16. 핵심 용어
+## 15. 핵심 용어
 
 | 용어 | 의미 |
 |---|---|
@@ -685,64 +675,63 @@ decode(encode(text))
 | `</w>` | 단어 끝 마커 (교육용 구현) |
 | Byte-level BPE | UTF-8 바이트에서 시작하는 BPE |
 | encode / decode | 텍스트↔id 변환 |
-| vocab size \(V\) | Embedding·LM head 차원과 직결 |
+| vocab size $V$ | Embedding·LM head 차원과 직결 |
 
-### 17. 복습 문제
-
-#### 문제 1 (개념)
+## 16. 연습 문제
+### 문제 1 (개념)
 
 BPE 학습과 인코딩의 차이를 한 문장씩 쓰시오.
 
-#### 문제 2 (절차)
+### 문제 2 (절차)
 
 초기 기호가 `a b c`이고 merge `("a","b")`가 1순위일 때, 한 번 적용한 결과는?
 
-#### 문제 3 (이유)
+### 문제 3 (이유)
 
 Merge Table에서 순서가 중요한 이유를 예를 들어 설명하시오.
 
-#### 문제 4 (코드)
+### 문제 4 (코드)
 
 교육용 구현에서 단어 `"cat"`의 초기 기호열을 쓰시오.
 
-#### 문제 5 (LLM 연결)
+### 문제 5 (LLM 연결)
 
 모델 학습 중 Tokenizer merges를 임의로 교체하면 어떤 문제가 생기는가?
 
-#### 문제 6 (계산)
+### 문제 6 (계산)
 
 초기 vocab에 문자 26개 + `</w>`가 있고 merge를 100번 했다면, 대략적 vocab 크기는? (special/`<unk>` 제외)
 
 ---
 
-### 정답 및 해설
+## 정답 및 해설
 
-#### 문제 1
+### 문제 1
 
 학습: 코퍼스 통계로 merge 순서를 결정한다.  
 인코딩: 이미 고정된 merge 순서를 새 텍스트에 적용해 토큰열/id를 만든다.
 
-#### 문제 2
+### 문제 2
 
 `ab c` (기호열 `["ab", "c"]`)
 
-#### 문제 3
+### 문제 3
 
 같은 쌍 집합이라도 적용 순서가 다르면 중간 기호열이 달라져 최종 분할이 달라질 수 있다. 예: 먼저 `a b→ab`를 할지 `b c→bc`를 할지에 따라 `abc`의 결과가 달라진다.
 
-#### 문제 4
+### 문제 4
 
 `["c", "a", "t", "</w>"]`
 
-#### 문제 5
+### 문제 5
 
 같은 텍스트가 다른 id 서열이 되어, 이미 학습된 Embedding 행의 의미가 깨진다. 사실상 다른 언어로 모델을 읽는 것과 같다.
 
-#### 문제 6
+### 문제 6
 
-\(26 + 1 + 100 = 127\)
+$26 + 1 + 100 = 127$
 
-### 18. 다음 강의와 연결
+## 17. 다음 강의와 연결
 
 이번 강의에서 BPE의 merge·encode·decode를 밑바닥에서 만들었다.
 
@@ -758,7 +747,7 @@ Tokenizer가 “조각”을 만들었다면, 30강은 “사전에 어떤 예�
 
 ### 강의 이동
 
-- **이전 강:** [제28강. Character / Word / Subword Tokenization](28강_Character_Word_Subword_Tokenization.md)
+- **이전 강:** [제28강. Character Word Subword Tokenization](28강_Character_Word_Subword_Tokenization.md)
 - **다음 강:** [제30강. Vocabulary와 Special Tokens](30강_Vocabulary와_Special_Tokens.md)
 
 <!-- /LECTURE_NAV -->

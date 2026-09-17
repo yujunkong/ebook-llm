@@ -1,23 +1,14 @@
-# 4권. RLHF · PPO · GRPO
+# 제88강. PPO 구현
 
-## 제88강. PPO 구현
+> **학습 목표**
+> - 밴딧형·미니 LM형 설정에서 롤아웃 → Advantage → clip loss → 업데이트를 코딩하기
+> - `logp`, `logp_old`, `ratio`, `eps`가 코드 변수로 어떻게 대응되는지 보이기
+> - 단순화 목록을 명시하고, full LLM PPO와 구분하기
+> - 학습 로그(reward, clip fraction, approx KL)를 읽어 건강 상태를 판단하기
+> - 제89강 KL 항을 어디에 꽂을지 예고하기
 
-### 1. 이번 강의에서 배울 것
-
-제87강에서 PPO clipped surrogate를 수식으로 이해했다. 이번 강의는 **돌아가는 최소 구현**을 만든다. 목표는 생산용 LLM 학습기가 아니라, 원리가 보이는 **토이 PPO 루프**다.
-
-이 강의를 마치면 다음을 할 수 있어야 한다.
-
-- 밴딧형·미니 LM형 설정에서 롤아웃 → Advantage → clip loss → 업데이트를 코딩하기
-- `logp`, `logp_old`, `ratio`, `eps`가 코드 변수로 어떻게 대응되는지 보이기
-- 단순화 목록을 명시하고, full LLM PPO와 구분하기
-- 학습 로그(reward, clip fraction, approx KL)를 읽어 건강 상태를 판단하기
-- 제89강 KL 항을 어디에 꽂을지 예고하기
-
-**사실:** 아래 코드는 교육용이며 특정 프레임워크의 성능 수치를 재현하지 않는다.  
-**설명:** 단순화해도 clip의 핵심은 동일하다.
-
-### 2. 왜 이것을 배우는가
+---
+## 1. 왜 이것을 배우는가
 
 수식만 외우면 다음에서 무너진다.
 
@@ -30,7 +21,7 @@ logprob 슬라이싱 한 칸 빗나감
 
 구현으로 “비율이 1 근처에서 움직이는지”를 눈으로 봐야 한다. 또한 RLHF 전체(제86강)에서 PPO 상자가 실제로 어떤 텐서를 소비하는지 고정해야 제89·90강으로 넘어갈 수 있다.
 
-### 3. 먼저 알아야 할 개념
+## 2. 먼저 알아야 할 개념
 
 - PPO clip 수식 (제87강)
 - Advantage 기초 (제83강)
@@ -40,9 +31,9 @@ logprob 슬라이싱 한 칸 빗나감
 
 이번 구현에서 **의도적으로 빼는 것**은 §10·§12에서 목록화한다.
 
-### 4. 핵심 개념 설명
+## 3. 핵심 개념 설명
 
-#### 4.1 두 가지 토이 설정
+### 3.1 두 가지 토이 설정
 
 **설정 A — Contextual Bandit (추천)**
 
@@ -67,7 +58,7 @@ LLM RLHF에 한 걸음 더 가깝다.
 
 이 강의는 A로 원리를 固め고, B로 시퀀스 확장을 보여 준다.
 
-#### 4.2 알고리즘 뼈대
+### 3.2 알고리즘 뼈대
 
 ```text
 for iter = 1..N:
@@ -86,7 +77,7 @@ for iter = 1..N:
 2. `logp`는 업데이트마다 재계산
 3. Advantage는 (기본) 롤아웃 배치 기준으로 고정하거나, value 학습과 함께 재추정
 
-#### 4.3 Full LLM PPO와의 차이 (미리 보기)
+### 3.3 Full LLM PPO와의 차이 (미리 보기)
 
 | 항목 | 이번 토이 | Full LLM PPO |
 |---|---|---|
@@ -100,7 +91,7 @@ for iter = 1..N:
 토이가 가르치는 것: **ratio·clip·update 계약**.  
 토이가 가르치지 않는 것: 인프라·스케일·제품 정렬 품질.
 
-### 5. 직관적으로 이해하기
+## 4. 직관적으로 이해하기
 
 공장 CCTV:
 
@@ -113,7 +104,7 @@ for iter = 1..N:
 
 밴딧 버전은 “한 동작짜리 영상”, LM 버전은 “여러 토큰짜리 영상”이다. 편집 규칙은 같다.
 
-### 6. 수학적으로 이해하기 — 코드 대응
+## 5. 수학적으로 이해하기 — 코드 대응
 
 \[
 \rho=\exp(\log\pi_\theta-\log\pi_{\mathrm{old}})
@@ -131,10 +122,10 @@ L=-\mathrm{mean}\min(\rho A,\mathrm{clip}(\rho)A)
 loss = -torch.min(ratio * adv, clipped_ratio * adv).mean()
 ```
 
-밴딧에서 \(T=1\)이므로 시퀀스 평균이 곧 샘플 손실이다.  
+밴딧에서 $T=1$이므로 시퀀스 평균이 곧 샘플 손실이다.  
 LM에서는 토큰 차원 mean을 한 번 더 취한다.
 
-### 7. 작은 숫자로 직접 계산하기
+## 6. 작은 숫자로 직접 계산하기
 
 토이 밴딧 한 샘플:
 
@@ -169,17 +160,15 @@ eps      = 0.2
 
 → 더 큰 surrogate(덜 보수적).
 
-### 8. 코드로 구현하기 — NumPy 밴딧 1스텝
+## 7. 코드로 구현하기 — NumPy 밴딧 1스텝
 
 ```python
 import numpy as np
-
 
 def softmax(logits):
     z = logits - logits.max()
     e = np.exp(z)
     return e / e.sum()
-
 
 def ppo_bandit_step(logits, action, logp_old, adv, eps=0.2, lr=0.05):
     """logits: [A], one sample update (교육용)."""
@@ -206,16 +195,15 @@ def ppo_bandit_step(logits, action, logp_old, adv, eps=0.2, lr=0.05):
 
 NumPy 수동 미분은 오류 여지가 크므로, **본 구현은 PyTorch**로 간다.
 
-### 9. PyTorch로 구현하기
+## 8. PyTorch로 구현하기
 
-#### 9.1 Contextual Bandit PPO
+### 8.1 Contextual Bandit PPO
 
 ```python
 import torch
 import torch.nn as nn
 import torch.nn.functional as F
 from torch.distributions import Categorical
-
 
 class BanditPolicy(nn.Module):
     def __init__(self, n_states=5, n_actions=3, hidden=32):
@@ -228,7 +216,6 @@ class BanditPolicy(nn.Module):
 
     def forward(self, states):
         return self.net(states)  # logits [B, A]
-
 
 def make_reward_table(n_states=5, n_actions=3, seed=0):
     g = torch.Generator().manual_seed(seed)
@@ -243,7 +230,6 @@ def make_reward_table(n_states=5, n_actions=3, seed=0):
                 table[s, a] = 0.1 * torch.rand((), generator=g)
     return table, optima
 
-
 @torch.no_grad()
 def rollout_bandit(policy, reward_table, batch_size=64):
     n_states = reward_table.size(0)
@@ -255,11 +241,9 @@ def rollout_bandit(policy, reward_table, batch_size=64):
     rewards = reward_table[states, actions]
     return states, actions, logp_old, rewards
 
-
 def compute_advantages(rewards):
     # 단순 baseline: 배치 평균
     return rewards - rewards.mean()
-
 
 def ppo_update_bandit(policy, optimizer, batch, eps=0.2, epochs=4):
     states, actions, logp_old, rewards = batch
@@ -296,7 +280,6 @@ def ppo_update_bandit(policy, optimizer, batch, eps=0.2, epochs=4):
         )
     return metrics
 
-
 def train_bandit_ppo(iters=80, seed=0):
     torch.manual_seed(seed)
     reward_table, optima = make_reward_table()
@@ -325,7 +308,7 @@ approx_kl 작은 양수 근처
 clip_frac 이 가끔 있으나 항상 1은 아님
 ```
 
-#### 9.2 Tiny LM PPO (시퀀스)
+### 8.2 Tiny LM PPO (시퀀스)
 
 장난감 보상: 응답에 토큰 `1`이 많이 포함될수록 보상↑ (의미 없는 규칙 — 원리 검증용).
 
@@ -343,7 +326,6 @@ class TinyLM(nn.Module):
         h, _ = self.rnn(x)
         return self.head(h)  # [B, T, V]
 
-
 @torch.no_grad()
 def generate(policy, prompt_ids, resp_len=4):
     """prompt_ids: [B, P]. returns full ids, resp logp sum/stack."""
@@ -359,11 +341,9 @@ def generate(policy, prompt_ids, resp_len=4):
     logp_tokens = torch.stack(logps, dim=1)  # [B, resp_len]
     return ids, logp_tokens
 
-
 def toy_reward(resp_tokens):
     # resp_tokens: [B, T]
     return (resp_tokens == 1).float().mean(dim=1)
-
 
 def ppo_update_lm(policy, optimizer, prompts, resp_len=4, eps=0.2, epochs=3):
     with torch.no_grad():
@@ -408,7 +388,7 @@ def ppo_update_lm(policy, optimizer, prompts, resp_len=4, eps=0.2, epochs=3):
 
 주의: `generate` 안의 `logp_old`는 `no_grad`로 저장한다. 업데이트 루프의 `logp`만 그래프에 연결한다.
 
-#### 9.3 KL 페널티 자리(미리 꽂을 위치)
+### 8.3 KL 페널티 자리(미리 꽂을 위치)
 
 제89강 내용의 훅:
 
@@ -421,7 +401,7 @@ def shaped_reward(rm_score, logp_theta, logp_ref, beta):
 
 토이 LM에서는 `π_ref`를 초기 스냅샷으로 freeze해 두고, `toy_reward` 대신 `shaped_reward`를 넣을 수 있다. 자세한 해석은 제89강.
 
-#### 9.4 로그 출력 예
+### 8.4 로그 출력 예
 
 ```python
 def demo():
@@ -436,7 +416,7 @@ def demo():
 
 실행 결과는 시드·환경에 따라 달라진다. **특정 숫자를 SOTA처럼 인용하지 말 것.**
 
-### 10. 실제 LLM에서는 어떻게 사용하는가
+## 9. 실제 LLM에서는 어떻게 사용하는가
 
 Full stack 대응표:
 
@@ -470,30 +450,30 @@ ppo_update_*
 
 제95강 프로젝트에서 preference/RL 실습으로 확장한다.
 
-### 11. 실습
+## 10. 실습
 
-#### 실습 A — 밴딧 PPO 실행
+### 실습 A — 밴딧 PPO 실행
 
 `train_bandit_ppo`를 실행하고 `acc` 곡선을 기록하라.  
 `eps=0.05`와 `eps=0.5`를 비교해 clip_frac 차이를 쓰라.
 
-#### 실습 B — 버그 주입
+### 실습 B — 버그 주입
 
 `logp_old.detach()`를 제거하거나, `ratio = exp(logp_old - logp)`로 뒤집어 증상을 관찰하라.
 
-#### 실습 C — Tiny LM
+### 실습 C — Tiny LM
 
 `toy_reward`를 “토큰 2의 비율”로 바꾸고, 평균 보상이 올라가는지 확인하라.
 
-#### 실습 D — 단순화 목록 작성
+### 실습 D — 단순화 목록 작성
 
 이 구현이 full LLM PPO 대비 빠진 항목 8개를 체크리스트로 쓰라.
 
-#### 실습 E — RLHF 연결
+### 실습 E — RLHF 연결
 
 제86강 다이어그램의 `θ ← PPO update` 상자에, 이번 함수 이름(`ppo_update_lm`)을 기입하라.
 
-### 12. 자주 하는 실수
+## 11. 자주 하는 실수
 
 1. **old logprob를 매 epoch 재샘플**  
    on-policy 계약 파괴.
@@ -519,7 +499,7 @@ ppo_update_*
 8. **ref KL 없이 RM만 장시간**  
    hacking (제89강으로 이어짐).
 
-### 13. 단순화 vs Full LLM PPO (명시)
+## 12. 단순화 vs Full LLM PPO (명시)
 
 **포함한 것**
 
@@ -542,7 +522,7 @@ ppo_update_*
 > 토이 성공 ≠ 챗봇 정렬 성공.  
 > 토이 성공 = PPO 계약 이해.
 
-### 14. 핵심 정리
+## 13. 핵심 정리
 
 - PPO 구현의 심장은 `exp(logp-logp_old)`와 clip된 surrogate다.
 - 롤아웃과 업데이트를 분리하고, old 로그확률을 고정한다.
@@ -551,14 +531,14 @@ ppo_update_*
 - Full LLM PPO는 이 골격 위에 RM·KL·인프라가 얹힌다.
 - 다음은 KL Divergence의 역할(제89강)이다.
 
-### 15. 핵심 용어
+## 14. 핵심 용어
 
 | 용어 | 의미 |
 |---|---|
 | Rollout | 현재 정책으로 궤적 수집 |
 | `logp_old` | 롤아웃 시점 로그확률 |
 | Clip fraction | 비율이 clip 밖인 비율 |
-| Approx KL | \(\mathbb{E}[\log\pi_{\mathrm{old}}-\log\pi_\theta]\) 근사 |
+| Approx KL | $\mathbb{E}[\log\pi_{\mathrm{old}}-\log\pi_\theta]$ 근사 |
 | Baseline | Advantage용 평균/가치 빼기 |
 | Outcome reward | 시퀀스 끝 스칼라 보상 |
 | Tiny LM | 교육용 소형 자기회귀 모델 |
@@ -566,73 +546,72 @@ ppo_update_*
 | Freeze | 파라미터 고정 |
 | Simplification | 교육용 생략 목록 |
 
-### 16. 복습 문제
-
-#### 문제 1（코드）
+## 15. 연습 문제
+### 문제 1（코드）
 
 `ratio = torch.exp(logp - logp_old.detach())`에서 `detach`가 old 쪽에 필요한 이유는?
 
-#### 문제 2（계산）
+### 문제 2（계산）
 
-\(\log\pi-\log\pi_{\mathrm{old}}=0\)이면 \(\rho\)와 unclipped 항 \(\rho A\)는?
+$\log\pi-\log\pi_{\mathrm{old}}=0$이면 $\rho$와 unclipped 항 $\rho A$는?
 
-#### 문제 3（구분）
+### 문제 3（구분）
 
 토이 `toy_reward`와 제85강 RM의 공통점·차이점 한 가지씩.
 
-#### 문제 4（메트릭）
+### 문제 4（메트릭）
 
 `clip_frac`이 매 스텝 1.0에 가깝다면 무엇을 의심하는가?
 
-#### 문제 5（연결）
+### 문제 5（연결）
 
 제89강에서 이 루프의 `rewards` 자리에 추가로 빼게 될 전형적인 항은?
 
-#### 문제 6（구조）
+### 문제 6（구조）
 
 PPO epoch 루프 안에서 응답을 **다시 sample**하면 안 되는 이유를 쓰시오.
 
-#### 문제 7（단순화）
+### 문제 7（단순화）
 
 GAE를 빼고 배치 평균 baseline만 쓰면 잃는 것(고수준)은?
 
 ---
 
-### 정답 및 해설
+## 정답 및 해설
 
-#### 문제 1
+### 문제 1
 
 old 확률은 고정 타깃이어야 하며, 그래프에 연결되면 old까지 미분되어 비율의 의미가 붕괴한다.
 
-#### 문제 2
+### 문제 2
 
-\(\rho=1\), unclipped 항은 \(A\) 그대로.
+$\rho=1$, unclipped 항은 $A$ 그대로.
 
-#### 문제 3
+### 문제 3
 
 공통: 응답에 스칼라 보상을 줌. 차이: RM은 선호 데이터로 학습된 모델, `toy_reward`는 고정 규칙.
 
-#### 문제 4
+### 문제 4
 
 학습률·ε·epoch가 과도하거나 logprob 정렬 버그로 비율이 항상 바깥에 있는 상황.
 
-#### 문제 5
+### 문제 5
 
-reference 대비 KL 페널티(\(\beta\mathrm{KL}\)).
+reference 대비 KL 페널티($\beta\mathrm{KL}$).
 
-#### 문제 6
+### 문제 6
 
 `logp_old`와 행동이 같은 궤적에 묶여 있어야 clip 비율이 정의된다. 다시 샘플하면 짝이 깨진다.
 
-#### 문제 7
+### 문제 7
 
 시간(토큰)축 신용 할당의 정교함·분산 조절 수단을 잃는다(고수준).
 
-### 17. 다음 강의와 연결
+## 16. 다음 강의와 연결
 
 제83강 Advantage → 제84·85강 데이터·RM → 제86강 구조 → 제87강 수식 → **이번 구현**으로 RLHF-PPO의 세로축이 한 번 관통했다.
 
-다음 **제89강. KL Divergence의 역할**에서는 \(\pi_{\mathrm{ref}}\)와의 KL이 보상·손실에 어떻게 들어가고, 왜 없으면 정책이 붕괴·해킹으로 흐르는지 다룬다. 그 위에 제90강 DPO가 “명시 RM+PPO” 없이도 preference를 쓰는 길을 연다.
+다음 **제89강. KL Divergence의 역할**에서는 $\pi_{\mathrm{ref}}$와의 KL이 보상·손실에 어떻게 들어가고, 왜 없으면 정책이 붕괴·해킹으로 흐르는지 다룬다. 그 위에 제90강 DPO가 “명시 RM+PPO” 없이도 preference를 쓰는 길을 연다.
 
 제86강의 다이어그램을 다시 펼쳐 보라. 비어 있던 update 상자가 이제 코드로 채워졌다.
 

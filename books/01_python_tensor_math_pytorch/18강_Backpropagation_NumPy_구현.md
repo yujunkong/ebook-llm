@@ -1,23 +1,14 @@
-# 1권. Python · Tensor · 수학 · PyTorch
+# 제18강. Backpropagation NumPy 구현
 
-## 제18강. Backpropagation NumPy 구현
+> **학습 목표**
+> - Forward / Backward / Update를 한 파일에서 연결하는 방법
+> - 단샘플·배치 학습 루프의 차이
+> - 회귀(MSE)와 이진 분류(BCE)에서 Loss·출력층만 어떻게 바뀌는지
+> - 수치 미분으로 구현을 검증하는 방법
+> - Loss가 실제로 감소하는 실험을 해석하는 방법
 
-### 1. 이번 강의에서 배울 것
-
-제17강에서 2-2-1 네트워크의 모든 편미분을 손으로 구했다.  
-이번 강의는 그 식을 **NumPy 함수와 학습 루프**로 옮긴다.
-
-이 강의를 마치면 다음을 말할 수 있어야 한다.
-
-- Forward / Backward / Update를 한 파일에서 연결하는 방법
-- 단샘플·배치 학습 루프의 차이
-- 회귀(MSE)와 이진 분류(BCE)에서 Loss·출력층만 어떻게 바뀌는지
-- 수치 미분으로 구현을 검증하는 방법
-- Loss가 실제로 감소하는 실험을 해석하는 방법
-
-PyTorch Autograd(제20강) 이전의 “수동 엔진”을 완성하는 장이다.
-
-### 2. 왜 이것을 배우는가
+---
+## 1. 왜 이것을 배우는가
 
 프레임워크 없이 학습이 한 바퀴 도는 코드를 갖고 있으면,
 
@@ -27,15 +18,15 @@ PyTorch Autograd(제20강) 이전의 “수동 엔진”을 완성하는 장이�
 
 오늘의 목표는 화려한 모델이 아니라, **Loss가 줄어드는 최소 학습기**이다.
 
-### 3. 먼저 알아야 할 개념
+## 2. 먼저 알아야 할 개념
 
 - 제15~17강의 2-2-1 구조, Forward cache, δ 공식
 - NumPy 행렬곱, `np.outer`, 브로드캐스팅 (제8~10강)
-- Gradient Descent: \(\theta \leftarrow \theta - \eta \nabla_\theta L\) (제12강)
+- Gradient Descent: $\theta \leftarrow \theta - \eta \nabla_\theta L$ (제12강)
 
-### 4. 핵심 개념 설명
+## 3. 핵심 개념 설명
 
-#### 4.1 Training Loop (학습 루프)
+### 3.1 Training Loop (학습 루프)
 
 **Training Loop(학습 루프)**는 데이터를 반복해 보며 파라미터를 갱신하는 바깥쪽 순환이다.
 
@@ -50,7 +41,7 @@ for epoch in range(E):
 **Epoch(에폭)**는 학습 데이터를 한 바퀴 도는 단위이다.  
 데이터가 아주 작으면 epoch와 step이 거의 같다.
 
-#### 4.2 SGD (Stochastic Gradient Descent)
+### 3.2 SGD (Stochastic Gradient Descent)
 
 **SGD**는 전체 데이터가 아니라 **일부 샘플(배치)**의 Gradient로 업데이트하는 방법이다.
 
@@ -60,7 +51,7 @@ for epoch in range(E):
 
 오늘은 먼저 단샘플로 원리를 굳힌 뒤, 미니배치로 확장한다.
 
-#### 4.3 Gradient Verification
+### 3.3 Gradient Verification
 
 구현이 맞는지 확인하려면 해석적 Gradient와 수치 Gradient를 비교한다.
 
@@ -73,17 +64,17 @@ for epoch in range(E):
 
 보통 `1e-6` 이하면 안심할 수 있다.
 
-#### 4.4 회귀 vs 이진 분류
+### 3.4 회귀 vs 이진 분류
 
 | | 회귀 | 이진 분류 |
 |---|---|---|
-| 출력 | 선형 \(\hat{y}\) | Sigmoid 확률 \(p\) |
-| Loss | MSE \(\frac12(\hat{y}-y)^2\) | BCE \(-(y\log p+(1-y)\log(1-p))\) |
-| \(\partial L/\partial z_{\mathrm{out}}\) | \(\hat{y}-y\) | \(p-y\) (Sigmoid+BCE 조합의 유명한 단순형) |
+| 출력 | 선형 $\hat{y}$ | Sigmoid 확률 $p$ |
+| Loss | MSE $\frac12(\hat{y}-y)^2$ | BCE $-(y\log p+(1-y)\log(1-p))$ |
+| $\partial L/\partial z_{\mathrm{out}}$ | $\hat{y}-y$ | $p-y$ (Sigmoid+BCE 조합의 유명한 단순형) |
 
 은닉층의 Backprop 패턴은 동일하다. **머리(출력·Loss)만 갈아 끼운다.**
 
-### 5. 직관적으로 이해하기
+## 4. 직관적으로 이해하기
 
 수동 Backprop 학습기는 다음 세 서랍으로 이루어진다.
 
@@ -94,11 +85,11 @@ for epoch in range(E):
 세 서랍을 `for`로 묶으면 “공부하는 기계”가 된다.  
 PyTorch는 2번 서랍을 Autograd가, 3번을 Optimizer가 맡는다. 오늘은 셋 다 우리가 쓴다.
 
-### 6. 수학적으로 이해하기 — 배치 식
+## 5. 수학적으로 이해하기 — 배치 식
 
-배치 크기 \(B\), 입력 차원 2, 은닉 2, 출력 1.
+배치 크기 $B$, 입력 차원 2, 은닉 2, 출력 1.
 
-관례: \(X\in\mathbb{R}^{B\times 2}\)
+관례: $X\in\mathbb{R}^{B\times 2}$
 
 \[
 \begin{aligned}
@@ -123,9 +114,9 @@ Backward (평균 MSE 기준):
 \end{aligned}
 \]
 
-단샘플은 \(B=1\)인 특수 경우이며, 17강 식과 일치한다.
+단샘플은 $B=1$인 특수 경우이며, 17강 식과 일치한다.
 
-### 7. 작은 숫자로 직접 계산하기 — 구현 직전 점검
+## 6. 작은 숫자로 직접 계산하기 — 구현 직전 점검
 
 17강과 동일 단샘플에서 Backward 함수가 내야 할 값:
 
@@ -140,9 +131,9 @@ db1 = [-0.395, 0.316]
 코드를 짜면 **먼저 이 숫자와 대조**한다.  
 학습 루프는 그다음이다. 순서가 바뀌면 버그를 학습으로 덮어 버린다.
 
-### 8. 코드로 구현하기
+## 7. 코드로 구현하기
 
-#### 8.1 유틸과 모델 파라미터
+### 7.1 유틸과 모델 파라미터
 
 ```python
 """18강: NumPy로 2-2-1 Backprop 학습기."""
@@ -151,16 +142,13 @@ from __future__ import annotations
 
 import numpy as np
 
-
 def relu(z: np.ndarray) -> np.ndarray:
     """ReLU."""
     return np.maximum(0.0, z)
 
-
 def relu_grad(z: np.ndarray) -> np.ndarray:
     """d ReLU / dz 마스크."""
     return (z > 0).astype(z.dtype)
-
 
 def init_params(seed: int = 0):
     """작은 난수로 Weight 초기화. Bias는 0."""
@@ -172,7 +160,6 @@ def init_params(seed: int = 0):
     b2 = np.zeros(1)
     return {"W1": W1, "b1": b1, "W2": W2, "b2": b2}
 
-
 def fixed_params_for_check():
     """17강 손계산과 동일한 파라미터."""
     return {
@@ -183,7 +170,7 @@ def fixed_params_for_check():
     }
 ```
 
-#### 8.2 Forward
+### 7.2 Forward
 
 ```python
 def forward(X: np.ndarray, params: dict, y: np.ndarray | None = None):
@@ -208,7 +195,7 @@ def forward(X: np.ndarray, params: dict, y: np.ndarray | None = None):
     return Y_hat, loss, cache
 ```
 
-#### 8.3 Backward
+### 7.3 Backward
 
 ```python
 def backward(cache: dict) -> dict:
@@ -239,7 +226,7 @@ def backward(cache: dict) -> dict:
     return {"W1": dW1, "b1": db1, "W2": dW2, "b2": db2}
 ```
 
-#### 8.4 Update
+### 7.4 Update
 
 ```python
 def sgd_update(params: dict, grads: dict, lr: float) -> None:
@@ -248,7 +235,7 @@ def sgd_update(params: dict, grads: dict, lr: float) -> None:
         params[k] = params[k] - lr * grads[k]
 ```
 
-#### 8.5 손계산 검증
+### 7.5 손계산 검증
 
 ```python
 def check_against_lesson17():
@@ -266,7 +253,7 @@ def check_against_lesson17():
     print("db1", grads["b1"])
 ```
 
-#### 8.6 수치 미분 검증기
+### 7.6 수치 미분 검증기
 
 ```python
 def numerical_gradients(params, X, y, eps=1e-6):
@@ -289,10 +276,8 @@ def numerical_gradients(params, X, y, eps=1e-6):
         grads[name] = gflat.reshape(arr.shape)
     return grads
 
-
 def rel_error(a, b, eps=1e-12):
     return np.max(np.abs(a - b) / np.maximum(eps, np.maximum(np.abs(a), np.abs(b))))
-
 
 def verify_gradients():
     params = fixed_params_for_check()
@@ -305,9 +290,9 @@ def verify_gradients():
         print(k, "rel_error =", rel_error(ana[k], num[k]))
 ```
 
-#### 8.7 회귀 학습 루프 — Loss가 떨어질 때까지
+### 7.7 회귀 학습 루프 — Loss가 떨어질 때까지
 
-합성 데이터: \(y = 2x_1 - 3x_2 + 0.5\)에 작은 노이즈.
+합성 데이터: $y = 2x_1 - 3x_2 + 0.5$에 작은 노이즈.
 
 ```python
 def make_regression_data(n=64, seed=1):
@@ -316,7 +301,6 @@ def make_regression_data(n=64, seed=1):
     y = (2 * X[:, 0] - 3 * X[:, 1] + 0.5).reshape(-1, 1)
     y += rng.normal(0, 0.05, size=y.shape)
     return X, y
-
 
 def train_regression(epochs=400, lr=0.05, batch_size=16, seed=0):
     X, y = make_regression_data()
@@ -354,14 +338,13 @@ epoch  399  loss=...   # 초깃값보다 명확히 감소
 
 **성공 기준:** 마지막 Loss가 첫 Loss보다 한 자릿수 이상 작거나, 적어도 단조에 가깝게 감소 추세.
 
-#### 8.8 이진 분류 버전
+### 7.8 이진 분류 버전
 
 ```python
 def sigmoid(z):
     # 안정성을 위해 clip
     z = np.clip(z, -60, 60)
     return 1.0 / (1.0 + np.exp(-z))
-
 
 def forward_clf(X, params, y=None):
     W1, b1, W2, b2 = params["W1"], params["b1"], params["W2"], params["b2"]
@@ -377,7 +360,6 @@ def forward_clf(X, params, y=None):
         loss = -np.mean(y * np.log(P + eps) + (1 - y) * np.log(1 - P + eps))
     cache = {"X": X, "Z1": Z1, "A1": A1, "Z2": Z2, "P": P, "y": y, **params}
     return P, loss, cache
-
 
 def backward_clf(cache):
     X, Z1, A1, P, y = cache["X"], cache["Z1"], cache["A1"], cache["P"], cache["y"]
@@ -395,7 +377,6 @@ def backward_clf(cache):
     db1 = np.sum(dZ1, axis=0)
     return {"W1": dW1, "b1": db1, "W2": dW2, "b2": db2}
 
-
 def make_classification_data(n=80, seed=2):
     """직선으로 대충 나뉘는 2D 점."""
     rng = np.random.default_rng(seed)
@@ -403,7 +384,6 @@ def make_classification_data(n=80, seed=2):
     logits = 1.5 * X[:, 0] - 2.0 * X[:, 1] + 0.1
     y = (logits > 0).astype(float).reshape(-1, 1)
     return X, y
-
 
 def train_classification(epochs=300, lr=0.1, batch_size=20, seed=0):
     X, y = make_classification_data()
@@ -429,7 +409,7 @@ def train_classification(epochs=300, lr=0.1, batch_size=20, seed=0):
 
 분류에서도 Loss 감소 + 정확도 상승을 관찰하는 것이 목표이다.
 
-#### 8.9 메인
+### 7.9 메인
 
 ```python
 if __name__ == "__main__":
@@ -443,10 +423,10 @@ if __name__ == "__main__":
     train_classification()
 ```
 
-### 9. 학습이 “됐다”는 신호를 읽는 법
+## 8. 학습이 “됐다”는 신호를 읽는 법
 
 1. **Loss 곡선**: 초반 빠르게 하락 → 완만. 진동이 크면 `lr` 감소 또는 `batch_size` 증가.
-2. **회귀**: 예측 \(\hat{y}\)와 \(y\)의 산점이 대각선에 가까워짐.
+2. **회귀**: 예측 $\hat{y}$와 $y$의 산점이 대각선에 가까워짐.
 3. **분류**: accuracy가 chance(0.5)를 넘어 안정.
 4. **과적합 예고**: 지금은 데이터가 단순해 잘 맞지만, 표현력이 큰 망 + 적은 데이터면 train Loss만 줄고 일반화가 깨진다(제24강).
 
@@ -458,7 +438,7 @@ Loss가 전혀 안 줄면 체크리스트:
 - `lr`이 터무니없이 크거나 작음
 - 입력 정규화 여부(오늘은 표준정규라 비교적 안전)
 
-### 10. 실제 LLM에서는 어떻게 사용하는가
+## 9. 실제 LLM에서는 어떻게 사용하는가
 
 NumPy 루프와 LLM Trainer의 대응:
 
@@ -474,37 +454,37 @@ NumPy 루프와 LLM Trainer의 대응:
 또한 분산 학습에서는 Backward로 구한 Gradient를 GPU 간에 평균 낸다.  
 원천은 여전히 “Loss에서 온 δ를 Weight에 외적”이다.
 
-### 11. 실습
+## 10. 실습
 
-#### 실습 1 — 17강 숫자 통과
+### 실습 1 — 17강 숫자 통과
 
 `check_against_lesson17()`가 표와 오차 `1e-10` 수준으로 일치하는지 assert를 걸어라.
 
-#### 실습 2 — 수치 미분 전 항목
+### 실습 2 — 수치 미분 전 항목
 
 `verify_gradients()`에서 모든 relative error `< 1e-6`을 확인한다.  
 일부러 `relu_grad`를 제거해 보면 error가 커지는지 본다(버그 주입 실험).
 
-#### 실습 3 — 회귀 Loss 하락
+### 실습 3 — 회귀 Loss 하락
 
 `train_regression`을 실행하고, `history[0]` 대비 `history[-1]` 비율을 출력한다.  
 목표: **명확한 감소**.
 
-#### 실습 4 — 학습률 스윕
+### 실습 4 — 학습률 스윕
 
 `lr ∈ {0.001, 0.05, 0.5, 2.0}`로 각각 100 epoch.  
 발산·정체·양호를 표로 정리한다.
 
-#### 실습 5 — 은닉 너비 변경
+### 실습 5 — 은닉 너비 변경
 
 은닉 뉴런을 2 → 8로 늘리려면 `init_params`와 행렬 shape를 일반화해야 한다.  
 `hidden=8` 인자로 리팩터링해 보라. (출력은 1 유지)
 
-#### 실습 6 — 분류 정확도
+### 실습 6 — 분류 정확도
 
 `train_classification` 최종 acc가 0.9 이상이 되는지 확인한다. 안 되면 epoch/`lr`을 조정한다.
 
-### 12. 자주 하는 실수
+## 11. 자주 하는 실수
 
 1. **배치 평균을 Forward/Backward에서 서로 다르게 한다**  
    Loss는 `mean`인데 Backward에서 `/B`를 빼먹으면 Gradient 스케일이 커진다.
@@ -524,15 +504,15 @@ NumPy 루프와 LLM Trainer의 대응:
 6. **난수 시드를 안 고정해 디버깅이 안 된다**  
    검증 단계에서는 고정 파라미터/`seed`를 사용한다.
 
-### 13. 핵심 정리
+## 12. 핵심 정리
 
-- NumPy Backprop 구현은 Forward cache → δ 계산 → \(dW=\delta a^{\top}\) → SGD 업데이트의 반복이다.
+- NumPy Backprop 구현은 Forward cache → δ 계산 → $dW=\delta a^{\top}$ → SGD 업데이트의 반복이다.
 - 먼저 17강 숫자·수치 미분으로 검증하고, 그다음 학습 루프를 돈다.
 - 회귀와 분류는 출력/Loss 머리만 다르고 은닉 Backprop 패턴은 같다.
 - Loss 감소는 구현이 살아 있다는 최소 증거이다.
 - 이 코드가 곧 PyTorch 학습 루프의 뼈대이다.
 
-### 14. 핵심 용어
+## 13. 핵심 용어
 
 | 용어 | 의미 |
 |---|---|
@@ -542,66 +522,65 @@ NumPy 루프와 LLM Trainer의 대응:
 | SGD | 배치 Gradient로 파라미터를 갱신하는 기본 옵티마이저 |
 | Gradient Verification | 해석적/수치 Gradient 비교로 구현을 검증 |
 | BCE | 이진 분류용 로그 손실 |
-| Logit | Sigmoid/Softmax 직전의 원시 점수 \(z\) |
+| Logit | Sigmoid/Softmax 직전의 원시 점수 $z$ |
 | In-place Update | 기존 파라미터 배열을 직접 갱신하는 방식 |
 | Relative Error | 두 Gradient 벡터의 상대 차이 |
 | Initialization | 학습 전 Weight를 작은 난수 등으로 세팅하는 일 |
 
-### 15. 복습 문제
-
-#### 문제 1 (개념)
+## 14. 연습 문제
+### 문제 1 (개념)
 
 학습 루프 한 step의 세 단계를 순서대로 쓰시오.
 
-#### 문제 2 (식)
+### 문제 2 (식)
 
-배치 MSE에서 \(\partial L/\partial W^{(2)} = (\partial L/\partial\hat{Y})^{\top} A^{(1)}\)이 되는 이유를 한 문장으로 설명하시오.
+배치 MSE에서 $\partial L/\partial W^{(2)} = (\partial L/\partial\hat{Y})^{\top} A^{(1)}$이 되는 이유를 한 문장으로 설명하시오.
 
-#### 문제 3 (구현)
+### 문제 3 (구현)
 
 `backward`에서 `relu_grad`를 곱하지 않으면 어떤 버그가 생기는가?
 
-#### 문제 4 (실험)
+### 문제 4 (실험)
 
 Loss가 폭발적으로 커질 때 가장 먼저 의볼 하이퍼파라미터는?
 
-#### 문제 5 (연결)
+### 문제 5 (연결)
 
 오늘 `sgd_update`가 PyTorch에서 보통 어떤 API 조합으로 대체되는가? (이름만)
 
-#### 문제 6 (계산)
+### 문제 6 (계산)
 
 17강 단샘플에서 `B=1`일 때 `dY = (Y_hat - y)/B`의 값은?
 
 ---
 
-### 정답 및 해설
+## 정답 및 해설
 
-#### 문제 1
+### 문제 1
 
 Forward(예측·Loss) → Backward(Gradient) → Update(파라미터 갱신).
 
-#### 문제 2
+### 문제 2
 
-\(\hat{Y}=A^{(1)}W^{(2)\top}+\cdots\)이므로 \(W^{(2)}\)에 대한 Gradient는 앞 층 활성 \(A^{(1)}\)과 출력 쪽 δ의 외적(배치에서는 행렬곱)으로 모인다.
+$\hat{Y}=A^{(1)}W^{(2)\top}+\cdots$이므로 $W^{(2)}$에 대한 Gradient는 앞 층 활성 $A^{(1)}$과 출력 쪽 δ의 외적(배치에서는 행렬곱)으로 모인다.
 
-#### 문제 3
+### 문제 3
 
-\(z\le0\)인 뉴런에도 Gradient가 흘러, ReLU의 정의와 다른 잘못된 업데이트가 수행된다.
+$z\le0$인 뉴런에도 Gradient가 흘러, ReLU의 정의와 다른 잘못된 업데이트가 수행된다.
 
-#### 문제 4
+### 문제 4
 
 학습률 `lr` (너무 큼). 그다음 Gradient 스케일/버그.
 
-#### 문제 5
+### 문제 5
 
 `loss.backward()` 후 `optimizer.step()` (그리고 보통 `optimizer.zero_grad()`).
 
-#### 문제 6
+### 문제 6
 
-\(0.21-1.0=-0.79\).
+$0.21-1.0=-0.79$.
 
-### 16. 다음 강의와 연결
+## 15. 다음 강의와 연결
 
 이번 강의에서 “수동 딥러닝 엔진”을 NumPy로 완성했다.
 

@@ -1,26 +1,15 @@
-# 2권. Tokenizer와 Transformer
+# 제41강. Multi-Head Attention
 
-## 제41강. Multi-Head Attention
+> **학습 목표**
+> - Single-Head Attention과 Multi-Head Attention의 차이
+> - $d_{\text{model}}$, $h$, $d_k = d_{\text{model}} / h$의 관계
+> - 각 head에서 $Q, K, V$를 계산하고, 결과를 concat한 뒤 $W^O$로 섞는 전체 흐름
+> - 왜 “한 번에 크게” 보는 대신 “여러 관점으로 작게” 보는지
+> - Causal Mask가 Multi-Head에서도 동일하게 적용되는 방식
+> - NumPy/PyTorch로 MHA를 스케치하는 방법
 
-### 1. 이번 강의에서 배울 것
-
-제39강에서 Self-Attention을, 제40강에서 Causal Mask를 익혔다.  
-이번 강의는 Attention을 **여러 개의 머리(head)**로 나누어 병렬로 돌리는 **Multi-Head Attention(MHA)**을 다룬다.
-
-이 강의를 마치면 다음을 말할 수 있어야 한다.
-
-- Single-Head Attention과 Multi-Head Attention의 차이
-- \(d_{\text{model}}\), \(h\), \(d_k = d_{\text{model}} / h\)의 관계
-- 각 head에서 \(Q, K, V\)를 계산하고, 결과를 **concat**한 뒤 \(W^O\)로 섞는 전체 흐름
-- 왜 “한 번에 크게” 보는 대신 “여러 관점으로 작게” 보는지
-- Causal Mask가 Multi-Head에서도 동일하게 적용되는 방식
-- NumPy/PyTorch로 MHA를 스케치하는 방법
-- GPT류 LLM에서 MHA(또는 그 변형)가 차지하는 위치
-
-제40강의 Causal Mask는 **한 head의 score 행렬**에 붙는 규칙이었다.  
-오늘은 그 규칙을 \(h\)개 head에 동시에 적용한 뒤, 결과를 다시 \(d_{\text{model}}\)로 합친다.
-
-### 2. 왜 이것을 배우는가
+---
+## 1. 왜 이것을 배우는가
 
 Self-Attention 한 번으로도 “토큰끼리 정보를 섞는” 일은 가능하다.  
 그런데 한 번의 Attention은 **하나의 유사도 기준**으로 섞는다.
@@ -32,8 +21,8 @@ Self-Attention 한 번으로도 “토큰끼리 정보를 섞는” 일은 가�
 - 가까운 이웃 토큰의 지역 패턴
 - 문장 끝에서 앞쪽 주제를 되짚는 장거리 의존
 
-한 개의 \(QK^\top\) 공간만으로는 이 관계들을 동시에 잘 담기 어렵다.  
-Multi-Head는 **표현 공간을 \(h\)개의 부분 공간으로 나누고**, 각 부분 공간이 서로 다른 Attention 패턴을 학습하도록 만든다.
+한 개의 $QK^\top$ 공간만으로는 이 관계들을 동시에 잘 담기 어렵다.  
+Multi-Head는 **표현 공간을 $h$개의 부분 공간으로 나누고**, 각 부분 공간이 서로 다른 Attention 패턴을 학습하도록 만든다.
 
 LLM 관점에서는 더 직접적이다.
 
@@ -49,68 +38,76 @@ LLM 관점에서는 더 직접적이다.
 Transformer Block의 첫 핵심 연산이 바로 MHA다.  
 제46강에서 블록을 조립할 때, 오늘은 그 안쪽의 “Attention 엔진”을 완성한다.
 
-### 3. 먼저 알아야 할 개념
+## 2. 먼저 알아야 할 개념
 
 이미 알고 있어야 하는 것:
 
 - Query / Key / Value (제36강)
 - Dot-Product Attention과 Softmax (제37~38강)
 - Self-Attention 구현과 shape (제39강)
-- Causal Mask: 미래 토큰 score를 \(-\infty\)로 가리기 (제40강)
+- Causal Mask: 미래 토큰 score를 $-\infty$로 가리기 (제40강)
 - 행렬곱과 reshape/transpose (제8~10강, 제19강)
 
 이번 강의에서 새로 고정할 기호:
 
 | 기호 | 의미 |
 |---|---|
-| \(d_{\text{model}}\) | 토큰 벡터 차원 (모델 폭) |
-| \(h\) | head 개수 |
-| \(d_k\) | 각 head의 Key/Query 차원. 보통 \(d_{\text{model}}/h\) |
-| \(d_v\) | 각 head의 Value 차원. 보통 \(d_k\)와 같게 둠 |
-| \(W^Q, W^K, W^V\) | 전체 입력에서 Q/K/V를 만드는 선형 변환 |
-| \(W^O\) | head 출력을 합친 뒤 다시 \(d_{\text{model}}\)로 섞는 출력 투영 |
+| $d_{\text{model}}$ | 토큰 벡터 차원 (모델 폭) |
+| $h$ | head 개수 |
+| $d_k$ | 각 head의 Key/Query 차원. 보통 $d_{\text{model}}/h$ |
+| $d_v$ | 각 head의 Value 차원. 보통 $d_k$와 같게 둠 |
+| $W^Q, W^K, W^V$ | 전체 입력에서 Q/K/V를 만드는 선형 변환 |
+| $W^O$ | head 출력을 합친 뒤 다시 $d_{\text{model}}$로 섞는 출력 투영 |
 
-### 4. 핵심 개념 설명
+## 3. 핵심 개념 설명
 
-#### 4.1 Single-Head를 한 줄로 복습
+### 3.1 Single-Head를 한 줄로 복습
 
-입력 행렬 \(X \in \mathbb{R}^{T \times d_{\text{model}}}\)가 있을 때,
+입력 행렬 $X \in \mathbb{R}^{T \times d_{\text{model}}}$가 있을 때,
 
 $$
+
 Q = X W^Q,\quad K = X W^K,\quad V = X W^V
+
 $$
 
 $$
+
 \mathrm{Attention}(Q,K,V)
 =
 \mathrm{softmax}\!\left(\frac{QK^\top}{\sqrt{d_k}} + M\right) V
-$$
-
-여기서 \(T\)는 시퀀스 길이, \(M\)은 Causal Mask(필요 시)이다.
-
-Single-Head에서는 보통 \(d_k = d_{\text{model}}\)로 두고 한 번에 계산한다.
-
-#### 4.2 Multi-Head의 정의
-
-**Multi-Head Attention**은 동일한 \(X\)에서 **서로 다른 선형 변환**으로 \(h\)개의 \((Q_i, K_i, V_i)\)를 만들고, 각 head의 Attention 출력을 이어 붙인 뒤 다시 선형 변환한다.
 
 $$
+
+여기서 $T$는 시퀀스 길이, $M$은 Causal Mask(필요 시)이다.
+
+Single-Head에서는 보통 $d_k = d_{\text{model}}$로 두고 한 번에 계산한다.
+
+### 3.2 Multi-Head의 정의
+
+**Multi-Head Attention**은 동일한 $X$에서 **서로 다른 선형 변환**으로 $h$개의 $(Q_i, K_i, V_i)$를 만들고, 각 head의 Attention 출력을 이어 붙인 뒤 다시 선형 변환한다.
+
+$$
+
 \mathrm{head}_i
 =
 \mathrm{Attention}(X W_i^Q,\ X W_i^K,\ X W_i^V)
+
 $$
 
 $$
+
 \mathrm{MultiHead}(X)
 =
 \mathrm{Concat}(\mathrm{head}_1,\ldots,\mathrm{head}_h)\, W^O
+
 $$
 
-각 \(W_i^Q \in \mathbb{R}^{d_{\text{model}} \times d_k}\)이고, \(W^O \in \mathbb{R}^{h d_v \times d_{\text{model}}}\)이다.
+각 $W_i^Q \in \mathbb{R}^{d_{\text{model}} \times d_k}$이고, $W^O \in \mathbb{R}^{h d_v \times d_{\text{model}}}$이다.
 
-실무 구현에서는 \(h\)개의 작은 행렬을 따로 두지 않고, **큰 \(W^Q\) 한 장**으로 \(Q\) 전체를 만든 뒤 head 축으로 reshape하는 방식이 흔하다. 수학적으로는 같다.
+실무 구현에서는 $h$개의 작은 행렬을 따로 두지 않고, **큰 $W^Q$ 한 장**으로 $Q$ 전체를 만든 뒤 head 축으로 reshape하는 방식이 흔하다. 수학적으로는 같다.
 
-#### 4.3 차원 설계: \(d_k = d_{\text{model}} / h\)
+### 3.3 차원 설계: $d_k = d_{\text{model}} / h$
 
 원 논문(Vaswani et al., 2017)의 핵심 설계 포인트는 다음과 같다.
 
@@ -119,33 +116,35 @@ $$
 방법:
 
 $$
+
 d_k = d_v = \frac{d_{\text{model}}}{h}
+
 $$
 
 예:
 
-- \(d_{\text{model}} = 512\), \(h = 8\) → \(d_k = 64\)
-- \(d_{\text{model}} = 768\), \(h = 12\) → \(d_k = 64\) (GPT-2 small류)
-- \(d_{\text{model}} = 4096\), \(h = 32\) → \(d_k = 128\) (대형 모델 예시 스케일)
+- $d_{\text{model}} = 512$, $h = 8$ → $d_k = 64$
+- $d_{\text{model}} = 768$, $h = 12$ → $d_k = 64$ (GPT-2 small류)
+- $d_{\text{model}} = 4096$, $h = 32$ → $d_k = 128$ (대형 모델 예시 스케일)
 
 주의: 위 숫자는 **구조를 익히기 위한 대표 값**이다. 실제 공개 모델마다 head 수·head 차원은 다를 수 있다. “모든 LLM이 반드시 이 숫자”가 아니다.
 
 왜 나누는가?
 
 1. **표현력**: 서로 다른 head가 서로 다른 부분 공간을 본다.
-2. **비용 제어**: head마다 \(d_k\)가 작아져, Softmax Attention의 내적·가중합 비용이 Single-Head full-\(d_{\text{model}}\)와 비슷해진다.
-3. **안정성**: \(\sqrt{d_k}\) 스케일링에서 \(d_k\)가 작을수록 Softmax 입력이 덜 극단적으로 커질 여지가 있다(완전 보장은 아니다).
+2. **비용 제어**: head마다 $d_k$가 작아져, Softmax Attention의 내적·가중합 비용이 Single-Head full-$d_{\text{model}}$와 비슷해진다.
+3. **안정성**: $\sqrt{d_k}$ 스케일링에서 $d_k$가 작을수록 Softmax 입력이 덜 극단적으로 커질 여지가 있다(완전 보장은 아니다).
 
-#### 4.4 Concat과 \(W^O\)의 역할
+### 3.4 Concat과 $W^O$의 역할
 
-각 head의 출력은 보통 shape \((T, d_v)\)이다.  
-\(h\)개를 이어 붙이면 \((T, h \cdot d_v)\)가 된다.  
-\(d_v = d_{\text{model}}/h\)이면 \(h \cdot d_v = d_{\text{model}}\)이므로, concat 직후 차원이 다시 \(d_{\text{model}}\)과 같아진다.
+각 head의 출력은 보통 shape $(T, d_v)$이다.  
+$h$개를 이어 붙이면 $(T, h \cdot d_v)$가 된다.  
+$d_v = d_{\text{model}}/h$이면 $h \cdot d_v = d_{\text{model}}$이므로, concat 직후 차원이 다시 $d_{\text{model}}$과 같아진다.
 
-그렇다면 \(W^O\)는 왜 필요한가?
+그렇다면 $W^O$는 왜 필요한가?
 
 - Concat만 하면 head별 결과가 **단순 나란히 붙은 상태**다.
-- \(W^O\)는 head들이 찾은 정보를 **하나의 통합 표현**으로 섞는다.
+- $W^O$는 head들이 찾은 정보를 **하나의 통합 표현**으로 섞는다.
 - Residual Connection(제44강)에 더해지기 전에, 블록 입력과 같은 “언어”로 맞추는 역할도 한다.
 
 비유:
@@ -156,19 +155,21 @@ h명의 전문가가 각자 메모 (d_v 차원)
     → 편집장(W^O)이 최종 요약문(d_model)으로 재작성
 ```
 
-#### 4.5 Causal Mask와의 관계
+### 3.5 Causal Mask와의 관계
 
 제40강 Causal Mask는 **시간(위치) 축**의 규칙이다, head 축의 규칙이 아니다.
 
 $$
+
 M_{ij} =
 \begin{cases}
 0 & i \ge j \
 -\infty & i < j
 \end{cases}
+
 $$
 
-(행 \(i\) = Query 위치, 열 \(j\) = Key 위치. 구현에 따라 부호·방향 표기가 다를 수 있으므로, “미래 Key를 차단”만 기억해도 된다.)
+(행 $i$ = Query 위치, 열 $j$ = Key 위치. 구현에 따라 부호·방향 표기가 다를 수 있으므로, “미래 Key를 차단”만 기억해도 된다.)
 
 Multi-Head에서는:
 
@@ -185,9 +186,9 @@ Multi-Head에서는:
 
 제48강 Causal LM은 이 MHA + Causal Mask가 층층이 쌓인 결과물이다.
 
-### 5. 직관적으로 이해하기
+## 4. 직관적으로 이해하기
 
-#### 5.1 한 눈으로 보는 것과 여러 눈으로 보는 것
+### 4.1 한 눈으로 보는 것과 여러 눈으로 보는 것
 
 Single-Head:
 
@@ -208,7 +209,7 @@ Multi-Head:
 학습이 끝나면 어떤 head는 지역(local) 패턴에, 어떤 head는 장거리 의존에 더 민감해지는 경우가 관찰되기도 한다.  
 다만 **특정 head가 항상 ‘문법 head’다**처럼 단정하는 것은 위험하다. 해석은 사후 분석이지, 구조가 강제하는 법칙이 아니다.
 
-#### 5.2 “나누었다가 합친다”의 정보 흐름
+### 4.2 “나누었다가 합친다”의 정보 흐름
 
 작은 그림:
 
@@ -226,51 +227,63 @@ X  (T × d_model)
 
 입력 폭과 출력 폭이 같으므로, Residual로 `X + MHA(X)`를 쓰기 좋다(제44·46강).
 
-#### 5.3 파라미터가 늘어나는 지점
+### 4.3 파라미터가 늘어나는 지점
 
-큰 \(W^Q,W^K,W^V,W^O\)를 각각 \(d_{	ext{model}}	imes d_{	ext{model}}\)로 두면 Single-Head full-\(d_k\)와 파라미터 규모가 비슷하다. Multi-Head의 이득은 예산을 폭발시키는 것이 아니라 **같은 예산으로 여러 부분 공간을 쓰는 것**에 가깝다.
+큰 $W^Q,W^K,W^V,W^O$를 각각 $d_{	ext{model}}	imes d_{	ext{model}}$로 두면 Single-Head full-$d_k$와 파라미터 규모가 비슷하다. Multi-Head의 이득은 예산을 폭발시키는 것이 아니라 **같은 예산으로 여러 부분 공간을 쓰는 것**에 가깝다.
 
-### 6. 수학적으로 이해하기
+## 5. 수학적으로 이해하기
 
-#### 6.1 Head별 수식
+### 5.1 Head별 수식
 
 전체 투영을 한 번에 쓰고 head로 쪼개는 표기:
 
 $$
+
 Q = X W^Q \in \mathbb{R}^{T \times d_{\text{model}}}
-$$
-
-\(Q\)를 \(h\)개로 나누면
 
 $$
+
+$Q$를 $h$개로 나누면
+
+$$
+
 Q = \mathrm{Concat}(Q_1,\ldots,Q_h),\quad
 Q_i \in \mathbb{R}^{T \times d_k}
+
 $$
 
 각 head:
 
 $$
+
 A_i = \mathrm{softmax}\!\left(\frac{Q_i K_i^\top}{\sqrt{d_k}} + M\right)
 \in \mathbb{R}^{T \times T}
+
 $$
 
 $$
+
 H_i = A_i V_i \in \mathbb{R}^{T \times d_v}
+
 $$
 
 합치기:
 
 $$
+
 H = \mathrm{Concat}(H_1,\ldots,H_h) \in \mathbb{R}^{T \times (h d_v)}
+
 $$
 
 $$
+
 \mathrm{MHA}(X) = H W^O \in \mathbb{R}^{T \times d_{\text{model}}}
+
 $$
 
-#### 6.2 배치·head를 포함한 실전 shape
+### 5.2 배치·head를 포함한 실전 shape
 
-배치 크기 \(B\)를 포함하면 흔한 4D 텐서는 다음과 같다.
+배치 크기 $B$를 포함하면 흔한 4D 텐서는 다음과 같다.
 
 | 텐서 | shape |
 |---|---|
@@ -284,31 +297,34 @@ $$
 `transpose` 순서를 잘못 잡으면 가장 흔한 버그가 난다.  
 `(B, T, h, d_k)` → `(B, h, T, d_k)`로 바꾸는 패턴을 몸과 손에 익힌다.
 
-### 7. 작은 숫자로 직접 계산하기
+## 6. 작은 숫자로 직접 계산하기
 
-목표는 “거대한 모델”이 아니라 **split → attend → concat → \(W^O\)**를 손으로 한 바퀴 도는 것이다.
+목표는 “거대한 모델”이 아니라 **split → attend → concat → $W^O$**를 손으로 한 바퀴 도는 것이다.
 
-#### 7.1 설정
+### 6.1 설정
 
-- \(T = 2\) (토큰 2개)
-- \(d_{\text{model}} = 4\)
-- \(h = 2\) → \(d_k = d_v = 2\)
+- $T = 2$ (토큰 2개)
+- $d_{\text{model}} = 4$
+- $h = 2$ → $d_k = d_v = 2$
 - 배치 없음, Causal Mask 사용
 
 입력:
 
 $$
+
 X =
 \begin{bmatrix}
 1 & 0 & 1 & 0 \
 0 & 1 & 0 & 1
 \end{bmatrix}
-$$
-
-설명을 위해, 이미 투영된 \(Q, K, V\)가 다음과 같다고 가정한다.  
-(실제로는 \(X W^{Q/K/V}\)로 얻는다.)
 
 $$
+
+설명을 위해, 이미 투영된 $Q, K, V$가 다음과 같다고 가정한다.  
+(실제로는 $X W^{Q/K/V}$로 얻는다.)
+
+$$
+
 Q =
 \begin{bmatrix}
 1 & 0 & 1 & 0 \
@@ -317,13 +333,15 @@ Q =
 ,\quad
 K = Q,\quad
 V = Q
+
 $$
 
-#### 7.2 Head로 쪼개기
+### 6.2 Head로 쪼개기
 
 head1: 앞 2차원, head2: 뒤 2차원.
 
 $$
+
 Q_1 =
 \begin{bmatrix}
 1 & 0 \
@@ -335,13 +353,15 @@ Q_2 =
 1 & 0 \
 0 & 1
 \end{bmatrix}
-$$
-
-\(K_1, V_1, K_2, V_2\)도 동일하게 둔다.
-
-#### 7.3 Head1 score
 
 $$
+
+$K_1, V_1, K_2, V_2$도 동일하게 둔다.
+
+### 6.3 Head1 score
+
+$$
+
 Q_1 K_1^\top
 =
 \begin{bmatrix}
@@ -357,36 +377,42 @@ Q_1 K_1^\top
 1 & 0 \
 0 & 1
 \end{bmatrix}
-$$
-
-스케일: \(\sqrt{d_k} = \sqrt{2} \approx 1.414\)
 
 $$
+
+스케일: $\sqrt{d_k} = \sqrt{2} \approx 1.414$
+
+$$
+
 \frac{Q_1 K_1^\top}{\sqrt{2}}
 \approx
 \begin{bmatrix}
 0.707 & 0 \
 0 & 0.707
 \end{bmatrix}
+
 $$
 
 Causal Mask 적용(미래 차단): 위치 0은 위치 1을 못 봄.
 
 $$
+
 S_1
 \approx
 \begin{bmatrix}
 0.707 & -\infty \
 0 & 0.707
 \end{bmatrix}
+
 $$
 
 Softmax (행 단위):
 
-- 행0: \(-\infty\) 열은 확률 0 → \([1,\ 0]\)
-- 행1: \(\mathrm{softmax}([0,\ 0.707])\)
+- 행0: $-\infty$ 열은 확률 0 → $[1,\ 0]$
+- 행1: $\mathrm{softmax}([0,\ 0.707])$
 
 $$
+
 \mathrm{softmax}([0, 0.707])
 =
 \left[
@@ -395,18 +421,22 @@ $$
 \right]
 \approx
 [0.331,\ 0.669]
+
 $$
 
 $$
+
 A_1
 \approx
 \begin{bmatrix}
 1.000 & 0.000 \
 0.331 & 0.669
 \end{bmatrix}
+
 $$
 
 $$
+
 H_1 = A_1 V_1
 \approx
 \begin{bmatrix}
@@ -422,31 +452,35 @@ H_1 = A_1 V_1
 1.000 & 0.000 \
 0.331 & 0.669
 \end{bmatrix}
+
 $$
 
-#### 7.4 Head2
+### 6.4 Head2
 
-이 예에서는 \(Q_2=K_2=V_2=Q_1\)이므로 \(H_2 = H_1\)이다.  
+이 예에서는 $Q_2=K_2=V_2=Q_1$이므로 $H_2 = H_1$이다.  
 실전에서는 투영이 달라져 head마다 다른 패턴이 나온다.  
 지금은 **concat 절차**를 보는 것이 목적이다.
 
-#### 7.5 Concat
+### 6.5 Concat
 
 $$
+
 H = \mathrm{Concat}(H_1, H_2)
 \approx
 \begin{bmatrix}
 1.000 & 0.000 & 1.000 & 0.000 \
 0.331 & 0.669 & 0.331 & 0.669
 \end{bmatrix}
-$$
-
-#### 7.6 \(W^O\) 적용
-
-간단한 \(W^O = I_4\)(단위행렬)라면 출력이 곧 \(H\)다.  
-조금 더 의미 있게, \(W^O\)가 head 정보를 섞도록
 
 $$
+
+### 6.6 $W^O$ 적용
+
+간단한 $W^O = I_4$(단위행렬)라면 출력이 곧 $H$다.  
+조금 더 의미 있게, $W^O$가 head 정보를 섞도록
+
+$$
+
 W^O =
 \begin{bmatrix}
 0.5 & 0.5 & 0 & 0 \
@@ -454,18 +488,19 @@ W^O =
 0 & 0 & 0.5 & 0.5 \
 0 & 0 & 0.5 & 0.5
 \end{bmatrix}^\top
+
 $$
 
 처럼 둘 수도 있다. (정확한 값은 구현 예제에서 확인한다.)
 
 핵심 메시지:
 
-1. head 안에서 \((T, d_k)\) Attention이 돈다.
-2. concat으로 \((T, d_{\text{model}})\)이 복구된다.
-3. \(W^O\)가 최종 혼합을 담당한다.
-4. Causal Mask는 각 head의 \((T, T)\)에 동일하게 들어간다.
+1. head 안에서 $(T, d_k)$ Attention이 돈다.
+2. concat으로 $(T, d_{\text{model}})$이 복구된다.
+3. $W^O$가 최종 혼합을 담당한다.
+4. Causal Mask는 각 head의 $(T, T)$에 동일하게 들어간다.
 
-### 8. 코드로 구현하기 (NumPy 스케치)
+## 7. 코드로 구현하기 (NumPy 스케치)
 
 아래 코드는 교육용이다. 속도·수치 안정성·패딩 마스크까지 챙긴 상용 구현은 아니다.
 
@@ -482,11 +517,9 @@ def softmax(x: np.ndarray, axis: int = -1) -> np.ndarray:
     e = np.exp(x)
     return e / np.sum(e, axis=axis, keepdims=True)
 
-
 def causal_mask(T: int) -> np.ndarray:
     """True인 곳이 차단(미래). shape (T, T)."""
     return np.triu(np.ones((T, T), dtype=bool), k=1)
-
 
 def split_heads(x: np.ndarray, n_heads: int) -> np.ndarray:
     """(B, T, C) -> (B, H, T, D)."""
@@ -496,12 +529,10 @@ def split_heads(x: np.ndarray, n_heads: int) -> np.ndarray:
     # (B, T, H, D) -> (B, H, T, D)
     return x.reshape(B, T, n_heads, D).transpose(0, 2, 1, 3)
 
-
 def merge_heads(x: np.ndarray) -> np.ndarray:
     """(B, H, T, D) -> (B, T, H*D)."""
     B, H, T, D = x.shape
     return x.transpose(0, 2, 1, 3).reshape(B, T, H * D)
-
 
 def mha_forward(
     x: np.ndarray,
@@ -536,7 +567,6 @@ def mha_forward(
     out = concat @ Wo
     return out, attn
 
-
 if __name__ == "__main__":
     rng = np.random.default_rng(0)
     B, T, C, H = 1, 2, 4, 2
@@ -558,7 +588,7 @@ if __name__ == "__main__":
 - Causal이면 `j > i` 위치의 확률이 0에 가까워야 한다
 - `out.shape`가 입력과 같아야 Residual에 더하기 쉽다
 
-### 9. PyTorch로 구현하기
+## 8. PyTorch로 구현하기
 
 ```python
 # mha_torch.py
@@ -570,7 +600,6 @@ import math
 import torch
 import torch.nn as nn
 import torch.nn.functional as F
-
 
 class MultiHeadAttention(nn.Module):
     def __init__(self, d_model: int, n_heads: int, dropout: float = 0.0):
@@ -613,7 +642,6 @@ class MultiHeadAttention(nn.Module):
         concat = heads.transpose(1, 2).contiguous().view(B, T, C)
         return self.out_proj(concat)
 
-
 if __name__ == "__main__":
     mha = MultiHeadAttention(d_model=8, n_heads=4)
     x = torch.randn(2, 5, 8)
@@ -622,11 +650,11 @@ if __name__ == "__main__":
 ```
 
 `nn.MultiheadAttention`을 쓸 수도 있다.  
-다만 이 책은 **내부 reshape·mask·\(W^O\)**를 직접 보는 것이 목적이므로, 위 스케치를 먼저 이해한다.
+다만 이 책은 **내부 reshape·mask·$W^O$**를 직접 보는 것이 목적이므로, 위 스케치를 먼저 이해한다.
 
-### 10. 실제 LLM에서는 어떻게 사용하는가
+## 9. 실제 LLM에서는 어떻게 사용하는가
 
-#### 10.1 GPT류 (Decoder-only)
+### 9.1 GPT류 (Decoder-only)
 
 - Self-Attention + **Causal Mask**가 기본
 - 거의 항상 Multi-Head (또는 Multi-Query / Grouped-Query 같은 변형)
@@ -640,11 +668,11 @@ if __name__ == "__main__":
 
 - “head가 각각 역할을 분담한다”는 유용한 직관이지만, 모든 모델·모든 층에서 깔끔히 역할이 분리된다고 보장되지는 않는다.
 
-#### 10.2 변형을 미리 적어 두기
+### 9.2 변형을 미리 적어 두기
 
 이후에 MQA·GQA처럼 KV head를 공유하는 변형을 만난다. 지금은 MHA만 정확히 알고, 변형은 추론 최적화(5권)로 미룬다.
 
-#### 10.3 제48강으로 가는 다리
+### 9.3 제48강으로 가는 다리
 
 ```text
 제40강 Causal Mask
@@ -658,13 +686,13 @@ if __name__ == "__main__":
 
 오늘 만든 `MHA(x, causal=True)`는 제48강에서 **층의 심장**으로 다시 등장한다.
 
-### 11. 실습
+## 10. 실습
 
-1. \(d_{\text{model}}=8,\ h=2\)와 \(h=4\)로 같은 입력에 MHA를 돌려 `out.shape`가 동일한지 확인하라.
+1. $d_{\text{model}}=8,\ h=2$와 $h=4$로 같은 입력에 MHA를 돌려 `out.shape`가 동일한지 확인하라.
 2. Causal를 켠 뒤, `attn[0, 0]` 상삼각(미래)이 0에 가까운지 출력하라.
 3. `n_heads`가 `d_model`의 약수가 아닐 때 assert가 뜨는지 확인하라.
 
-### 12. 자주 하는 실수
+## 11. 자주 하는 실수
 
 1. **`d_model % n_heads != 0`**  
    head 차원이 정수가 되지 않는다. 설계 단계에서 약수로 맞춘다.
@@ -672,56 +700,55 @@ if __name__ == "__main__":
 2. **reshape 순서 오류**  
    `(B, T, H, D)`와 `(B, H, T, D)`를 혼동하면 Attention이 의미 없는 축에서 돈다.
 
-3. **스케일을 \(\sqrt{d_{\text{model}}}\)로 나누기**  
-   맞혀야 하는 값은 보통 \(\sqrt{d_k}\)이다.
+3. **스케일을 $\sqrt{d_{\text{model}}}$로 나누기**  
+   맞혀야 하는 값은 보통 $\sqrt{d_k}$이다.
 
 4. **Mask를 head마다 다르게 만들기**  
    표준 Causal LM에서는 공유한다.
 
-5. **Concat 후 \(W^O\) 생략**  
-   차원이 맞아도 표현 혼합이 약해진다. 구조상 \(W^O\)를 두는 편이 일반적이다.
+5. **Concat 후 $W^O$ 생략**  
+   차원이 맞아도 표현 혼합이 약해진다. 구조상 $W^O$를 두는 편이 일반적이다.
 
 6. **Single-Head 결과와 ‘평균’을 비교하려 하기**  
    Multi-Head는 단순 평균이 아니라 부분 공간 병렬 + 출력 투영이다.
 
-### 13. 핵심 정리
+## 12. 핵심 정리
 
-- Multi-Head Attention은 Self-Attention을 \(h\)개 부분 공간에서 병렬로 수행한다.
-- 보통 \(d_k = d_{\text{model}} / h\)로 두어 비용을 제어한다.
-- 각 head 출력을 concat한 뒤 \(W^O\)로 \(d_{\text{model}}\) 표현을 만든다.
+- Multi-Head Attention은 Self-Attention을 $h$개 부분 공간에서 병렬로 수행한다.
+- 보통 $d_k = d_{\text{model}} / h$로 두어 비용을 제어한다.
+- 각 head 출력을 concat한 뒤 $W^O$로 $d_{\text{model}}$ 표현을 만든다.
 - Causal Mask는 제40강과 동일한 “미래 차단” 규칙을 모든 head에 적용한다.
 - shape `(B, H, T, D)`를 안정적으로 다루는 것이 구현의 핵심이다.
 - LLM의 Transformer Block에서 MHA는 토큰 간 정보 혼합의 중심이다.
 
-### 14. 핵심 용어
+## 13. 핵심 용어
 
 | 용어 | 설명 |
 |---|---|
 | Multi-Head Attention (MHA) | 여러 Attention head를 병렬 수행 후 결합하는 메커니즘 |
-| Head | \(d_k\) 차원의 부분 Attention 경로 하나 |
-| \(d_{\text{model}}\) | 모델의 토큰 벡터 차원 |
-| \(d_k, d_v\) | head별 Query/Key, Value 차원 |
+| Head | $d_k$ 차원의 부분 Attention 경로 하나 |
+| $d_{\text{model}}$ | 모델의 토큰 벡터 차원 |
+| $d_k, d_v$ | head별 Query/Key, Value 차원 |
 | Concat | head 출력을 마지막 차원으로 이어 붙임 |
-| \(W^O\) (Output Projection) | concat 결과를 통합하는 선형층 |
+| $W^O$ (Output Projection) | concat 결과를 통합하는 선형층 |
 | Causal Mask | 미래 토큰을 보지 못하게 하는 마스크(제40강) |
 
-### 15. 복습 문제
+## 14. 연습 문제
+**문제 1.** $d_{\text{model}}=768$, $h=12$일 때 $d_k$는?
 
-**문제 1.** \(d_{\text{model}}=768\), \(h=12\)일 때 \(d_k\)는?
-
-**문제 2.** 왜 head를 늘리면서 \(d_k\)를 나누는가? 한 가지 이유를 쓰라.
+**문제 2.** 왜 head를 늘리면서 $d_k$를 나누는가? 한 가지 이유를 쓰라.
 
 **문제 3.** Causal Mask는 head마다 다른가, 같은가? (표준 Causal LM 기준)
 
 **문제 4.** `(B, T, C)`를 head로 나눌 때 자주 쓰는 4D shape는?
 
-**문제 5.** Concat만 하고 \(W^O\)가 없다면 무엇이 부족한가?
+**문제 5.** Concat만 하고 $W^O$가 없다면 무엇이 부족한가?
 
 **문제 6.** 제40강과 제41강의 관계를 한 문장으로 쓰라.
 
-#### 정답과 해설
+### 정답과 해설
 
-1. \(d_k = 768 / 12 = 64\).
+1. $d_k = 768 / 12 = 64$.
 
 2. 예: 전체 계산량/파라미터를 Single-Head와 비슷한 규모로 유지하면서, 여러 부분 공간의 관계를 학습하기 위해서.
 
@@ -731,9 +758,9 @@ if __name__ == "__main__":
 
 5. head별 정보를 하나의 통합 표현으로 섞는 학습 가능한 혼합이 부족하다. Residual에 들어가기 전 표현을 재구성하는 역할도 약해진다.
 
-6. 제40강이 만든 미래 차단 규칙을, 제41강이 \(h\)개 head에 동시에 적용하고 concat+\(W^O\)로 합친다.
+6. 제40강이 만든 미래 차단 규칙을, 제41강이 $h$개 head에 동시에 적용하고 concat+$W^O$로 합친다.
 
-### 16. 다음 강의와 연결
+## 15. 다음 강의와 연결
 
 MHA는 “토큰 사이 관계를 여러 눈으로 본다”.  
 그런데 아직 **토큰의 순서**를 모델이 본질적으로 알지는 못한다. Attention 자체는 집합에 가까운 연산이라, 위치 정보가 빠지면 “누가 먼저인지”가 약해진다.

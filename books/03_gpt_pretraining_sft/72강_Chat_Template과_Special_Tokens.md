@@ -1,20 +1,14 @@
-# 3권. GPT Pretraining과 SFT
+# 제72강. Chat Template과 Special Tokens
 
-## 제72강. Chat Template과 Special Tokens
+> **학습 목표**
+> - Chat template이 messages → 단일 문자열/토큰 시퀀스로 가는 규칙임을 설명하기
+> - 역할·경계에 쓰이는 special tokens의 역할 (`bos`/`eos`/role 마커 등)
+> - `apply_chat_template` 개념(학습·추론 동일 적용)을 코드로 스케치하기
+> - train/infer 템플릿 불일치가 Instruction following 실패로 이어지는 이유
+> - 다음 제73강 LoRA로 넘어가기 전, SFT 입력 파이프라인의 마지막 퍼즐 맞추기
 
-### 1. 이번 강의에서 배울 것
-
-제70강에서 messages 형식을, 제71강에서 응답 마스크 SFT를 다뤘다. 이번 강의는 그 둘을 잇는 **렌더링 계약** — **Chat Template(채팅 템플릿)** 과 **Special Tokens(특수 토큰)** — 을 고정한다.
-
-이 강의를 마치면 다음을 말할 수 있어야 한다.
-
-- Chat template이 messages → 단일 문자열/토큰 시퀀스로 가는 규칙임을 설명하기
-- 역할·경계에 쓰이는 special tokens의 역할 (`bos`/`eos`/role 마커 등)
-- `apply_chat_template` 개념(학습·추론 동일 적용)을 코드로 스케치하기
-- **train/infer 템플릿 불일치**가 Instruction following 실패로 이어지는 이유
-- 다음 제73강 LoRA로 넘어가기 전, SFT 입력 파이프라인의 마지막 퍼즐 맞추기
-
-### 2. 왜 이것을 배우는가
+---
+## 1. 왜 이것을 배우는가
 
 같은 messages라도 사람이 붙이는 문자열이 달라지면 **다른 데이터**다.
 
@@ -42,16 +36,16 @@ Assistant: 안녕하세요
 
 Chat template은 이 함정을 막기 위한 **단일 렌더러**다.
 
-### 3. 먼저 알아야 할 개념
+## 2. 먼저 알아야 할 개념
 
 - Special tokens 기초 (2권 제30강)
 - messages 스키마 (제70강)
 - SFT 프롬프트 마스크 (제71강)
 - Tokenizer: `encode` / `decode`, vocab 확장
 
-### 4. 핵심 개념 설명
+## 3. 핵심 개념 설명
 
-#### 4.1 Chat Template이란?
+### 3.1 Chat Template이란?
 
 **Chat Template**은 `messages`(역할·내용 리스트)를 모델이 기대하는 **단일 프롬프트 문자열 또는 토큰 시퀀스**로 변환하는 규칙이다. 보통 다음을 포함한다.
 
@@ -67,7 +61,7 @@ apply_chat_template(messages, add_generation_prompt=False|True)
   → string or token ids
 ```
 
-#### 4.2 Special Tokens이란?
+### 3.2 Special Tokens이란?
 
 **Special Tokens**는 일반 텍스트 단어가 아니라 **제어·경계**를 위해 vocab에 넣어 둔 토큰이다. 예:
 
@@ -89,7 +83,7 @@ Special token을 vocab에 추가하면:
 3. (필요 시) LM head 행 추가
 4. 템플릿 문자열에 그 심볼만 사용
 
-#### 4.3 `apply_chat_template` 개념
+### 3.3 `apply_chat_template` 개념
 
 실무(예: Hugging Face Tokenizer)에서는 대략:
 
@@ -114,7 +108,7 @@ ids = tokenizer.apply_chat_template(
 
 그 다음 제71강처럼 assistant 구간만 labels로 남긴다. 일부 도구는 템플릿과 함께 **마스킹 헬퍼**를 제공한다. 원리를 모르면 헬퍼도 디버깅하기 어렵다.
 
-#### 4.4 Generation prompt
+### 3.4 Generation prompt
 
 추론:
 
@@ -138,7 +132,7 @@ messages = [
 
 이 한 플래그를 학습/추론에 섞어 쓰면 경계가 밀린다.
 
-#### 4.5 Train / Infer 일관성
+### 3.5 Train / Infer 일관성
 
 체크리스트:
 
@@ -152,13 +146,13 @@ messages = [
 
 “프롬프트를 예쁘게” 수동 수정하는 습관이 불일치의 주범이다.
 
-### 5. 직관적으로 이해하기
+## 4. 직관적으로 이해하기
 
 Chat template은 **연극 대본의 서식 파일(CSS가 아니라 각본 서식)** 이다. Special tokens는 **막간을 알리는 방울 소리**다.
 
 배우(모델)는 방울 소리 다음에 대사가 나온다고 학습했다. 공연 날 방울을 다른 악기 소리로 바꾸면, 대사를 언제 시작할지 모른다.
 
-### 6. 작은 템플릿 예제
+## 5. 작은 템플릿 예제
 
 미니 교재용 초간단 템플릿(교육용; 실제 대형 모델 템플릿과는 이름이 다를 수 있음):
 
@@ -189,7 +183,7 @@ Chat template은 **연극 대본의 서식 파일(CSS가 아니라 각본 서식
 
 여기서 생성을 시작한다.
 
-### 7. 코드로 구현하기 — 미니 `apply_chat_template`
+## 6. 코드로 구현하기 — 미니 `apply_chat_template`
 
 Jinja 없이 동작하는 교육용 구현:
 
@@ -202,7 +196,6 @@ from __future__ import annotations
 from typing import Literal
 
 Role = Literal["system", "user", "assistant"]
-
 
 def apply_chat_template(
     messages: list[dict],
@@ -218,7 +211,6 @@ def apply_chat_template(
     if add_generation_prompt:
         parts.append("<|assistant|>\n")
     return "".join(parts)
-
 
 def find_assistant_spans(text: str) -> list[tuple[int, int]]:
     """문자 오프셋 예시. 실전 마스크는 토큰 인덱스에서 하라."""
@@ -237,7 +229,6 @@ def find_assistant_spans(text: str) -> list[tuple[int, int]]:
         spans.append((content_s, e))
         pos = e + len(end_tag)
     return spans
-
 
 if __name__ == "__main__":
     msgs = [
@@ -270,7 +261,7 @@ spans [(..., ...)]
 
 문자 오프셋은 직관용이다. 제71강 마스크는 **같은 템플릿으로 만든 뒤 토큰화**한 ID 배열에서 잡는 것이 정석이다.
 
-### 8. Special tokens를 tokenizer에 등록하는 스케치
+## 7. Special tokens를 tokenizer에 등록하는 스케치
 
 ```python
 # register_specials.py
@@ -295,7 +286,7 @@ SPECIALS = {
 - 이미 템플릿이 있는 공개 chat 모델을 쓸 때는 **임의로 심볼을 바꿔 덮지 말 것**
 - 미니 GPT(제68강 char tokenizer)에서는 문자 단위라 `<|`가 여러 토큰으로 쪼개질 수 있다. 교육용으로는 **역할 마커를 단일 문자 제어코드로 두거나**, 단어 단위 vocab에 마커를 통째로 넣는 편이 낫다.
 
-### 9. 마스크와 템플릿의 결합
+## 8. 마스크와 템플릿의 결합
 
 권장 파이프라인:
 
@@ -320,7 +311,7 @@ messages (정답 없음)
 
 이 두 경로가 **같은 `apply_chat_template` 구현**을 import해야 한다. train 스크립트에 문자열을 하드코딩하고 generate에 다른 하드코딩을 두지 말 것.
 
-### 10. 실제 LLM에서는 어떻게 사용하는가
+## 9. 실제 LLM에서는 어떻게 사용하는가
 
 - 모델 카드에 `chat_template`(종종 Jinja)가 배포되는 경우가 많다.
 - 토크나이저 설정과 가중치가 한 쌍이다. 토크나이저만 다른 버전으로 바꾸면 특수 토큰 ID가 어긋난다.
@@ -329,25 +320,25 @@ messages (정답 없음)
 
 특정 상용 모델의 숨은 템플릿을 추측해 “공식”처럼 적지 않는다. 사용 중인 체크포인트의 문서를 따른다.
 
-### 11. 실습
+## 10. 실습
 
-#### 실습 1 — Train/Infer 문자열 비교
+### 실습 1 — Train/Infer 문자열 비교
 
 §7 코드로 train/infer 문자열을 출력하고, infer가 train의 접두(정답 제외)와 일치하는지 확인하라.
 
-#### 실습 2 — 불일치 실험 (의도적)
+### 실습 2 — 불일치 실험 (의도적)
 
 학습은 `<|user|>` 템플릿, 추론은 `User:` 평문을 써  generat ion 품질이 어떻게 깨지는지 미니 모델로 관찰하라. (제69강 개념의 실험 버전)
 
-#### 실습 3 — Stop tokens
+### 실습 3 — Stop tokens
 
 생성 시 `<|end|>` 또는 EOS에서 멈추도록 stop 규칙을 추가하라. 멈추지 않으면 다음 user 마커를 환각할 수 있다.
 
-#### 실습 4 — labels 디코드
+### 실습 4 — labels 디코드
 
 마스크 후 `labels != -100`인 ID만 decode해 “모델이 외워야 할 문자열”이 응답 내용과 일치하는지 눈으로 확인하라.
 
-### 12. 자주 하는 실수
+## 11. 자주 하는 실수
 
 1. **학습·추론 템플릿 분기 구현**  
    복사-수정 순간 불일치가 생긴다. 함수 하나로.
@@ -364,7 +355,7 @@ messages (정답 없음)
 5. **system을 추론에만 추가**  
    학습 분포에 없던 전역 규칙이 갑자기 나타나면 행동이 불안정해질 수 있다.
 
-### 13. 핵심 정리
+## 12. 핵심 정리
 
 - Chat template은 messages를 모델 입력 시퀀스로 만드는 **단일 계약**이다.
 - Special tokens는 역할·경계·종료를 vocab에 고정한다.
@@ -372,7 +363,7 @@ messages (정답 없음)
 - SFT 마스크는 템플릿이 만든 토큰 시퀀스 위에서만 정확하다.
 - Train/Infer 일관성이 Instruction following의 전제다.
 
-### 14. 핵심 용어
+## 13. 핵심 용어
 
 | 용어 | 의미 |
 |---|---|
@@ -384,53 +375,52 @@ messages (정답 없음)
 | Stop token | 생성 종료를 유발하는 토큰 |
 | Train/infer consistency | 학습과 추론의 템플릿·토크나이저 일치 |
 
-### 15. 복습 문제
-
-#### 문제 1 (개념)
+## 14. 연습 문제
+### 문제 1 (개념)
 
 Chat template이 필요한 이유를 “토큰 분포” 관점에서 한 문장으로.
 
-#### 문제 2 (API)
+### 문제 2 (API)
 
 `add_generation_prompt=True`를 쓰는 시점과 `False`를 쓰는 시점을 구분하시오.
 
-#### 문제 3 (특수 토큰)
+### 문제 3 (특수 토큰)
 
 Role marker를 special로 등록하지 않고 일반 BPE에 맡기면 어떤 문제가 생기는가?
 
-#### 문제 4 (디버깅)
+### 문제 4 (디버깅)
 
 모델이 응답 끝에 곧바로 `<|user|>`를 생성하기 시작할 때, 템플릿/stop 측면에서 의할 후보 두 가지를 쓰시오.
 
-#### 문제 5 (연결)
+### 문제 5 (연결)
 
 제71강 마스크, 이번 템플릿, 다음 제73강 LoRA는 SFT 파이프라인에서 각각 어떤 층을 담당하는가?
 
 ---
 
-### 정답 및 해설
+## 정답 및 해설
 
-#### 문제 1
+### 문제 1
 
 모델은 의미가 아니라 렌더된 토큰 시퀀스의 분포를 배우므로, messages를 항상 같은 규칙으로 토큰열에 옮겨야 학습과 추론이 같은 분포에 있기 때문이다.
 
-#### 문제 2
+### 문제 2
 
 True: 정답 assistant가 없는 추론 입력에서 assistant 헤더까지 열어 생성을 시작할 때. False: 정답이 포함된 학습 시퀀스를 만들 때.
 
-#### 문제 3
+### 문제 3
 
 마커가 여러 서브워드로 쪼개져 역할 경계가 불안정해지고, 마스크·stop·해석이 어려워진다.
 
-#### 문제 4
+### 문제 4
 
 예: (1) 학습 데이터에서 메시지 종료 토큰을 충분히/일관되게 쓰지 않음 (2) 생성 시 end/eos stop 미설정 (3) generation prompt/개행 불일치.
 
-#### 문제 5
+### 문제 5
 
 마스크=손실 지지 집합, 템플릿=입력 렌더 계약, LoRA=전체 가중치 대신 저랭크 어댑터로 효율적 미세조정.
 
-### 16. 다음 강의와 연결
+## 15. 다음 강의와 연결
 
 이제 SFT의 **데이터 형식 → 손실 마스크 → 템플릿/특수 토큰**이 한 줄로 연결되었다.
 

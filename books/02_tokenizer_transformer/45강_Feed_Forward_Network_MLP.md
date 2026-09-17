@@ -1,29 +1,22 @@
-# 2권. Tokenizer와 Transformer
+# 제45강. Feed-Forward Network (MLP)
 
-## 제45강. Feed-Forward Network (MLP)
+> **학습 목표**
+> - FFN이 두 개의 선형층과 활성화로 이루어짐을 수식으로 쓰기
+> - Expansion ratio(확장 비율)와 $d_{\text{ff}}$의 의미
+> - ReLU / GeLU / SwiGLU의 위치(사실과 설명 구분)
+> - FFN이 시퀀스 길이가 아니라 특징 차원에서 동작한다는 점
+> - Attention과 FFN의 역할 분담 직관
+> - 제46강 Block 조립에 바로 넣을 수 있는 모듈 스케치
 
-### 1. 이번 강의에서 배울 것
-
-Multi-Head Attention은 **토큰 사이**에서 정보를 섞는다.  
-Transformer Block의 다른 절반인 **Feed-Forward Network(FFN)**, 곧 위치별 **MLP**는 **토큰 안**에서 비선형 변환을 수행한다.
-
-이 강의를 마치면 다음을 말할 수 있어야 한다.
-
-- FFN이 두 개의 선형층과 활성화로 이루어짐을 수식으로 쓰기
-- Expansion ratio(확장 비율)와 \(d_{\text{ff}}\)의 의미
-- ReLU / GeLU / SwiGLU의 위치(사실과 설명 구분)
-- FFN이 시퀀스 길이가 아니라 특징 차원에서 동작한다는 점
-- Attention과 FFN의 역할 분담 직관
-- 제46강 Block 조립에 바로 넣을 수 있는 모듈 스케치
-
-### 2. 왜 이것을 배우는가
+---
+## 1. 왜 이것을 배우는가
 
 Attention만 있으면 “누구와 대화할지”는 정해져도, “들은 내용을 얼마나 깊게 재표현할지”가 약하다.  
 FFN은 각 위치의 벡터를 더 넓은 은닉 공간으로 보냈다가 다시 접으며 **비선형 특징 변환**을 담당한다.
 
 파라미터 관점에서도 중요하다.  
 많은 Transformer에서 **FFN 파라미터가 Attention보다 크다**.  
-\(d_{\text{ff}} \approx 4\, d_{\text{model}}\)이면 선형층 두 장의 무게가 상당하다.
+$d_{\text{ff}} \approx 4\, d_{\text{model}}$이면 선형층 두 장의 무게가 상당하다.
 
 LLM 연결:
 
@@ -35,29 +28,33 @@ Block:
 
 제48강 Causal LM의 층 하나하나는 결국 이 두 경로의 반복이다.
 
-### 3. 먼저 알아야 할 개념
+## 2. 먼저 알아야 할 개념
 
-- 선형층 \(y = xW + b\) (제15~16강)
+- 선형층 $y = xW + b$ (제15~16강)
 - 활성화 함수(ReLU 등)
 - Residual / Pre-LN 패턴 (제44강)
 - shape `(B, T, d_model)` 유지의 필요성
 
-### 4. 핵심 개념 설명
+## 3. 핵심 개념 설명
 
-#### 4.1 기본 2층 FFN
+### 3.1 기본 2층 FFN
 
 원 논문 Transformer의 FFN:
 
 $$
+
 \mathrm{FFN}(x) = W_2\,\sigma(W_1 x + b_1) + b_2
-$$
-
-시퀀스 표기로는 각 위치 \(t\)에 독립적으로
 
 $$
+
+시퀀스 표기로는 각 위치 $t$에 독립적으로
+
+$$
+
 \mathrm{FFN}(x_t)
 =
 \max(0,\ x_t W_1 + b_1)\, W_2 + b_2
+
 $$
 
 (활성화가 ReLU인 경우).
@@ -69,20 +66,22 @@ shape:
 - 출력: `(..., d_model)`
 
 토큰 사이 혼합 없음.  
-같은 \(W_1, W_2\)가 모든 위치에 **공유**된다.  
+같은 $W_1, W_2$가 모든 위치에 **공유**된다.  
 그래서 “position-wise FFN”이라고 부른다.
 
-#### 4.2 Expansion Ratio
+### 3.2 Expansion Ratio
 
 **Expansion ratio**는 은닉 확장을 얼마나 할지다.
 
 $$
+
 d_{\text{ff}} = \mathrm{ratio} \times d_{\text{model}}
+
 $$
 
 고전적 Transformer:
 
-- ratio \(= 4\) → \(d_{\text{model}}=512\)이면 \(d_{\text{ff}}=2048\)
+- ratio $= 4$ → $d_{\text{model}}=512$이면 $d_{\text{ff}}=2048$
 
 현대 LLM:
 
@@ -94,14 +93,16 @@ $$
 
 - 한 겹 선형만으로는 표현력이 부족하다.
 - 넓은 은닉 + 비선형이 특징을 분리·재결합하기 쉽다.
-- 다시 \(d_{\text{model}}\)로 축소해 Residual에 더한다.
+- 다시 $d_{\text{model}}$로 축소해 Residual에 더한다.
 
-#### 4.3 활성화 함수들
+### 3.3 활성화 함수들
 
 **ReLU**
 
 $$
+
 \mathrm{ReLU}(z) = \max(0, z)
+
 $$
 
 원 논문 FFN의 기본.
@@ -111,10 +112,12 @@ $$
 대략:
 
 $$
+
 \mathrm{GeLU}(z) \approx z \cdot \Phi(z)
+
 $$
 
-\(\Phi\)는 표준정규 CDF.  
+$\Phi$는 표준정규 CDF.  
 GPT-2 등에서 널리 쓰였다.  
 ReLU보다 부드러운 게이트처럼 동작한다.
 
@@ -123,13 +126,15 @@ ReLU보다 부드러운 게이트처럼 동작한다.
 GLU(Gated Linear Unit) 계열. 단순화된 형태:
 
 $$
+
 \mathrm{SwiGLU}(x)
 =
 \big(\mathrm{Swish}(x W_{gate}) \odot (x W_{up})\big) W_{down}
+
 $$
 
-- \(\odot\): 요소곱
-- Swish/SiLU: \(z \cdot \sigma(z)\)
+- $\odot$: 요소곱
+- Swish/SiLU: $z \cdot \sigma(z)$
 
 사실:
 
@@ -142,7 +147,7 @@ $$
 
 이 책의 제46강 기본 Block은 **교육용으로 GeLU 2층 FFN**을 쓰고, SwiGLU는 “현대 LLM 옵션”으로 표시한다.
 
-#### 4.4 Attention vs FFN
+### 3.4 Attention vs FFN
 
 | | Attention | FFN |
 |---|---|---|
@@ -154,63 +159,72 @@ $$
 둘 다 빠지면 Transformer가 아니다.  
 제46강에서 한 블록 안에 나란히 놓는다.
 
-### 5. 직관적으로 이해하기
+## 4. 직관적으로 이해하기
 
 회의로 비유하면:
 
 - Attention: 누가 누구에게 말할 차례인지, 무엇을 들을지
 - FFN: 각 참가자가 들은 내용을 **혼자 노트에 깊게 정리**
 
-노트가 충분히 넓어야( \(d_{\text{ff}}\) ) 복잡한 정리가 가능하다.  
-정리 후 다시 책상 크기( \(d_{\text{model}}\) )로 접어 Residual 서랍에 넣는다.
+노트가 충분히 넓어야( $d_{\text{ff}}$ ) 복잡한 정리가 가능하다.  
+정리 후 다시 책상 크기( $d_{\text{model}}$ )로 접어 Residual 서랍에 넣는다.
 
-### 6. 수학적으로 이해하기
+## 5. 수학적으로 이해하기
 
-#### 6.1 배치 행렬형
+### 5.1 배치 행렬형
 
-\(X \in \mathbb{R}^{B \times T \times d_{\text{model}}}\)
+$X \in \mathbb{R}^{B \times T \times d_{\text{model}}}$
 
 $$
+
 H = \sigma(X W_1 + b_1) \in \mathbb{R}^{B \times T \times d_{\text{ff}}}
+
 $$
 
 $$
+
 Y = H W_2 + b_2 \in \mathbb{R}^{B \times T \times d_{\text{model}}}
+
 $$
 
-#### 6.2 파라미터 수 (편향 무시)
+### 5.2 파라미터 수 (편향 무시)
 
 기본 FFN:
 
 $$
+
 |\theta|
 \approx
 d_{\text{model}} \cdot d_{\text{ff}} + d_{\text{ff}} \cdot d_{\text{model}}
 =
 2 d_{\text{model}} d_{\text{ff}}
+
 $$
 
-ratio 4이면 \(8\, d_{\text{model}}^2\) 규모.
+ratio 4이면 $8\, d_{\text{model}}^2$ 규모.
 
-MHA의 \(W^Q,W^K,W^V,W^O\)가 대략 \(4\, d_{\text{model}}^2\)이므로,  
+MHA의 $W^Q,W^K,W^V,W^O$가 대략 $4\, d_{\text{model}}^2$이므로,  
 **FFN이 더 무거운** 경우가 많다.
 
-#### 6.3 Pre-LN에서의 위치
+### 5.3 Pre-LN에서의 위치
 
 $$
+
 x \leftarrow x + \mathrm{FFN}(\mathrm{LN}(x))
+
 $$
 
-Attention residual 이후의 \(x\)를 받아 한 번 더 가공한다.
+Attention residual 이후의 $x$를 받아 한 번 더 가공한다.
 
-### 7. 작은 숫자로 직접 계산하기
+## 6. 작은 숫자로 직접 계산하기
 
 설정:
 
-- \(d_{\text{model}}=2\), \(d_{\text{ff}}=4\), ReLU
-- 한 토큰 \(x = [1,\ 2]\)
+- $d_{\text{model}}=2$, $d_{\text{ff}}=4$, ReLU
+- 한 토큰 $x = [1,\ 2]$
 
 $$
+
 W_1 =
 \begin{bmatrix}
 1 & 0 & -1 & 2 \\
@@ -218,19 +232,25 @@ W_1 =
 \end{bmatrix}
 ,\quad
 b_1 = [0,0,0,0]
-$$
-
-(여기서 \(W_1\)는 \(d_{\text{model}} \times d_{\text{ff}}\)로 두었다.)
 
 $$
+
+(여기서 $W_1$는 $d_{\text{model}} \times d_{\text{ff}}$로 두었다.)
+
+$$
+
 x W_1 = [1,\ 2,\ 1,\ 0]
+
 $$
 
 $$
+
 \mathrm{ReLU}(x W_1) = [1,\ 2,\ 1,\ 0]
+
 $$
 
 $$
+
 W_2 =
 \begin{bmatrix}
 1 & 0 \\
@@ -240,17 +260,20 @@ W_2 =
 \end{bmatrix}
 ,\quad
 b_2 = [0,0]
+
 $$
 
 $$
+
 \mathrm{FFN}(x) = [1,\ 2,\ 1,\ 0] W_2 = [2,\ 2]
+
 $$
 
-Residual이면 \(x + \mathrm{FFN}(x) = [3,\ 4]\).
+Residual이면 $x + \mathrm{FFN}(x) = [3,\ 4]$.
 
 확장했다가(4차원) 다시 접어(2차원) 수정량을 만든 것이다.
 
-### 8. 코드로 구현하기
+## 7. 코드로 구현하기
 
 ```python
 # ffn.py
@@ -259,7 +282,6 @@ from __future__ import annotations
 import torch
 import torch.nn as nn
 import torch.nn.functional as F
-
 
 class FeedForward(nn.Module):
     """Position-wise FFN: Linear → GeLU → Linear."""
@@ -278,7 +300,6 @@ class FeedForward(nn.Module):
         x = self.fc2(x)
         return x
 
-
 class SwiGLUFFN(nn.Module):
     """현대 LLM에서 흔한 게이트형 FFN의 교육용 스케치."""
 
@@ -293,7 +314,6 @@ class SwiGLUFFN(nn.Module):
 
     def forward(self, x: torch.Tensor) -> torch.Tensor:
         return self.w_down(F.silu(self.w_gate(x)) * self.w_up(x))
-
 
 if __name__ == "__main__":
     ff = FeedForward(8, 32)
@@ -312,7 +332,7 @@ def ffn_relu(x, W1, b1, W2, b2):
     return h @ W2 + b2
 ```
 
-### 9. 실제 LLM에서는 어떻게 사용하는가
+## 8. 실제 LLM에서는 어떻게 사용하는가
 
 사실:
 
@@ -327,15 +347,15 @@ def ffn_relu(x, W1, b1, W2, b2):
 
 제48강에서 블록을 셀 때, 파라미터의 상당 부분이 이 MLP에 있음을 기억하면 메모리·연산 예상이 쉬워진다.
 
-### 10. 실습
+## 9. 실습
 
 1. `FeedForward(16)`에 랜덤 입력을 넣어 shape 보존을 확인하라.
-2. \(d_{\text{ff}}=4 d_{\text{model}}\)일 때 대략 파라미터 수를 계산하고 `sum(p.numel())`과 비교하라.
+2. $d_{\text{ff}}=4 d_{\text{model}}$일 때 대략 파라미터 수를 계산하고 `sum(p.numel())`과 비교하라.
 3. ReLU/GeLU를 바꿔 같은 입력의 출력 차이를 관찰하라.
 4. SwiGLU 스케치의 중간 활성화가 음수도 통과하는지(SiLU 특성) 한 원소로 확인하라.
 5. Pre-LN residual 래퍼에 FFN을 넣어 `x + ffn(ln(x))`를 실행하라.
 
-### 11. 자주 하는 실수
+## 10. 자주 하는 실수
 
 1. **FFN을 시퀀스 축으로 섞으려 하기**  
    기본 FFN은 위치별 독립이다.
@@ -352,30 +372,29 @@ def ffn_relu(x, W1, b1, W2, b2):
 5. **dropout 위치 무시**  
    구현마다 다르니 하나로 고정한다.
 
-### 12. 핵심 정리
+## 11. 핵심 정리
 
 - FFN은 position-wise 2층 MLP로, 토큰 내 비선형 변환을 담당한다.
-- 보통 \(d_{\text{model}} \to d_{\text{ff}} \to d_{\text{model}}\)이며 확장비 4가 고전 기본값이다.
+- 보통 $d_{\text{model}} \to d_{\text{ff}} \to d_{\text{model}}$이며 확장비 4가 고전 기본값이다.
 - 활성화는 ReLU → GeLU → SwiGLU로 세대가 진화해 왔다.
 - Attention(통신)과 FFN(계산)이 한 블록의 양 날개다.
 - 제46강에서 Norm/Residual과 함께 조립한다.
 
-### 13. 핵심 용어
+## 12. 핵심 용어
 
 | 용어 | 설명 |
 |---|---|
 | FFN / MLP | Transformer의 위치별 피드포워드 네트워크 |
-| \(d_{\text{ff}}\) | FFN 은닉 차원 |
-| Expansion Ratio | \(d_{\text{ff}} / d_{\text{model}}\) |
+| $d_{\text{ff}}$ | FFN 은닉 차원 |
+| Expansion Ratio | $d_{\text{ff}} / d_{\text{model}}$ |
 | GeLU | GPT류에서 흔한 부드러운 활성화 |
 | SwiGLU | 게이트형 FFN. 현대 LLM에 흔함 |
 | Position-wise | 모든 위치에 같은 가중치를 독립 적용 |
 
-### 14. 복습 문제
-
+## 13. 연습 문제
 **문제 1.** 기본 FFN의 입출력 차원을 쓰라.
 
-**문제 2.** \(d_{\text{model}}=512\), ratio=4일 때 \(d_{\text{ff}}\)는?
+**문제 2.** $d_{\text{model}}=512$, ratio=4일 때 $d_{\text{ff}}$는?
 
 **문제 3.** FFN이 토큰 사이 정보를 직접 섞는가?
 
@@ -383,9 +402,9 @@ def ffn_relu(x, W1, b1, W2, b2):
 
 **문제 5.** Attention과 FFN의 역할 분담을 한 문장으로.
 
-#### 정답과 해설
+### 정답과 해설
 
-1. \(d_{\text{model}} \to d_{\text{ff}} \to d_{\text{model}}\).
+1. $d_{\text{model}} \to d_{\text{ff}} \to d_{\text{model}}$.
 
 2. 2048.
 
@@ -395,7 +414,7 @@ def ffn_relu(x, W1, b1, W2, b2):
 
 5. Attention이 토큰 간 정보를 모으고, FFN이 각 토큰 표현을 비선형으로 가공한다.
 
-### 15. 다음 강의와 연결
+## 14. 다음 강의와 연결
 
 부품이 모두 모였다.
 

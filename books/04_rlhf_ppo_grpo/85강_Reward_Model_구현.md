@@ -1,24 +1,14 @@
-# 4권. RLHF · PPO · GRPO
+# 제85강. Reward Model 구현
 
-## 제85강. Reward Model 구현
+> **학습 목표**
+> - RM을 “분류기처럼 학습하지만 추론 때는 스칼라 스코어러”로 설명하기
+> - Bradley-Terry 모델과 pairwise logistic 손실을 유도·계산하기
+> - Preference 배치로 RM을 한 스텝 학습하는 미니 구현 쓰기
+> - Chosen/Rejected 점수 차이가 커지도록 학습됨을 숫자로 확인하기
+> - 제86강 RLHF에서 RM 점수가 정책 업데이트에 어떻게 쓰이는지 예고하기
 
-### 1. 이번 강의에서 배울 것
-
-제84강에서 Preference Dataset \((x, y_w, y_l)\)을 정의했다. 이번 강의는 그 데이터로 **Reward Model(RM, 보상 모델)**을 학습한다. RM의 역할은 단순하다.
-
-> 프롬프트와 응답을 받아 **스칼라 점수** \(r_\phi(x,y)\)를 출력한다.
-
-이 강의를 마치면 다음을 할 수 있어야 한다.
-
-- RM을 “분류기처럼 학습하지만 추론 때는 스칼라 스코어러”로 설명하기
-- Bradley-Terry 모델과 pairwise logistic 손실을 유도·계산하기
-- Preference 배치로 RM을 한 스텝 학습하는 미니 구현 쓰기
-- Chosen/Rejected 점수 차이가 커지도록 학습됨을 숫자로 확인하기
-- 제86강 RLHF에서 RM 점수가 정책 업데이트에 어떻게 쓰이는지 예고하기
-
-제87·88강의 PPO는 “보상이 이미 있다”는 전제 위에 선다. 그 보상을 LLM에서 만드는 표준 방법이 바로 이 강의의 RM이다.
-
-### 2. 왜 이것을 배우는가
+---
+## 1. 왜 이것을 배우는가
 
 강화학습 정책 업데이트는 매 샘플에 **보상 숫자**가 필요하다. 사람은 매번 점수를 줄 수 없다.
 
@@ -42,7 +32,7 @@ Preference는 상대적이고 희소하다. RM은 그 신호를 **밀도 있는 
 
 RM이 잘못되면 PPO는 **잘못된 취향**을 열심히 최적화한다. “최적화 알고리즘이 틀렸다”기보다 “목표가 틀렸다”가 된다.
 
-### 3. 먼저 알아야 할 개념
+## 2. 먼저 알아야 할 개념
 
 - Preference Dataset · chosen/rejected (제84강)
 - Sigmoid · logistic 손실 (1권 분류 감각, 2권 Softmax와 연결)
@@ -56,11 +46,11 @@ RM이 잘못되면 PPO는 **잘못된 취향**을 열심히 최적화한다. “
 - KL 페널티 계수 β의 실무 튜닝 (제89강)
 - DPO가 RM을 명시적으로 안 만드는 이유 (제90강)
 
-### 4. 핵심 개념 설명
+## 3. 핵심 개념 설명
 
-#### 4.1 Reward Model이란?
+### 3.1 Reward Model이란?
 
-**Reward Model**은 입력 \((x,y)\)에 대해 실수 \(r_\phi(x,y)\in\mathbb{R}\)를 내는 신경망이다. 기호 \(\phi\)는 RM 파라미터.
+**Reward Model**은 입력 $(x,y)$에 대해 실수 $r_\phi(x,y)\in\mathbb{R}$를 내는 신경망이다. 기호 $\phi$는 RM 파라미터.
 
 전형적 구조:
 
@@ -78,11 +68,11 @@ RM이 잘못되면 PPO는 **잘못된 취향**을 열심히 최적화한다. “
 |---|---|
 | 학습 | 쌍 비교를 맞히는 **분류 문제**에 가깝다 |
 | 추론 | 클래스 확률이 아니라 **스칼라 점수**를 쓴다 |
-| 출력 | “chosen 클래스”가 아니라 \(r(x,y)\) |
+| 출력 | “chosen 클래스”가 아니라 $r(x,y)$ |
 
 즉, 학습 목표는 pairwise preference likelihood이고, 배포·사용 형태는 scorer다.
 
-#### 4.2 왜 스칼라인가?
+### 3.2 왜 스칼라인가?
 
 PPO·REINFORCE 계열은 궤적(또는 응답)에 대해 스칼라 보상을 가정하는 경우가 많다. LLM에서는 보통 **응답 전체**에 하나의 보상(outcome reward)을 준다.
 
@@ -93,7 +83,7 @@ PPO·REINFORCE 계열은 궤적(또는 응답)에 대해 스칼라 보상을 가
 
 스칼라 하나라는 점은 단순하지만, “어느 문장이 나빴는지”를 직접 말해주지는 않는다. 그 신용 할당은 Advantage/GAE가 일부 담당한다(제83·87강).
 
-#### 4.3 Bradley-Terry 선호 모델
+### 3.3 Bradley-Terry 선호 모델
 
 제84강에서 예고한 대로, 점수 차이가 승 확률을 결정한다고 본다.
 
@@ -103,7 +93,7 @@ P_\phi(y_w \succ y_l \mid x)
 \sigma\big(r_\phi(x,y_w)-r_\phi(x,y_l)\big)
 \]
 
-\(\sigma(z)=1/(1+e^{-z})\).
+$\sigma(z)=1/(1+e^{-z})$.
 
 가정(모델링 가정이지 자연법칙 주장 아님):
 
@@ -111,9 +101,9 @@ P_\phi(y_w \succ y_l \mid x)
 2. 점수 차이가 클수록 선호 확률이 크다
 3. 관측은 독립적인 pairwise 비교다
 
-#### 4.4 학습 손실
+### 3.4 학습 손실
 
-데이터 \(\mathcal{D}\)에 대해 음의 로그우도:
+데이터 $\mathcal{D}$에 대해 음의 로그우도:
 
 \[
 \mathcal{L}_{\mathrm{RM}}(\phi)
@@ -125,7 +115,7 @@ P_\phi(y_w \succ y_l \mid x)
 \]
 
 이것은 라벨 1에 대한 **binary logistic loss**와 동일하다.  
-\(\Delta = r_w - r_l\)로 두면 \(\mathcal{L}=-\log\sigma(\Delta)\).
+$\Delta = r_w - r_l$로 두면 $\mathcal{L}=-\log\sigma(\Delta)$.
 
 동치 형태:
 
@@ -135,19 +125,19 @@ P_\phi(y_w \succ y_l \mid x)
 
 직관:
 
-- \(r_w \gg r_l\) → \(\Delta\) 큼 → 손실 작음
-- \(r_w \approx r_l\) → 손실 \(\approx \log 2\)
-- \(r_w \ll r_l\) → 손실 큼 → 강하게 교정
+- $r_w \gg r_l$ → $\Delta$ 큼 → 손실 작음
+- $r_w \approx r_l$ → 손실 $\approx \log 2$
+- $r_w \ll r_l$ → 손실 큼 → 강하게 교정
 
-#### 4.5 “분류”이지만 Softmax 2클래스가 아닌 이유
+### 3.5 “분류”이지만 Softmax 2클래스가 아닌 이유
 
-두 응답을 한 네트워크에 넣어 2-way softmax를 낼 수도 있으나, 표준 RM은 **공유 스코어 함수** \(r_\phi\)를 두고 차이만 비교한다. 장점:
+두 응답을 한 네트워크에 넣어 2-way softmax를 낼 수도 있으나, 표준 RM은 **공유 스코어 함수** $r_\phi$를 두고 차이만 비교한다. 장점:
 
 - 추론 때 응답 하나만 점수화 가능 (best-of-N)
 - 여러 응답 순위에 일관된 점수 척도 제공
-- PPO에서 단일 \(y\)에 보상 부여 가능
+- PPO에서 단일 $y$에 보상 부여 가능
 
-#### 4.6 초기화
+### 3.6 초기화
 
 흔한 관례:
 
@@ -160,9 +150,9 @@ P_\phi(y_w \succ y_l \mid x)
 **사실:** 초기화 전략은 구현체마다 다르다.  
 **설명:** “무조건 SFT 복제가 유일한 정답”이 아니라, 표현 재사용이 실무적으로 흔하다는 뜻이다.
 
-#### 4.7 정규화와 스케일
+### 3.7 정규화와 스케일
 
-\(r\)에 상수 \(c\)를 더해도 차이 \(\Delta\)는 불변이다.
+$r$에 상수 $c$를 더해도 차이 $\Delta$는 불변이다.
 
 \[
 r' = r + c \quad\Rightarrow\quad \Delta'=\Delta
@@ -183,7 +173,7 @@ pairwise accuracy = mean(r_w > r_l)
 
 Accuracy만으로 충분치는 않다. 애매 데이터면 상한이 낮다(제84강).
 
-#### 4.8 Margin · 랭킹 변형
+### 3.8 Margin · 랭킹 변형
 
 기본 BT 외에도:
 
@@ -191,10 +181,10 @@ Accuracy만으로 충분치는 않다. 애매 데이터면 상한이 낮다(제8
 \log\sigma\big(r_w - r_l - m\big)
 \]
 
-처럼 margin \(m>0\)을 넣어 “조금만 이겨도 충분”을 막을 수 있다.  
+처럼 margin $m>0$을 넣어 “조금만 이겨도 충분”을 막을 수 있다.  
 또는 listwise(여러 응답)로 Plackett-Luce를 쓰기도 한다. 이 강의 구현은 **기본 pairwise BT**에 고정한다.
 
-### 5. 직관적으로 이해하기
+## 4. 직관적으로 이해하기
 
 심판 점수표:
 
@@ -217,13 +207,13 @@ Accuracy만으로 충분치는 않다. 애매 데이터면 상한이 낮다(제8
 
 절대 4.2의 의미는 이후 메뉴 전체 분포·정규화로 해석한다.
 
-### 6. 수학적으로 이해하기
+## 5. 수학적으로 이해하기
 
-#### 6.1 손실 미분 스케치
+### 5.1 손실 미분 스케치
 
-\(\ell=-\log\sigma(\Delta)\), \(\Delta=r_w-r_l\).
+$\ell=-\log\sigma(\Delta)$, $\Delta=r_w-r_l$.
 
-\(\sigma'(\Delta)=\sigma(\Delta)(1-\sigma(\Delta))\)이므로
+$\sigma'(\Delta)=\sigma(\Delta)(1-\sigma(\Delta))$이므로
 
 \[
 \frac{\partial\ell}{\partial\Delta}
@@ -233,7 +223,7 @@ Accuracy만으로 충분치는 않다. 애매 데이터면 상한이 낮다(제8
 -\sigma(-\Delta)
 \]
 
-해석: 승 확률을 과소예측할수록 \(\Delta\)를 키우는 방향의 기울기가 나온다.
+해석: 승 확률을 과소예측할수록 $\Delta$를 키우는 방향의 기울기가 나온다.
 
 연쇄법칙:
 
@@ -242,11 +232,11 @@ Accuracy만으로 충분치는 않다. 애매 데이터면 상한이 낮다(제8
 \frac{\partial\ell}{\partial r_l}=-\frac{\partial\ell}{\partial\Delta}
 \]
 
-즉 chosen 점수는 올리고 rejected 점수는 내린다(현재 \(\Delta\)가 작을 때).
+즉 chosen 점수는 올리고 rejected 점수는 내린다(현재 $\Delta$가 작을 때).
 
-#### 6.2 배치 목표
+### 5.2 배치 목표
 
-미니배치 \(B\)개 쌍:
+미니배치 $B$개 쌍:
 
 \[
 \mathcal{L}
@@ -256,7 +246,7 @@ Accuracy만으로 충분치는 않다. 애매 데이터면 상한이 낮다(제8
 
 안정 구현에서는 `softplus(-Delta)` 또는 `logsigmoid`를 사용한다.
 
-#### 6.3 정확도와 손실의 관계
+### 5.3 정확도와 손실의 관계
 
 \[
 \mathrm{Acc}=\frac{1}{|B|}\sum_i \mathbf{1}[r_w^{(i)}>r_l^{(i)}]
@@ -264,11 +254,11 @@ Accuracy만으로 충분치는 않다. 애매 데이터면 상한이 낮다(제8
 
 Acc는 불연속이라 직접 미분이 안 된다. 손실은 Acc의 **부드러운 대리 목표**다.
 
-### 7. 작은 숫자로 직접 계산하기
+## 6. 작은 숫자로 직접 계산하기
 
 교육용 배치 3개. 현재 RM 출력:
 
-| i | \(r_w\) | \(r_l\) | \(\Delta\) | \(\sigma(\Delta)\) | \(\ell=-\log\sigma(\Delta)\) |
+| i | $r_w$ | $r_l$ | $\Delta$ | $\sigma(\Delta)$ | $\ell=-\log\sigma(\Delta)$ |
 |---|---|---|---|---|---|
 | 1 | 1.0 | -1.0 | 2.0 | 0.8808 | 0.1269 |
 | 2 | 0.2 | 0.1 | 0.1 | 0.5250 | 0.6444 |
@@ -280,7 +270,7 @@ Acc는 불연속이라 직접 미분이 안 된다. 손실은 Acc의 **부드러
 \mathcal{L}\approx\frac{0.1269+0.6444+2.1269}{3}\approx 0.9661
 \]
 
-배치 정확도: 쌍1·2만 맞춤 → \(2/3\approx0.667\).
+배치 정확도: 쌍1·2만 맞춤 → $2/3\approx0.667$.
 
 쌍3이 손실을 지배한다. 한 스텝의 정성 업데이트:
 
@@ -291,33 +281,31 @@ Acc는 불연속이라 직접 미분이 안 된다. 손실은 Acc의 **부드러
 
 학습 후 가상 점수:
 
-| i | \(r_w'\) | \(r_l'\) | \(\Delta'\) | \(\ell'\) |
+| i | $r_w'$ | $r_l'$ | $\Delta'$ | $\ell'$ |
 |---|---|---|---|---|
 | 1 | 1.1 | -1.1 | 2.2 | 0.1054 |
 | 2 | 0.35 | 0.05 | 0.30 | 0.5543 |
 | 3 | 0.5 | 0.5 | 0.0 | 0.6931 |
 
-평균 손실 \(\approx 0.451\)로 감소. **숫자는 교육용**이며 특정 논문 재현 결과가 아니다.
+평균 손실 $\approx 0.451$로 감소. **숫자는 교육용**이며 특정 논문 재현 결과가 아니다.
 
 Sigmoid 테이블 (암기용):
 
-| \(z\) | \(\sigma(z)\) |
+| $z$ | $\sigma(z)$ |
 |---|---|
 | 0 | 0.5 |
 | 1 | 0.731 |
 | 2 | 0.881 |
 | -2 | 0.119 |
 
-### 8. 코드로 구현하기 — NumPy로 손실만
+## 7. 코드로 구현하기 — NumPy로 손실만
 
 ```python
 import numpy as np
 
-
 def sigmoid(z):
     z = np.clip(z, -50, 50)
     return 1.0 / (1.0 + np.exp(-z))
-
 
 def rm_pairwise_loss(r_w, r_l):
     """Bradley-Terry NLL. r_w, r_l: shape [B]."""
@@ -327,7 +315,6 @@ def rm_pairwise_loss(r_w, r_l):
     acc = (delta > 0).mean()
     return loss.mean(), acc
 
-
 r_w = np.array([1.0, 0.2, -0.5])
 r_l = np.array([-1.0, 0.1, 1.5])
 loss, acc = rm_pairwise_loss(r_w, r_l)
@@ -336,15 +323,14 @@ print(loss, acc)
 
 기대: 손실 약 0.97, 정확도 약 0.67 (부동소수 오차 허용).
 
-### 9. PyTorch로 구현하기
+## 8. PyTorch로 구현하기
 
-#### 9.1 스칼라 헤드가 있는 RM
+### 8.1 스칼라 헤드가 있는 RM
 
 ```python
 import torch
 import torch.nn as nn
 import torch.nn.functional as F
-
 
 class ToyBackbone(nn.Module):
     """교육용: embedding + mean pool. 실제로는 Transformer."""
@@ -362,7 +348,6 @@ class ToyBackbone(nn.Module):
         denom = mask.sum(dim=1).clamp(min=1.0)
         return summed / denom  # [B,D]
 
-
 class RewardModel(nn.Module):
     def __init__(self, backbone, d_model=32):
         super().__init__()
@@ -374,13 +359,12 @@ class RewardModel(nn.Module):
         r = self.v_head(h).squeeze(-1)  # [B]
         return r
 
-
 def pairwise_reward_loss(r_w, r_l):
     # -log σ(r_w - r_l)
     return -F.logsigmoid(r_w - r_l).mean()
 ```
 
-#### 9.2 학습 스텝
+### 8.2 학습 스텝
 
 ```python
 def train_rm_step(model, batch, optimizer):
@@ -402,7 +386,7 @@ def train_rm_step(model, batch, optimizer):
     }
 ```
 
-#### 9.3 Last-token pooling (실무에 더 가까움)
+### 8.3 Last-token pooling (실무에 더 가까움)
 
 Mean pool 대신 **마지막 유효 토큰** hidden을 쓰는 구현이 흔하다.
 
@@ -417,7 +401,7 @@ def last_token_pool(hidden, attention_mask):
 
 Causal LM backbone을 쓸 때는 `transformer` 출력 hidden에 이 pooling 후 linear head를 얹는다.
 
-#### 9.4 전체 미니 루프
+### 8.4 전체 미니 루프
 
 ```python
 def toy_rm_training_demo(steps=50, seed=0):
@@ -447,7 +431,7 @@ def toy_rm_training_demo(steps=50, seed=0):
 
 합성 규칙이 일관되면 `acc`와 `mean_margin`이 상승하는 경향을 관찰할 수 있다. 이는 **구현 스모크 테스트**이지 언어 품질 증명가 아니다.
 
-#### 9.5 추론: 응답 점수화
+### 8.5 추론: 응답 점수화
 
 ```python
 @torch.no_grad()
@@ -469,7 +453,7 @@ def best_of_n(model, encode_fn, prompt, candidates):
     return candidates[best], scores
 ```
 
-### 10. 실제 LLM에서는 어떻게 사용하는가
+## 9. 실제 LLM에서는 어떻게 사용하는가
 
 표준 RLHF 스택에서의 RM:
 
@@ -506,14 +490,14 @@ RM 명시 학습 + PPO   vs   preference를 정책에 직접 흡수(DPO)
 이번 강의는 전자의 전반부
 ```
 
-### 11. 실습
+## 10. 실습
 
-#### 실습 A — 손계산
+### 실습 A — 손계산
 
-\(r_w=0.0\), \(r_l=0.0\)일 때 손실이 \(\log 2\)임을 보이시오.  
-\(r_w=3\), \(r_l=0\)일 때 \(\sigma(\Delta)\)와 손실을 소수 3자리로 계산하시오.
+$r_w=0.0$, $r_l=0.0$일 때 손실이 $\log 2$임을 보이시오.  
+$r_w=3$, $r_l=0$일 때 $\sigma(\Delta)$와 손실을 소수 3자리로 계산하시오.
 
-#### 실습 B — Toy RM 과적합 테스트
+### 실습 B — Toy RM 과적합 테스트
 
 제84강에서 만든 10쌍으로 `RewardModel`을 학습하라.
 
@@ -521,15 +505,15 @@ RM 명시 학습 + PPO   vs   preference를 정책에 직접 흡수(DPO)
 2. held-out 2쌍 accuracy와 비교
 3. chosen/rejected 평균 길이 차와 점수 차의 상관을 대략 관찰
 
-#### 실습 C — 버그 주입
+### 실습 C — 버그 주입
 
 `pairwise_reward_loss`에서 실수로 `r_l - r_w`를 넣으면 어떤 증상이 나타나는지 실험하고 한 줄로 기록하라.
 
-#### 실습 D — Pooling 비교
+### 실습 D — Pooling 비교
 
 동일 데이터에서 mean pool vs last-token pool의 train loss 곡선을 비교하라. (우열을 SOTA처럼 주장하지 말 것. 차이만 관찰)
 
-#### 실습 E — 문서화
+### 실습 E — 문서화
 
 팀원에게 설명할 한 문단:
 
@@ -539,7 +523,7 @@ RM은 무엇을 입력으로 받아 무엇을 출력하며,
 PPO에서는 어디에 꽂히는가?
 ```
 
-### 12. 자주 하는 실수
+## 11. 자주 하는 실수
 
 1. **손실 부호 반전** (`r_l - r_w`)  
    rejected를 더 좋아하게 학습한다.
@@ -560,7 +544,7 @@ PPO에서는 어디에 꽂히는가?
    역할이 붕괴한다. (별도 단계가 기본)
 
 7. **절대 점수 해석 과신**  
-   \(r=10\)이 “완벽”을 뜻하지 않는다. 차이와 분포가 중요하다.
+   $r=10$이 “완벽”을 뜻하지 않는다. 차이와 분포가 중요하다.
 
 8. **길이 정규화 없음**  
    장황함 해킹을 돕는다.
@@ -571,94 +555,93 @@ PPO에서는 어디에 꽂히는가?
 10. **너무 강한 모델 + 너무 적은 선호**  
     암기 후 PPO에서 취약.
 
-### 13. 핵심 정리
+## 12. 핵심 정리
 
-- RM은 \((x,y)\mapsto r_\phi(x,y)\in\mathbb{R}\) 스코어러다.
+- RM은 $(x,y)\mapsto r_\phi(x,y)\in\mathbb{R}$ 스코어러다.
 - 학습은 Bradley-Terry pairwise logistic loss로 한다.
-- 손실 \(-\log\sigma(r_w-r_l)\)은 chosen·rejected 점수 간격을 벌린다.
+- 손실 $-\log\sigma(r_w-r_l)$은 chosen·rejected 점수 간격을 벌린다.
 - 추론 때는 단일 응답 스칼라를 정책 보상·BO-N에 쓴다.
 - 절대 영점은 자유 → RL 단계에서 정규화·KL이 필요.
 - 데이터 편향이 RM에 그대로 각인된다.
 - 다음 강의에서 SFT→샘플→RM→RL의 전체 구조를 조립한다.
 
-### 14. 핵심 용어
+## 13. 핵심 용어
 
 | 용어 | 의미 |
 |---|---|
 | Reward Model (RM) | 응답에 스칼라 보상을 부여하는 모델 |
 | Bradley-Terry | 점수 차이로 승 확률을 정의하는 모델 |
-| Pairwise logistic loss | \(-\log\sigma(r_w-r_l)\) |
+| Pairwise logistic loss | $-\log\sigma(r_w-r_l)$ |
 | Reward head | hidden → 스칼라 linear |
 | Last-token pooling | 마지막 유효 토큰 표현 사용 |
 | Margin | 승패 점수 차에 강제 간격 |
-| Pairwise accuracy | \(r_w>r_l\) 비율 |
+| Pairwise accuracy | $r_w>r_l$ 비율 |
 | Reward hacking | 보상 허점을 악용하는 정책 행동 |
 | Best-of-N | N개 샘플 중 RM 최댓값 선택 |
 | Outcome reward | 응답 전체에 주는 보상 |
 
-### 15. 복습 문제
+## 14. 연습 문제
+### 문제 1（수식）
 
-#### 문제 1（수식）
+$r_w=r_l$일 때 $\mathcal{L}_{\mathrm{RM}}$의 한 샘플 값은?
 
-\(r_w=r_l\)일 때 \(\mathcal{L}_{\mathrm{RM}}\)의 한 샘플 값은?
-
-#### 문제 2（직관）
+### 문제 2（직관）
 
 RM 학습이 분류처럼 보이는데, 배포 시 클래스 확률이 아니라 스칼라를 쓰는 이유는?
 
-#### 문제 3（계산）
+### 문제 3（계산）
 
-\(\Delta=1\)일 때 \(\sigma(\Delta)\)와 \(-\log\sigma(\Delta)\)를 소수 3자리로 구하시오.
+$\Delta=1$일 때 $\sigma(\Delta)$와 $-\log\sigma(\Delta)$를 소수 3자리로 구하시오.
 
-#### 문제 4（구현）
+### 문제 4（구현）
 
 `logsigmoid(r_w-r_l)` 대신 `logsigmoid(r_l-r_w)`를 쓰면 어떤 실패가 생기는가?
 
-#### 문제 5（연결）
+### 문제 5（연결）
 
 제86강에서 RM 출력은 파이프라인의 어느 상자에 들어가는가?
 
-#### 문제 6（한계）
+### 문제 6（한계）
 
 Preference 데이터가 길이 편향을 가지면 RM에 어떤 경향이 생기는가?
 
-#### 문제 7（수학）
+### 문제 7（수학）
 
-\(r \leftarrow r+c\)로 모든 응답 점수에 상수를 더해도 손실이 불변인 이유를 한 줄로.
+$r \leftarrow r+c$로 모든 응답 점수에 상수를 더해도 손실이 불변인 이유를 한 줄로.
 
 ---
 
-### 정답 및 해설
+## 정답 및 해설
 
-#### 문제 1
+### 문제 1
 
-\(\sigma(0)=1/2\)이므로 \(-\log(1/2)=\log 2\).
+$\sigma(0)=1/2$이므로 $-\log(1/2)=\log 2$.
 
-#### 문제 2
+### 문제 2
 
-정책 최적화·BO-N은 응답별 비교 가능한 **점수**가 필요하고, 공유 \(r\)이 그 역할을 하기 때문이다.
+정책 최적화·BO-N은 응답별 비교 가능한 **점수**가 필요하고, 공유 $r$이 그 역할을 하기 때문이다.
 
-#### 문제 3
+### 문제 3
 
-\(\sigma(1)\approx0.731\), \(-\log(0.731)\approx0.313\).
+$\sigma(1)\approx0.731$, $-\log(0.731)\approx0.313$.
 
-#### 문제 4
+### 문제 4
 
 rejected를 더 높게 밀어 선호와 반대 방향으로 학습한다.
 
-#### 문제 5
+### 문제 5
 
 샘플된 응답을 점수화하는 보상 단계( RM score → RL update의 입력).
 
-#### 문제 6
+### 문제 6
 
-긴 응답에 높은 \(r\)을 주는 경향 → 이후 정책이 장황해질 위험.
+긴 응답에 높은 $r$을 주는 경향 → 이후 정책이 장황해질 위험.
 
-#### 문제 7
+### 문제 7
 
-손실이 \(r_w-r_l\)에만 의존하므로 공통 상수 \(c\)는 차이에서 상쇄된다.
+손실이 $r_w-r_l$에만 의존하므로 공통 상수 $c$는 차이에서 상쇄된다.
 
-### 16. 다음 강의와 연결
+## 15. 다음 강의와 연결
 
 이제 Preference → 스칼라 보상 함수까지의 다리가 놓였다.
 

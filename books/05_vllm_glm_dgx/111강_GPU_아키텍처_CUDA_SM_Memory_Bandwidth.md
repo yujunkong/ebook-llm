@@ -1,24 +1,14 @@
-# 5권. vLLM · GLM · DGX Spark
+# 제111강. GPU 아키텍처 — CUDA, SM, Memory Bandwidth
 
-## 제111강. GPU 아키텍처 — CUDA, SM, Memory Bandwidth
+> **학습 목표**
+> - CUDA 실행 모델에서 SM(Streaming Multiprocessor), warp, thread block의 역할을 구분한다.
+> - HBM(또는 해당 플랫폼 메모리) 대역폭(bandwidth) 이 LLM decode에 왜 자주 병목이 되는지 설명한다.
+> - compute-bound 와 memory-bound 를 직관과 간단한 roofline 스케치로 구분한다.
+> - 벤더 스펙 시트의 “TFLOPS / GB/s”를 어떻게 읽는지 알고, 임의 성능 수치를 지어내지 않는다.
+> - 제112~116강(엔진 선택·TP·NCCL·DGX Spark·서빙 프로젝트)이 왜 이 기초 위에 올라가는지 연결한다.
 
-### 1. 이번 강의에서 배울 것
-
-제110강까지는 **알고리즘·서빙 계층**(MTP, speculative decoding, 지표, 스케줄러)을 다뤘다. 이번 강의부터는 그 계층이 실제로 앉는 **GPU 하드웨어 계층**으로 내려간다.
-
-이 강의를 마치면 다음을 할 수 있어야 한다.
-
-- CUDA 실행 모델에서 **SM(Streaming Multiprocessor)**, **warp**, **thread block**의 역할을 구분한다.
-- HBM(또는 해당 플랫폼 메모리) **대역폭(bandwidth)** 이 LLM decode에 왜 자주 병목이 되는지 설명한다.
-- **compute-bound** 와 **memory-bound** 를 직관과 간단한 roofline 스케치로 구분한다.
-- 벤더 스펙 시트의 “TFLOPS / GB/s”를 **어떻게 읽는지** 알고, 임의 성능 수치를 지어내지 않는다.
-- 제112~116강(엔진 선택·TP·NCCL·DGX Spark·서빙 프로젝트)이 왜 이 기초 위에 올라가는지 연결한다.
-
-목표가 아니다: 특정 GPU의 “초당 토큰 수”를 이 강의에서 단정하는 것.
-
-목표가 맞다: **서빙 로그를 볼 때 “계산이 부족한가, 메모리가 부족한가”를 먼저 묻게 되는 것**.
-
-### 2. 왜 이것을 배우는가
+---
+## 1. 왜 이것을 배우는가
 
 LLM 서빙에서 자주 나오는 문장들이다.
 
@@ -47,7 +37,7 @@ Decode   : 토큰 1개 × 전체 가중치·KV 읽기 → 상대적으로 memory
 
 설명: “항상”이 아니다. 배치 크기, 양자화, 커널, 모델 폭에 따라 경계가 움직인다. 다만 **decode가 memory-bound 쪽에 기울기 쉽다**는 직관은 서빙 설계의 출발점이다.
 
-### 3. 먼저 알아야 할 개념
+## 2. 먼저 알아야 할 개념
 
 1. **Training vs Inference** — 제99강
 2. **Prefill / Decode** — 제100강
@@ -57,9 +47,9 @@ Decode   : 토큰 1개 × 전체 가중치·KV 읽기 → 상대적으로 memory
 
 하드웨어 세대·칩 이름은 빠르게 바뀐다. 이 강의는 **CUDA 실행 모델의 공통 골격**과 **대역폭 직관**에 초점을 둔다. 특정 SKU의 최신 숫자는 벤더 문서를 직접 확인하는 방법을 제115강과 함께 익힌다.
 
-### 4. CUDA란 무엇인가
+## 3. CUDA란 무엇인가
 
-#### 4.1 용어
+### 3.1 용어
 
 | 영어 | 한국어 | 쉬운 정의 | 왜 필요한가 |
 |---|---|---|---|
@@ -76,7 +66,7 @@ Decode   : 토큰 1개 × 전체 가중치·KV 읽기 → 상대적으로 memory
 
 - “CUDA를 안다”는 것이 반드시 CUDA C++를 매일 작성한다는 뜻은 아니다. 서빙 엔지니어에게는 **실행 단위·메모리 계층·병목 분류**를 읽는 능력이 더 자주 쓰인다.
 
-#### 4.2 실행이 펼쳐지는 방식 (개요)
+### 3.2 실행이 펼쳐지는 방식 (개요)
 
 ```text
 호스트(CPU) 코드
@@ -92,9 +82,9 @@ Decode   : 토큰 1개 × 전체 가중치·KV 읽기 → 상대적으로 memory
 
 LLM 관점: “한 번의 forward”는 사실 **수많은 커널의 연쇄**다. 엔진(제112강)은 이 연쇄를 배치·그래프·캐시로 재구성한다.
 
-### 5. SM — Streaming Multiprocessor
+## 4. SM — Streaming Multiprocessor
 
-#### 5.1 용어
+### 4.1 용어
 
 **SM(Streaming Multiprocessor)** 은 GPU 안의 **연산 공장 단위**다. 여러 SM이 칩에 모여 있고, 각 SM이 워프·블록을 받아 실행한다.
 
@@ -106,7 +96,7 @@ SM     = 공장 1동
 Warp   = 동시에 같은 동작을 하는 작업반
 ```
 
-#### 5.2 SM이 가진 것 (개념 수준)
+### 4.2 SM이 가진 것 (개념 수준)
 
 세대마다 세부 구성은 다르다. 공통적으로 이야기하는 요소:
 
@@ -123,7 +113,7 @@ Warp   = 동시에 같은 동작을 하는 작업반
 - **사실**: SM 개수·코어 구성·Tensor Core 세대는 **칩/제품 스펙**에 따른다.
 - **설명**: “SM이 많다 = 항상 서빙이 빠르다”는 성립하지 않는다. 메모리가 막히면 SM은 기다려야 한다.
 
-#### 5.3 Occupancy 직관
+### 4.3 Occupancy 직관
 
 **Occupancy** 는 “SM이 동시에 얼마나 많은 워프를 붙들고 있는가”에 가까운 지표 계열이다(정확한 정의는 도구·문서에 따름).
 
@@ -142,9 +132,9 @@ GPU SM Active / utilization
 
 이다.
 
-### 6. Warp — 스케줄의 기본 묶음
+## 5. Warp — 스케줄의 기본 묶음
 
-#### 6.1 용어
+### 5.1 용어
 
 **Warp** 는 CUDA에서 **함께 스케줄되는 스레드 묶음**이다. 전통적으로 **32 threads** 가 한 warp다(아키텍처 문서의 기본 가정; 세부 변형은 세대 문서를 본다).
 
@@ -153,7 +143,7 @@ GPU SM Active / utilization
 같은 instruction을 lockstep에 가깝게 진행 (분기 시 divergence)
 ```
 
-#### 6.2 Warp divergence
+### 5.2 Warp divergence
 
 같은 warp 안에서 `if`로 서로 다른 경로를 타면, 일부 스레드는 쉬고 일부가 실행되는 식의 **분기 패널티**가 생길 수 있다.
 
@@ -162,7 +152,7 @@ LLM 커널 설계에서:
 - attention mask, variable sequence length, MoE 라우팅 등은 divergence·부하 불균형을 유발할 수 있다.
 - 서빙 엔진·커널이 이를 완화하는 방식이 성능 차이의 한 축이다(제112강 연결).
 
-#### 6.3 왜 서빙 사람이 warp를 알아야 하는가
+### 5.3 왜 서빙 사람이 warp를 알아야 하는가
 
 직접 커널을 안 짜더라도:
 
@@ -170,9 +160,9 @@ LLM 커널 설계에서:
 2. “너무 작은 decode batch” — 계산 밀도가 낮아지고 memory 대기가 드러남
 3. “특수 샘플링·구조화 출력” — 커널 경로가 갈라져 그래프/캐시 이득이 줄 수 있음
 
-### 7. 메모리 계층과 Bandwidth
+## 6. 메모리 계층과 Bandwidth
 
-#### 7.1 계층 스케치
+### 6.1 계층 스케치
 
 개념적 피라미드(구체 용량·속도는 칩마다 다름):
 
@@ -188,7 +178,7 @@ LLM 커널 설계에서:
 
 **Memory Bandwidth(메모리 대역폭)** 는 단위 시간당 메모리에서 읽고 쓸 수 있는 **바이트 양**이다. 단위는 보통 GB/s 또는 TB/s.
 
-#### 7.2 HBM이란
+### 6.2 HBM이란
 
 **HBM(High Bandwidth Memory)** 은 GPU에 가까이 붙어 높은 대역폭을 제공하도록 설계된 메모리 기술이다. 많은 데이터센터 GPU가 HBM을 쓴다.
 
@@ -204,7 +194,7 @@ LLM 커널 설계에서:
 (사실) 실제 제품의 메모리 종류·GB/s는 스펙 시트를 본다
 ```
 
-#### 7.3 용량(capacity) vs 대역폭(bandwidth)
+### 6.3 용량(capacity) vs 대역폭(bandwidth)
 
 | | Capacity | Bandwidth |
 |---|---|---|
@@ -215,27 +205,29 @@ LLM 커널 설계에서:
 
 제101강 KV Cache는 **용량** 압박의 대표다. 제103강 양자화는 **용량과 대역폭 모두**에 도움을 줄 수 있다(바이트↓ → 같은 대역폭으로 더 많은 “유효 파라미터”를 읽음 — 설명).
 
-### 8. Compute-bound vs Memory-bound
+## 7. Compute-bound vs Memory-bound
 
-#### 8.1 정의 (직관)
+### 7.1 정의 (직관)
 
 | 구분 | 직관 | LLM에서 자주 보이는 장면 |
 |---|---|---|
 | **Compute-bound** | 연산기(ALU/Tensor Core)가 바쁘고, 메모리는 충분히 먹여 줌 | 큰 배치 prefill, 넓은 GEMM |
 | **Memory-bound** | 연산기는 놀고, 데이터를 기다리느라 시간이 감 | 작은 배치 decode, 거대 가중치 스트리밍 |
 
-#### 8.2 산술강도 (Arithmetic Intensity)
+### 7.2 산술강도 (Arithmetic Intensity)
 
 간단한 정의:
 
 $$
+
 \text{Arithmetic Intensity} \approx \frac{\text{연산 횟수 (FLOPs)}}{\text{이동한 바이트 (Bytes)}}
+
 $$
 
 - intensity가 높으면 → compute 쪽으로 기울기 쉽다.
 - intensity가 낮으면 → memory 쪽으로 기울기 쉽다.
 
-#### 8.3 Decode가 memory에 기울기 쉬운 이유 (스케치)
+### 7.3 Decode가 memory에 기울기 쉬운 이유 (스케치)
 
 한 토큰 decode에서(단순화):
 
@@ -251,9 +243,9 @@ $$
 사실: 실제 intensity는 커널 구현·융합·캐시·양자화에 크게 의존한다.  
 설명: 위 스케치는 **왜 배치·양자화·캐시가 성능 레버인지**를 위한 지도다.
 
-### 9. Roofline — 가볍게
+## 8. Roofline — 가볍게
 
-#### 9.1 그림으로 보는 천장
+### 8.1 그림으로 보는 천장
 
 Roofline 모델은 성능을 두 천장으로 본다.
 
@@ -271,7 +263,7 @@ Roofline 모델은 성능을 두 천장으로 본다.
 - 왼쪽(낮은 intensity): **memory roof**에 걸림
 - 오른쪽(높은 intensity): **compute roof**에 걸림
 
-#### 9.2 서빙에서의 사용법
+### 8.2 서빙에서의 사용법
 
 Roofline을 “정확한 숫자 예측기”로 쓰지 않는다. 대신:
 
@@ -281,7 +273,7 @@ Roofline을 “정확한 숫자 예측기”로 쓰지 않는다. 대신:
 
 제117강 GPU 최적화 실험에서 이 질문을 측정 템플릿과 연결한다.
 
-#### 9.3 숫자 약속
+### 8.3 숫자 약속
 
 이 책은 **임의로 Peak TFLOPS·실측 tok/s를 지어내지 않는다**.
 
@@ -293,9 +285,9 @@ Roofline을 “정확한 숫자 예측기”로 쓰지 않는다. 대신:
 
 스펙의 Peak는 **이상적 조건의 상한**인 경우가 많다(정밀도, sparsity, 문제 크기 전제). 각주를 읽는다.
 
-### 10. LLM 연산과 GPU 매핑
+## 9. LLM 연산과 GPU 매핑
 
-#### 10.1 주요 연산 블록
+### 9.1 주요 연산 블록
 
 | 블록 | 대략적 성격 (설명) | 메모리 관점 |
 |---|---|---|
@@ -304,7 +296,7 @@ Roofline을 “정확한 숫자 예측기”로 쓰지 않는다. 대신:
 | Softmax / norm / act | 상대적으로 가벼울 수 있음 | 커널 launch·대역폭 낭비 주의 |
 | Sampling | 보통 작음 | 그래프 깨짐·동기화에 민감할 수 있음 |
 
-#### 10.2 Prefill vs Decode 다시 보기
+### 9.2 Prefill vs Decode 다시 보기
 
 ```text
 Prefill
@@ -318,7 +310,7 @@ Decode
 
 스펙ulative decoding(제110강)은 “검증·초안”으로 **유효 토큰당 메모리 트래픽**을 바꾸려는 시도로도 읽을 수 있다(성공 여부는 수용률·오버헤드에 달림).
 
-### 11. 대역폭 예산 — 사고 실험 (숫자 예시)
+## 10. 대역폭 예산 — 사고 실험 (숫자 예시)
 
 **예시(설명용 가정, 특정 제품 실측 아님):**
 
@@ -331,7 +323,9 @@ Decode
 거친 상한:
 
 $$
+
 \text{토큰/초} \lesssim \frac{BW}{W}
+
 $$
 
 의미:
@@ -342,7 +336,7 @@ $$
 
 이 식을 **측정값처럼 인용하지 말 것**. “병목 후보를 좁히는 사고 도구”다.
 
-### 12. 코드로 감각 잡기 (스케치)
+## 11. 코드로 감각 잡기 (스케치)
 
 아래는 **대역폭 병목을 흉내 내는 사고 코드**다. 벤치마크 결과가 아니다.
 
@@ -354,7 +348,6 @@ def arithmetic_intensity(flops: float, bytes_moved: float) -> float:
     if bytes_moved <= 0:
         raise ValueError("bytes_moved must be positive")
     return flops / bytes_moved
-
 
 # 예: 배치1 decode에서 거대 가중치를 읽고 상대적으로 적은 FLOP
 w_bytes = 14e9          # 설명용 가정: 14GB 가중치를 읽는다
@@ -371,9 +364,9 @@ print("intensity ~", arithmetic_intensity(flops * batch, w_bytes))
 - 배치가 커지면 intensity가 올라갈 **수 있다**(가정이 맞을 때).
 - 반대로 KV가 길어지면 읽기 바이트가 늘어 intensity가 내려갈 **수 있다**.
 
-### 13. nvidia-smi · 프로파일러로 무엇을 볼까
+## 12. nvidia-smi · 프로파일러로 무엇을 볼까
 
-#### 13.1 운영 중 자주 보는 신호
+### 12.1 운영 중 자주 보는 신호
 
 | 신호 | 가능한 해석 (설명) |
 |---|---|
@@ -384,7 +377,7 @@ print("intensity ~", arithmetic_intensity(flops * batch, w_bytes))
 
 단정하지 말 것. **가설 → 측정 → 재현** 순서를 지킨다(제118강 리포트).
 
-#### 13.2 벤더 문서 읽기 체크리스트
+### 12.2 벤더 문서 읽기 체크리스트
 
 1. 제품 페이지와 **User Guide / Data Sheet**를 구분한다.
 2. Peak FLOPS의 **정밀도(FP4/FP8/BF16…)** 와 sparsity 전제를 읽는다.
@@ -394,9 +387,9 @@ print("intensity ~", arithmetic_intensity(flops * batch, w_bytes))
 
 제115강에서 DGX Spark 공개 스펙을 이 방법으로 읽는다.
 
-### 14. 실습
+## 13. 실습
 
-#### 실습 A — 병목 분류 연습
+### 실습 A — 병목 분류 연습
 
 다음 시나리오를 compute / memory / capacity / 통신 중 **주 후보**로 분류하고 이유를 한 줄로 쓰시오.
 
@@ -405,7 +398,7 @@ print("intensity ~", arithmetic_intensity(flops * batch, w_bytes))
 3. 단일 GPU에서는 괜찮다가 TP=2로 나누니 토큰/초가 기대보다 낮음(제113~114강 복선)
 4. Prefill TTFT만 길고, 이후 TPOT는 수용 가능
 
-#### 실습 B — 스펙 시트 독서
+### 실습 B — 스펙 시트 독서
 
 사용 가능한 GPU(또는 DGX Spark 문서)에서 다음을 표로 옮기시오.
 
@@ -418,7 +411,7 @@ print("intensity ~", arithmetic_intensity(flops * batch, w_bytes))
 
 값을 외우지 말고 **출처를 남긴다**.
 
-### 15. 자주 하는 실수
+## 14. 자주 하는 실수
 
 1. **Utilization = 성능** 으로 단정한다.
 2. **OOM만 메모리 문제**로 보고, bandwidth 병목을 놓친다.
@@ -427,7 +420,7 @@ print("intensity ~", arithmetic_intensity(flops * batch, w_bytes))
 5. “더 많은 SM / 더 큰 칩”이면 서빙이 무조건 나아진다고 본다.
 6. 통합 메모리 플랫폼에 HBM 가정을 그대로 이식한다.
 
-### 16. 핵심 정리
+## 15. 핵심 정리
 
 - CUDA 실행은 Grid → Block → Warp → Thread로 펼쳐지고, **SM**이 그 공장이다.
 - LLM decode는 종종 **memory-bound** 쪽에 기울며, 배치·양자화·캐시가 산술강도를 바꾼다.
@@ -435,7 +428,7 @@ print("intensity ~", arithmetic_intensity(flops * batch, w_bytes))
 - Roofline은 예측기가 아니라 **병목 방향 나침반**이다.
 - 성능 숫자는 발명하지 말고, 스펙·프로파일·재현 가능한 측정으로 말한다.
 
-### 17. 핵심 용어
+## 16. 핵심 용어
 
 | 용어 | 의미 |
 |---|---|
@@ -450,63 +443,62 @@ print("intensity ~", arithmetic_intensity(flops * batch, w_bytes))
 | Memory-bound | 대역폭 천장이 지배 |
 | Roofline | intensity에 따른 성능 상한 모델 |
 
-### 18. 복습 문제
-
-#### 문제 1 (구분)
+## 17. 연습 문제
+### 문제 1 (구분)
 
 다음 중 **용량(capacity)** 문제에 더 가까운 것은?  
 (a) KV cache가 늘어 OOM  
 (b) 배치 1 decode에서 가중치 읽기가 시간을 지배
 
-#### 문제 2 (개념)
+### 문제 2 (개념)
 
 Warp divergence가 성능에 영향을 줄 수 있는 이유를 한 문장으로 쓰시오.
 
-#### 문제 3 (직관)
+### 문제 3 (직관)
 
 Continuous batching이 decode의 산술강도를 올릴 수 있는 메커니즘을 설명하시오.
 
-#### 문제 4 (사실/설명)
+### 문제 4 (사실/설명)
 
 “이 GPU는 1 PFLOP이므로 어떤 모델이든 초당 N 토큰이다” 문장의 문제점을 두 가지 쓰시오.
 
-#### 문제 5 (연결)
+### 문제 5 (연결)
 
 제103강 양자화가 memory-bound decode에 도움이 될 **수 있는** 이유를 대역폭 관점에서 쓰시오.
 
-#### 문제 6 (설계)
+### 문제 6 (설계)
 
 TTFT만 나쁠 때와 TPOT만 나쁠 때, 각각 우선 의볼 GPU/알고리즘 레버를 하나씩 제시하시오.
 
 ---
 
-### 정답 및 해설
+## 정답 및 해설
 
-#### 문제 1
+### 문제 1
 
 (a). OOM은 용량. (b)는 대역폭·memory-bound 후보.
 
-#### 문제 2
+### 문제 2
 
 한 warp 안 스레드가 서로 다른 제어 경로를 타면, 일부는 대기하고 일부가 실행되어 유효 연산 효율이 떨어질 수 있다.
 
-#### 문제 3
+### 문제 3
 
 여러 요청이 같은 가중치 로드를 공유하면, 이동 바이트당 처리하는 토큰·연산이 늘어 intensity가 올라갈 수 있다.
 
-#### 문제 4
+### 문제 4
 
 예: (1) Peak FLOP은 특정 정밀도·조건의 상한이며 실측 토큰속도와 직접 등치되지 않음 (2) decode는 memory-bound일 수 있어 FLOP만으로 결정되지 않음.
 
-#### 문제 5
+### 문제 5
 
 가중치·활성화 바이트가 줄면 같은 대역폭으로 더 많은 유효 계산을 밀어 넣을 여지가 생긴다(품질·커널 지원은 별개).
 
-#### 문제 6
+### 문제 6
 
 예: TTFT → prefill 커널·최대 배치 토큰·프롬프트 길이 / TPOT → 배치 효율·양자화·KV 트래픽·샘플러 오버헤드. (환경에 따라 다름)
 
-### 19. 다음 강의와 연결
+## 18. 다음 강의와 연결
 
 GPU의 천장과 병목 종류를 보았다. 다음 질문은 **그 위에서 도는 소프트웨어 엔진을 무엇을 고를까**다.
 
@@ -522,6 +514,6 @@ GPU의 천장과 병목 종류를 보았다. 다음 질문은 **그 위에서 �
 ### 강의 이동
 
 - **이전 강:** [제110강. MTP와 Speculative Decoding](110강_MTP와_Speculative_Decoding.md)
-- **다음 강:** [제112강. Inference Engine 비교 — vLLM · TensorRT-LLM · SGLang](112강_Inference_Engine_비교_vLLM_TensorRT_LLM_SGLang.md)
+- **다음 강:** [제112강. Inference Engine 비교 vLLM TensorRT LLM SGLang](112강_Inference_Engine_비교_vLLM_TensorRT_LLM_SGLang.md)
 
 <!-- /LECTURE_NAV -->

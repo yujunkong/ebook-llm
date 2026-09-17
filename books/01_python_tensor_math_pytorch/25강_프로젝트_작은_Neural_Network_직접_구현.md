@@ -1,21 +1,13 @@
-# 1권. Python · Tensor · 수학 · PyTorch
+# 제25강. 프로젝트 — 작은 Neural Network 직접 구현
 
-## 제25강. 프로젝트 — 작은 Neural Network 직접 구현
+> **학습 목표**
+> - 2층 MLP의 forward / loss / backward / update를 NumPy로 끝까지 구현한다.
+> - 동일한 데이터·구조를 `nn.Module` + DataLoader + Optimizer로 재현한다.
+> - `model.py` / `train.py` 형태의 파일 분리 습관을 갖는다.
+> - 학습 곡선과 예측 결과를 보고 버그를 스스로 좁힌다.
 
-### 1. 이번 강의에서 배울 것
-
-1권의 개별 개념을 **하나의 작은 제품**으로 조립한다. 목표는 화려한 정확도가 아니다. **같은 문제를 NumPy로 한 번, PyTorch로 한 번** 풀어, “직접 미분한 세계”와 “Autograd·Module 세계”가 같은 학습인지 확인하는 것이다.
-
-이 강의를 마치면 다음을 할 수 있어야 한다.
-
-- 2층 MLP의 forward / loss / backward / update를 NumPy로 끝까지 구현한다.
-- 동일한 데이터·구조를 `nn.Module` + DataLoader + Optimizer로 재현한다.
-- `model.py` / `train.py` 형태의 파일 분리 습관을 갖는다.
-- 학습 곡선과 예측 결과를 보고 버그를 스스로 좁힌다.
-
-이번 강의는 1권에서 **가장 긴 실전 강의**다. 코드를 읽기만 하지 말고, 디렉터리를 만들어 실행한다.
-
-### 2. 왜 이것을 배우는가
+---
+## 1. 왜 이것을 배우는가
 
 지금까지의 강의는 부품 단위였다.
 
@@ -37,29 +29,33 @@
 
 LLM으로 가는 길에서도 패턴은 같다. 2권 Mini Transformer, 3권 Mini GPT는 이번 프로젝트의 **확대 버전**이다. 지금 작은 MLP로 “끝까지 학습되는 파이프라인”을 한 번 완주해야 한다.
 
-### 3. 프로젝트 개요
+## 2. 프로젝트 개요
 
-#### 3.1 문제 정의
+### 2.1 문제 정의
 
 2차원 입력 $(x_1, x_2)$를 보고 두 클래스 중 하나를 예측하는 **이진 분류**를 한다.
 
 결정 규칙은 비선형이다.
 
 $$
+
 y = \mathbf{1}\big[x_1^2 + x_2 > 0\big]
+
 $$
 
 직선 하나로 나누기 어렵기 때문에, 은닉층이 있는 MLP가 필요하다.
 
-#### 3.2 모델 구조
+### 2.2 모델 구조
 
 $$
+
 \begin{aligned}
 z_1 &= X W_1 + b_1 \\
 a_1 &= \mathrm{ReLU}(z_1) \\
 z_2 &= a_1 W_2 + b_2 \\
 \hat{p} &= \sigma(z_2)
 \end{aligned}
+
 $$
 
 - 입력 차원: 2  
@@ -70,7 +66,7 @@ $$
 NumPy 버전에서는 수식 그대로 손으로 backward 한다.  
 PyTorch 버전에서는 `BCEWithLogitsLoss` + Autograd를 쓴다.
 
-#### 3.3 권장 디렉터리 구조
+### 2.3 권장 디렉터리 구조
 
 두 트랙을 나란히 둔다.
 
@@ -88,7 +84,7 @@ ch25_mini_nn/
 
 한 파일에 모두 넣어도 동작은 한다. 다만 이후 Transformer 프로젝트는 파일이 늘어나므로, **지금 분리 습관을 고정**한다.
 
-### 4. 먼저 알아야 할 개념 (프로젝트 체크리스트)
+## 3. 먼저 알아야 할 개념 (프로젝트 체크리스트)
 
 시작 전 다음을 체크한다.
 
@@ -101,7 +97,7 @@ ch25_mini_nn/
 
 부족하면 해당 강의를 짧게 재독하고 돌아온다. 프로젝트 도중 재독도 정상이다.
 
-### 5. 공통 데이터 — `data.py`
+## 4. 공통 데이터 — `data.py`
 
 ```python
 # ch25_mini_nn/data.py
@@ -110,7 +106,6 @@ ch25_mini_nn/
 from __future__ import annotations
 
 import numpy as np
-
 
 def make_toy_binary(
     n: int = 400,
@@ -126,7 +121,6 @@ def make_toy_binary(
     y[flip] = 1.0 - y[flip]
     return x.astype(np.float64), y
 
-
 def train_val_split(
     x: np.ndarray,
     y: np.ndarray,
@@ -139,7 +133,6 @@ def train_val_split(
     n_val = int(n * val_ratio)
     val_idx, train_idx = idx[:n_val], idx[n_val:]
     return x[train_idx], y[train_idx], x[val_idx], y[val_idx]
-
 
 if __name__ == "__main__":
     x, y = make_toy_binary()
@@ -154,39 +147,46 @@ if __name__ == "__main__":
 
 클래스 비율이 극단적이지 않은지 `y.mean()`으로 확인한다.
 
-### 6. Part A — NumPy MLP
+## 5. Part A — NumPy MLP
 
-#### 6.1 수학 정리
+### 5.1 수학 정리
 
 배치 $X \in \mathbb{R}^{N \times 2}$에 대해
 
 $$
+
 \begin{aligned}
 Z_1 &= X W_1 + b_1 \\
 A_1 &= \mathrm{ReLU}(Z_1) \\
 Z_2 &= A_1 W_2 + b_2 \\
 \hat{P} &= \sigma(Z_2)
 \end{aligned}
+
 $$
 
 BCE:
 
 $$
+
 L = -\frac{1}{N}\sum_{i=1}^{N}\Big[
   y_i\log(\hat{p}_i+\varepsilon)
   +(1-y_i)\log(1-\hat{p}_i+\varepsilon)
 \Big]
+
 $$
 
 출력층에서 sigmoid + BCE를 같이 쓰면, 로짓 $Z_2$에 대한 기울기가 깔끔해진다.
 
 $$
+
 \frac{\partial L}{\partial Z_2} = \frac{1}{N}(\hat{P} - Y)
+
 $$
 
 은닉층:
 
 $$
+
 \begin{aligned}
 \frac{\partial L}{\partial W_2} &= A_1^\top \frac{\partial L}{\partial Z_2} \\
 \frac{\partial L}{\partial b_2} &= \sum_{n}\frac{\partial L}{\partial Z_2} \\
@@ -195,11 +195,12 @@ $$
 \frac{\partial L}{\partial W_1} &= X^\top \frac{\partial L}{\partial Z_1} \\
 \frac{\partial L}{\partial b_1} &= \sum_{n}\frac{\partial L}{\partial Z_1}
 \end{aligned}
+
 $$
 
 제17·18강에서 한 계산의 압축판이다.
 
-#### 6.2 `numpy_mlp/model.py`
+### 5.2 `numpy_mlp/model.py`
 
 ```python
 # ch25_mini_nn/numpy_mlp/model.py
@@ -207,12 +208,10 @@ from __future__ import annotations
 
 import numpy as np
 
-
 def sigmoid(z: np.ndarray) -> np.ndarray:
     # 안정적인 sigmoid
     z = np.clip(z, -30.0, 30.0)
     return 1.0 / (1.0 + np.exp(-z))
-
 
 class NumpyMLP:
     def __init__(self, d_in=2, d_hidden=16, d_out=1, seed=0):
@@ -257,7 +256,7 @@ class NumpyMLP:
         return (p >= 0.5).astype(np.float64)
 ```
 
-#### 6.3 `numpy_mlp/train.py`
+### 5.3 `numpy_mlp/train.py`
 
 ```python
 # ch25_mini_nn/numpy_mlp/train.py
@@ -274,11 +273,9 @@ sys.path.insert(0, str(ROOT))
 from data import make_toy_binary, train_val_split  # noqa: E402
 from numpy_mlp.model import NumpyMLP  # noqa: E402
 
-
 def accuracy(model: NumpyMLP, X, Y) -> float:
     pred = model.predict_label(X)
     return float(np.mean(pred == Y))
-
 
 def iterate_minibatches(X, Y, batch_size, rng):
     n = X.shape[0]
@@ -286,7 +283,6 @@ def iterate_minibatches(X, Y, batch_size, rng):
     for start in range(0, n, batch_size):
         batch = idx[start:start + batch_size]
         yield X[batch], Y[batch]
-
 
 def main():
     x, y = make_toy_binary(n=400, seed=0, noise=0.05)
@@ -324,12 +320,11 @@ def main():
     model.W1, model.b1, model.W2, model.b2 = best_params
     print(f"[numpy] best val_acc={best_val:.3f}")
 
-
 if __name__ == "__main__":
     main()
 ```
 
-#### 6.4 NumPy 예상 결과
+### 5.4 NumPy 예상 결과
 
 환경에 따라 숫자는 달라질 수 있다. 성공의 기준은 다음과 같다.
 
@@ -347,9 +342,9 @@ if __name__ == "__main__":
 2. epoch가 진행되며 train/val acc가 **함께** 올라가는가?
 3. train만 치솟고 val이 무너지면 제24강 정규화를 적용해 본다. (과제)
 
-### 7. Part B — PyTorch MLP
+## 6. Part B — PyTorch MLP
 
-#### 7.1 `torch_mlp/model.py`
+### 6.1 `torch_mlp/model.py`
 
 ```python
 # ch25_mini_nn/torch_mlp/model.py
@@ -357,7 +352,6 @@ from __future__ import annotations
 
 import torch
 import torch.nn as nn
-
 
 class TorchMLP(nn.Module):
     def __init__(self, d_in: int = 2, d_hidden: int = 16, d_out: int = 1):
@@ -374,7 +368,7 @@ class TorchMLP(nn.Module):
 
 NumPy 버전은 확률 `P`를 직접 저장했지만, PyTorch에서는 **logit**을 내고 `BCEWithLogitsLoss`에 맡기는 편이 수치적으로 안전하다.
 
-#### 7.2 `torch_mlp/train.py`
+### 6.2 `torch_mlp/train.py`
 
 ```python
 # ch25_mini_nn/torch_mlp/train.py
@@ -394,7 +388,6 @@ sys.path.insert(0, str(ROOT))
 from data import make_toy_binary, train_val_split  # noqa: E402
 from torch_mlp.model import TorchMLP  # noqa: E402
 
-
 @torch.no_grad()
 def accuracy(model: TorchMLP, loader: DataLoader) -> float:
     model.eval()
@@ -406,7 +399,6 @@ def accuracy(model: TorchMLP, loader: DataLoader) -> float:
         correct += (pred == yb).sum().item()
         total += yb.numel()
     return correct / total
-
 
 def main():
     torch.manual_seed(0)
@@ -466,12 +458,11 @@ def main():
     torch.save(best_state, ROOT / "torch_mlp" / "best.pt")
     print("saved:", ROOT / "torch_mlp" / "best.pt")
 
-
 if __name__ == "__main__":
     main()
 ```
 
-#### 7.3 PyTorch 예상 결과
+### 6.3 PyTorch 예상 결과
 
 ```text
 [torch] epoch 001 | loss=0.6x | train_acc=0.6x | val_acc=0.6x
@@ -484,7 +475,7 @@ saved: .../torch_mlp/best.pt
 
 Adam + 적절한 lr 덕분에 NumPy SGD보다 빨리 안정되는 경우가 많다. 그렇다고 PyTorch가 “다른 수학”을 쓰는 것은 아니다. **같은 gradient update를 자동·고수준 API로 수행**할 뿐이다.
 
-### 8. 두 구현을 나란히 비교하기
+## 7. 두 구현을 나란히 비교하기
 
 | 항목 | NumPy | PyTorch |
 |---|---|---|
@@ -502,7 +493,7 @@ Adam + 적절한 lr 덕분에 NumPy SGD보다 빨리 안정되는 경우가 많�
 
 LLM 코드는 PyTorch 쪽에 가깝다. 그러나 Attention 버그를 잡을 때는 NumPy로 했던 **shape·미분 추적 습관**이 그대로 필요하다.
 
-### 9. 한 파일로 최소 실행하고 싶을 때
+## 8. 한 파일로 최소 실행하고 싶을 때
 
 디렉터리 구성이 부담되면, 먼저 아래 통합 스크립트로 성공 경험을 만든 뒤 분리해도 된다.
 
@@ -516,7 +507,6 @@ import torch.nn as nn
 
 from data import make_toy_binary, train_val_split
 
-
 def numpy_smoke():
     from numpy_mlp.model import NumpyMLP
 
@@ -529,7 +519,6 @@ def numpy_smoke():
         model.step(0.2)
     pred = model.predict_label(x_va)
     print("numpy val_acc", float(np.mean(pred == y_va)))
-
 
 def torch_smoke():
     x, y = make_toy_binary(n=200, seed=0)
@@ -549,13 +538,12 @@ def torch_smoke():
         acc = float(((p >= 0.5).float().numpy() == y_va).mean())
     print("torch val_acc", acc)
 
-
 if __name__ == "__main__":
     numpy_smoke()
     torch_smoke()
 ```
 
-### 10. 실제 LLM에서는 이 프로젝트가 어떻게 확장되는가
+## 9. 실제 LLM에서는 이 프로젝트가 어떻게 확장되는가
 
 이번 프로젝트의 각 칸이 이후 권에서 이렇게 커진다.
 
@@ -571,21 +559,21 @@ if __name__ == "__main__":
 따라서 “장난감 분류를 했으니 LLM과 무관하다”가 아니다.  
 **데이터가 들어가고, 파라미터가 갱신되고, 검증으로 고르는 루프**를 완주한 것이다.
 
-### 11. 실습 — 필수 미션
+## 10. 실습 — 필수 미션
 
-#### 미션 1 — NumPy 학습 완주
+### 미션 1 — NumPy 학습 완주
 
 1. 위의 `data.py`, `numpy_mlp/model.py`, `numpy_mlp/train.py`를 작성한다.
 2. 실행해 val_acc ≥ 0.80을 목표로 한다.
 3. 실패하면 lr, epoch, hidden size 순으로 조절한다.
 
-#### 미션 2 — PyTorch 재현
+### 미션 2 — PyTorch 재현
 
 1. `torch_mlp/`를 작성·실행한다.
 2. `best.pt`가 저장되는지 확인한다.
 3. 새 프로세스에서 `load_state_dict` 후 val_acc를 재측정한다.
 
-#### 미션 3 — 결과 보고서 (짧게)
+### 미션 3 — 결과 보고서 (짧게)
 
 다음을 노트에 남긴다.
 
@@ -593,31 +581,31 @@ if __name__ == "__main__":
 - 사용한 lr, batch, hidden
 - 가장 오래 막힌 버그 한 가지와 해결법
 
-### 12. 도전 과제 (심화)
+## 11. 도전 과제 (심화)
 
 시간 되는 만큼 도전한다. 전부 할 필요는 없다.
 
-#### 도전 1 — Softmax 다중 클래스
+### 도전 1 — Softmax 다중 클래스
 
 경계를 바꿔 3클래스 분류로 확장한다. NumPy에서는 softmax + cross entropy 미분을, PyTorch에서는 `CrossEntropyLoss`를 사용한다.
 
-#### 도전 2 — Dropout 추가
+### 도전 2 — Dropout 추가
 
 NumPy에서 학습 시 마스크를 직접 만들고, 평가 시 끈다. PyTorch `nn.Dropout`과 val 곡선을 비교한다.
 
-#### 도전 3 — 초기화 민감도
+### 도전 3 — 초기화 민감도
 
 `seed`만 바꿔 5번 학습해 val_acc 분산을 기록한다. 딥러닝 실험에 반복이 필요한 이유를 체감한다.
 
-#### 도전 4 — 결정 경계 시각화
+### 도전 4 — 결정 경계 시각화
 
 격자 위의 예측을 산점도와 함께 그려, 모델이 $x_1^2 + x_2=0$ 곡선을 근사하는지 본다. (matplotlib)
 
-#### 도전 5 — 성능 대조 표
+### 도전 5 — 성능 대조 표
 
 동일 epoch·동일 SGD lr로 NumPy와 PyTorch를 맞추어, 구현 차이가 아닌 **알고리즘 차이**를 줄인 비교를 시도한다. (PyTorch도 `torch.optim.SGD` 사용)
 
-### 13. 자주 하는 실수와 디버깅 가이드
+## 12. 자주 하는 실수와 디버깅 가이드
 
 1. **shape 불일치**  
    `W1`을 `(hidden, in)`으로 두었는데 `X @ W1`을 기대한 경우. 매 텐서에 `assert`를 넣는다.
@@ -648,7 +636,7 @@ NumPy에서 학습 시 마스크를 직접 만들고, 평가 시 끈다. PyTorch
 
 “한 배치 암기 테스트”는 구현 버그를 찾는 강력한 방법이다. 충분히 큰 모델이 배치 16개를 암기조차 못 하면 backward/update에 버그가 있을 확률이 높다.
 
-### 14. 핵심 정리
+## 13. 핵심 정리
 
 - 1권 프로젝트는 NumPy MLP와 PyTorch MLP로 **같은 학습 문제**를 두 번 푸는 것이다.
 - 파일 분리(`data` / `model` / `train`)는 이후 Transformer·GPT 프로젝트의 예행 연습이다.
@@ -656,7 +644,7 @@ NumPy에서 학습 시 마스크를 직접 만들고, 평가 시 끈다. PyTorch
 - 성공 기준은 완벽한 숫자보다, **재현 가능한 학습 곡선 + val 기반 모델 선택**이다.
 - 이 루프가 곧 LLM 학습 루프의 축소판이다.
 
-### 15. 핵심 용어
+## 14. 핵심 용어
 
 | 용어 | 의미 |
 |---|---|
@@ -669,53 +657,52 @@ NumPy에서 학습 시 마스크를 직접 만들고, 평가 시 끈다. PyTorch
 | Checkpoint | 좋은 val 시점의 `state_dict` 스냅샷 |
 | Smoke Test | 짧은 실행으로 파이프라인 생존을 확인하는 테스트 |
 
-### 16. 복습 문제
-
-#### 문제 1 (개념)
+## 15. 연습 문제
+### 문제 1 (개념)
 
 이 프로젝트에서 NumPy 구현과 PyTorch 구현을 모두 요구하는 이유를 두 가지 쓰시오.
 
-#### 문제 2 (계산)
+### 문제 2 (계산)
 
 배치 $N=4$, $\hat{p}=[0.9,0.1,0.8,0.2]$, $y=[1,0,1,0]$일 때 BCE(평균, $\varepsilon$ 무시)의 대략적 크기가 작은지 큰지 직관적으로 판단하고 근거를 쓰시오.
 
-#### 문제 3 (코드)
+### 문제 3 (코드)
 
 NumPy `backward`에서 `dZ2 = (P - Y) / n`인 이유를 “sigmoid+BCE 합성 미분” 관점에서 설명하시오.
 
-#### 문제 4 (실험)
+### 문제 4 (실험)
 
 한 배치 overfit 테스트에서 loss가 전혀 안 내려간다. 점검할 항목 세 가지를 쓰시오.
 
-#### 문제 5 (연결)
+### 문제 5 (연결)
 
 2권 Mini Transformer 프로젝트로 넘어가면, 이번 `model.py`의 Linear 자리가 어떤 모듈들로 대체되는지 예상해 쓰시오.
 
 ---
 
-### 정답 및 해설
+## 정답 및 해설
 
-#### 문제 1
+### 문제 1
 
 (1) 미분·형상 원리를 투명하게 검증하기 위해 (2) 이후 LLM 코드가 올라갈 공학 스택(Module/Autograd/Optimizer)을 동일 문제에 연결하기 위해.
 
-#### 문제 2
+### 문제 2
 
 예측이 정답과 잘 맞으므로 BCE는 작은 편이다. 예: $0.9$↔1, $0.1$↔0 등은 자신 있는 올바른 예측이라 손실 기여가 낮다.
 
-#### 문제 3
+### 문제 3
 
 $\sigma$와 BCE를 합성하면 $\partial L/\partial z = \hat{p}-y$ 형태가 되고, 배치 평균 Loss를 쓰므로 $1/n$이 곱해진다. (제13·17강 흐름)
 
-#### 문제 4
+### 문제 4
 
 예시: 학습률 과소/과대, Gradient 부호·평균 누락, 라벨 shape `(N,)` vs `(N,1)` 불일치, 옵티마이저 step 누락, 잘못된 loss 함수(logit/확률 혼동).
 
-#### 문제 5
+### 문제 5
 
 토큰 Embedding, Self-Attention(QKV Linear 포함), FFN(두 개의 Linear), LayerNorm, Residual 연결 등으로 대체·확장된다. 최종 출력은 vocab 크기 logit.
 
-### 17. 다음 강의와 연결
+## 16. 다음 강의와 연결
 
 작은 신경망이 **실제로 학습되는 것**을 두 스택으로 확인했다.
 
@@ -728,6 +715,6 @@ $\sigma$와 BCE를 합성하면 $\partial L/\partial z = \hat{p}-y$ 형태가 �
 ### 강의 이동
 
 - **이전 강:** [제24강. 과적합과 정규화](24강_과적합과_정규화.md)
-- **다음 강:** [제26강. 1권 총정리 — LLM으로 가는 다리](26강_1권_총정리_LLM으로_가는_다리.md)
+- **다음 강:** [제26강. 1권 총정리 LLM으로 가는 다리](26강_1권_총정리_LLM으로_가는_다리.md)
 
 <!-- /LECTURE_NAV -->
