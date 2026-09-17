@@ -1,16 +1,14 @@
-# 제42강. Positional Encoding
+# 42강. Positional Encoding
+## 이번 강에서 배우는 내용
 
-> **학습 목표**
-> - 왜 Attention에 위치 정보가 별도로 필요한지
-> - Sinusoidal PE의 직관과 수식
-> - 작은 숫자로 PE 벡터를 직접 계산하는 방법
-> - 토큰 임베딩에 PE를 더하는(add) 방식
-> - Sinusoidal PE의 한계와, 제43강 RoPE로 넘어가는 이유
-> - 현대 LLM에서 absolute PE가 차지하던 위치(사실과 해석을 구분)
+- 왜 Attention에 위치 정보가 별도로 필요한지
+- Sinusoidal PE의 직관과 수식
+- 작은 숫자로 PE 벡터를 직접 계산하는 방법
+- 토큰 임베딩에 PE를 더하는(add) 방식
+- Sinusoidal PE의 한계와, 제43강 RoPE로 넘어가는 이유
+- 현대 LLM에서 absolute PE가 차지하던 위치(사실과 해석을 구분)
 
----
-## 1. 왜 이것을 배우는가
-
+## 왜 중요한가?
 언어에서 순서는 의미다.
 
 ```text
@@ -36,8 +34,7 @@ token id
 제43강의 RoPE는 이 문제를 **더하기**가 아니라 **회전**으로 푸는 현대적 해법이다.  
 오늘은 그 이전 세대의 표준을 정확히 이해한다.
 
-## 2. 먼저 알아야 할 개념
-
+## 선수 개념
 - Embedding: 토큰 id → $d_{\text{model}}$ 벡터 (제31강)
 - Self-Attention / MHA (제39~41강)
 - $\sin, \cos$의 기본 성질 (주기, 위상)
@@ -48,8 +45,7 @@ token id
 - RoPE의 복소 회전 형식 (제43강)
 - ALiBi 등 다른 상대 위치 방법 (제53강 힌트)
 
-## 3. 핵심 개념 설명
-
+## 핵심 개념
 ### 3.1 위치 정보가 없는 Attention의 문제
 
 입력 시퀀스 $X = [x_1, x_2, x_3]$에 대해 Self-Attention은 (마스크·특수 구조를 제외하면) 토큰 쌍의 유사도에 의존한다.  
@@ -136,8 +132,7 @@ $$
 
 곱하기나 concat을 쓰는 변종도 있으나, 원 논문과 많은 구현은 add다.
 
-## 4. 직관적으로 이해하기
-
+## 직관적으로 이해하기
 시계열에 여러 메트로놈을 붙인다고 상상한다.
 
 ```text
@@ -152,8 +147,7 @@ $$
 
 Attention은 이 지문이 섞인 벡터로 Q/K/V를 만들므로, **내용이 비슷한 토큰도 위치가 다르면** Key/Query가 달라질 수 있다.
 
-## 5. 수학적으로 이해하기
-
+## 수학적으로 이해하기
 ### 5.1 주파수 정의
 
 $$
@@ -206,8 +200,7 @@ $$
 | 유연성 | 고정 패턴 | 데이터가 패턴을 학습 |
 | 대표 예 | 원 논문 Transformer | GPT-2 등 |
 
-## 6. 작은 숫자로 직접 계산하기
-
+## 작은 숫자로 직접 계산하기
 ### 6.1 설정
 
 - $d_{\text{model}} = 4$
@@ -292,8 +285,7 @@ $$
 
 같은 내용 임베딩이라도 위치가 다르면 $X$의 행이 달라지고, 이후 Q/K도 달라진다.
 
-## 7. 코드로 구현하기
-
+## 코드로 구현하기
 ```python
 # sinusoidal_pe.py
 """Sinusoidal Positional Encoding (NumPy)."""
@@ -353,8 +345,7 @@ class SinusoidalPositionalEncoding(nn.Module):
 
 `register_buffer`로 두면 학습 파라미터는 아니지만 `state_dict`/device 이동에 포함된다.
 
-## 8. 한계 — 왜 다음이 RoPE인가
-
+## 한계 — 왜 다음이 RoPE인가
 Sinusoidal/Learned absolute PE는 강력하지만 한계가 있다.
 
 1. **절대 위치 중심**  
@@ -373,8 +364,7 @@ Sinusoidal/Learned absolute PE는 강력하지만 한계가 있다.
 
 제43강에서 이 한계를 회전으로 돌파한다.
 
-## 9. 실제 LLM에서는 어떻게 사용하는가
-
+## LLM에서는 어디에 사용될까?
 사실:
 
 - 원 논문 Transformer(기계번역 Encoder-Decoder)는 sinusoidal PE를 사용했다.
@@ -388,16 +378,14 @@ Sinusoidal/Learned absolute PE는 강력하지만 한계가 있다.
 
 제48강 Causal LM 구조를 그릴 때, 위치 모듈이 Embedding 바로 다음(또는 Attention 내부)에 들어가는 지점을 표시하게 된다.
 
-## 10. 실습
-
+## 실습
 1. `sinusoidal_pe(8, 4)`를 출력해 각 행(위치)이 서로 다른지 확인하라.
 2. 같은 토큰 임베딩 `[0.2, 0.1, -0.1, 0.0]`를 위치 0과 3에 두고 PE를 더한 뒤 차이를 계산하라.
 3. `d_model=8`에서 $i$가 커질수록 인접 위치 간 PE 차이가 작아지는 차원을 관찰하라.
 4. Learned PE용 `nn.Embedding(max_len, d_model)`과 sinusoidal을 같은 모델에 바꿔 끼울 인터페이스를 스케치하라.
 5. (선택) $PE_{t}$와 $PE_{t+1}$의 코사인 유사도가 $t$에 따라 어떻게 변하는지 그려 보라.
 
-## 11. 자주 하는 실수
-
+## 자주 하는 실수
 1. **PE를 concat하고도 d_model을 안 바꿈**  
    add가 아니라 concat이면 차원이 두 배가 된다.
 
@@ -413,16 +401,14 @@ Sinusoidal/Learned absolute PE는 강력하지만 한계가 있다.
 5. **“현대 LLM = 무조건 sinusoidal”**  
    사실이 아니다. 모델별 위치 인코딩을 확인한다.
 
-## 12. 핵심 정리
-
+## 핵심 요약
 - Self-Attention은 위치 신호가 없으면 순서에 둔감하다.
 - Positional Encoding은 위치 $t$를 벡터로 만들어 임베딩에 더한다.
 - Sinusoidal PE는 차원마다 다른 주파수의 sin/cos로 고유 지문을 만든다.
 - 상대 오프셋에 대한 선형 관계 성질이 있지만, 상대 위치 전용 메커니즘은 아니다.
 - 한계를 보완하는 현대적 대표 해가 제43강 RoPE다.
 
-## 13. 핵심 용어
-
+## 용어 사전
 | 용어 | 설명 |
 |---|---|
 | Positional Encoding (PE) | 토큰 위치를 벡터로 표현하는 방법 |
@@ -431,7 +417,7 @@ Sinusoidal/Learned absolute PE는 강력하지만 한계가 있다.
 | Learned PE | 위치 테이블을 학습하는 absolute PE |
 | Wavelength / Frequency | 차원별 주기·주파수. 세밀/거친 위치 해상도 |
 
-## 14. 연습 문제
+## 연습문제
 **문제 1.** Attention에 위치 인코딩이 필요한 이유를 한 문장으로 쓰라.
 
 **문제 2.** $d_{\text{model}}=4$, $t=0$일 때 sinusoidal PE의 값은?
@@ -454,8 +440,7 @@ Sinusoidal/Learned absolute PE는 강력하지만 한계가 있다.
 
 5. 없다. GPT-2는 learned absolute position embedding을 사용했다.
 
-## 15. 다음 강의와 연결
-
+## 다음 강의와 연결
 오늘은 “위치를 더한다”.  
 다음은 “Query/Key를 위치만큼 회전한다”.
 

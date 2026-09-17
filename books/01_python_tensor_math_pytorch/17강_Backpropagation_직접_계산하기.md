@@ -1,15 +1,13 @@
-# 제17강. Backpropagation 직접 계산하기
+# 17강. Backpropagation 직접 계산하기
+## 이번 강에서 배우는 내용
 
-> **학습 목표**
-> - Backpropagation(역전파)이 Computational Graph 위에서 Chain Rule을 체계적으로 적용하는 알고리즘임을 설명
-> - Loss → 출력층 → 은닉층 순으로 Gradient가 흐르는 이유
-> - 2-2-1 네트워크에서 $\partial L/\partial W^{(2)}, \partial L/\partial b^{(2)}, \partial L/\partial W^{(1)}, \partial L/\partial b^{(1)}$을 직접 계산
-> - Local Gradient와 Upstream Gradient의 곱으로 각 노드의 Gradient를 얻는 습관
-> - `loss.backward()`가 내부적으로 하는 일의 손계산 버전을 그림으로 설명
+- Backpropagation(역전파)이 Computational Graph 위에서 Chain Rule을 체계적으로 적용하는 알고리즘임을 설명
+- Loss → 출력층 → 은닉층 순으로 Gradient가 흐르는 이유
+- 2-2-1 네트워크에서 $\partial L/\partial W^{(2)}, \partial L/\partial b^{(2)}, \partial L/\partial W^{(1)}, \partial L/\partial b^{(1)}$을 직접 계산
+- Local Gradient와 Upstream Gradient의 곱으로 각 노드의 Gradient를 얻는 습관
+- `loss.backward()`가 내부적으로 하는 일의 손계산 버전을 그림으로 설명
 
----
-## 1. 왜 이것을 배우는가
-
+## 왜 중요한가?
 딥러닝 프레임워크는 `loss.backward()` 한 줄로 Gradient를 채워 준다.  
 하지만 그 한 줄이 하는 일은 결국 다음뿐이다.
 
@@ -28,8 +26,7 @@ Loss
 
 가 몸이 기억한다. 18강의 NumPy 구현과 20강의 Autograd는 이 손계산의 자동화이다.
 
-## 2. 먼저 알아야 할 개념
-
+## 선수 개념
 ### 2.1 Chain Rule 복습 (제14강)
 
 합성 $L = f(g(w))$이면
@@ -72,8 +69,7 @@ Loss
 | $y$ | $1.0$ |
 | $L$ | $0.31205$ |
 
-## 3. 핵심 개념 설명
-
+## 핵심 개념
 ### 3.1 Backpropagation
 
 **Backpropagation(역전파, Backprop)**는 Loss에서 시작해 계산 그래프를 **출력→입력 방향**으로 따라가며, Chain Rule로 각 파라미터의 Gradient를 효율적으로 계산하는 알고리즘이다.
@@ -117,8 +113,7 @@ PyTorch에서는 2~6이 `loss.backward()`에 해당한다(제20강).
 
 형태로 정리된다. 오늘은 성분별로 풀어서 이 공식의 출처를 확인한다.
 
-## 4. 직관적으로 이해하기
-
+## 직관적으로 이해하기
 Forward가 “시험 답안을 앞에서 뒤로 작성”이라면,  
 Backprop은 **채점 코멘트를 뒤에서 앞으로 전달**하는 일이다.
 
@@ -130,8 +125,7 @@ Backprop은 **채점 코멘트를 뒤에서 앞으로 전달**하는 일이다.
 
 쪽지가 곧 Gradient이다.
 
-## 5. 수학적으로 이해하기 — 준비 미분
-
+## 수학적으로 이해하기 — 준비 미분
 ### 5.1 Loss 미분
 
 \[
@@ -181,8 +175,7 @@ z^{(1)}_i = \sum_j W^{(1)}_{ij} x_j + b^{(1)}_i
 \frac{\partial z^{(1)}_i}{\partial x_j} = W^{(1)}_{ij}
 \]
 
-## 6. 작은 숫자로 직접 계산하기 — 모든 편미분
-
+## 작은 숫자로 직접 계산하기 — 모든 편미분
 목표: 숫자로 $\nabla L$을 전부 구한다.
 
 ### 6.1 Step A — $\partial L/\partial\hat{y}$
@@ -367,8 +360,7 @@ w^{(2)}_1 \leftarrow 0.5 - 0.1\cdot(-0.237) = 0.5 + 0.0237 = 0.5237
 새 파라미터로 Forward하면 $\hat{y}$가 0.21보다 커져 $y=1$에 조금 가까워지고, Loss가 줄어드는 것이 정상이다.  
 18강에서 반복 루프로 확인한다.
 
-## 7. 경로별로 Chain Rule 펼치기 (한 Weight만 확대)
-
+## 경로별로 Chain Rule 펼치기 (한 Weight만 확대)
 $W^{(1)}_{11}$ 하나만 끝까지 추적한다.
 
 의존 경로:
@@ -407,8 +399,7 @@ W11 → z1 → a1 → ŷ → L
 Backprop의 장점은, 이 곱셈을 노드마다 **한 번만** 정리해 재사용하는 것이다.  
 $\partial L/\partial a_1=-0.395$를 한 번 구해 두면 $W_{11}, W_{12}, b_1$이 공유한다.
 
-## 8. 수치 미분으로 검증하기
-
+## 수치 미분으로 검증하기
 손계산이 맞는지 확인하는 표준 방법:
 
 \[
@@ -448,8 +439,7 @@ print("analytic         =", -0.237)
 
 모든 파라미터에 대해 이 검사를 돌리는 습관이, 18강 구현의 버그를 잡는 가장 확실한 방법이다.
 
-## 9. Computational Graph에서의 Backward 스케치
-
+## Computational Graph에서의 Backward 스케치
 ```text
 Forward:
 x,W1,b1 → z1 → a1 →(+W2,b2)→ ŷ → L
@@ -474,8 +464,7 @@ Backward (화살표는 Gradient 흐름):
 
 이 그림이 곧 Autograd 엔진의 할 일이다.
 
-## 10. 코드로 “계산 순서”만 구현하기 (완성본은 18강)
-
+## 코드로 “계산 순서”만 구현하기 (완성본은 18강)
 ```python
 """17강: Backprop 단계를 명시적으로 풀어 쓴 버전."""
 
@@ -521,8 +510,7 @@ print("db1      =", dL_db1)
 
 출력은 7절 표와 같아야 한다.
 
-## 11. 실제 LLM에서는 어떻게 사용하는가
-
+## LLM에서는 어디에 사용될까?
 LLM 학습의 Backward도 원리는 동일하다. 다만 그래프가 길다.
 
 ```text
@@ -551,8 +539,7 @@ Residual 경로 + Attention 경로 + FFN(MLP) 경로
 | Gradient Checkpointing | Forward cache를 버려 메모리를 줄이고, Backward 때 재계산 |
 | `loss.backward()` | 오늘 손계산의 자동 실행 |
 
-## 12. 실습
-
+## 실습
 ### 실습 1 — 표 다시 쓰기
 
 책을 덮고 7.9 요약표를 빈칸으로 다시 채운다.  
@@ -580,8 +567,7 @@ $0.31205$보다 작아지는지 확인한다.
 $\sigma'(z)=\sigma(z)(1-\sigma(z))$를 넣어 δ를 다시 계산한다.  
 같은 숫자라도 Gradient 크기가 달라짐을 관찰한다.
 
-## 13. 자주 하는 실수
-
+## 자주 하는 실수
 1. **Forward 값과 Gradient를 혼동한다**  
    $a=0.3$과 $\partial L/\partial a=-0.395$는 다른 객체이다.
 
@@ -603,8 +589,7 @@ $\sigma'(z)=\sigma(z)(1-\sigma(z))$를 넣어 δ를 다시 계산한다.
 7. **한 샘플 Gradient를 “진리”로 과대 해석한다**  
    배치·데이터셋 전체의 평균 Gradient가 학습 방향이다. 오늘은 알고리즘 이해용 단샘플이다.
 
-## 14. 핵심 정리
-
+## 핵심 요약
 - Backpropagation은 Loss에서 시작해 Chain Rule로 모든 파라미터 Gradient를 효율적으로 계산한다.
 - 순서는 항상 Loss → 출력층 → (Activation 미분) → 은닉층 → … 이다.
 - 핵심 패턴: $\partial L/\partial W = \delta\, a_{\mathrm{prev}}^{\top}$, $\partial L/\partial b = \delta$.
@@ -612,8 +597,7 @@ $\sigma'(z)=\sigma(z)(1-\sigma(z))$를 넣어 δ를 다시 계산한다.
 - 수치 미분은 해석적 Backprop의 단위 테스트이다.
 - `loss.backward()`와 Autograd는 이 손계산의 일반화이다.
 
-## 15. 핵심 용어
-
+## 용어 사전
 | 용어 | 의미 |
 |---|---|
 | Backpropagation | 계산 그래프를 역으로 순회하며 Gradient를 구하는 알고리즘 |
@@ -627,7 +611,7 @@ $\sigma'(z)=\sigma(z)(1-\sigma(z))$를 넣어 δ를 다시 계산한다.
 | Vanishing / Exploding Gradient | 곱누적으로 Gradient가 소멸/폭발하는 현상 |
 | Computational Graph (Backward) | Forward 그래프를 반대 방향으로 평가하는 과정 |
 
-## 16. 연습 문제
+## 연습문제
 ### 문제 1 (개념)
 
 Backpropagation을 Chain Rule과 Computational Graph 단어로 정의하시오.
@@ -655,7 +639,6 @@ $z^{(1)}_1=-0.5$로만 바뀌고 나머지 Forward 결과가 기적적으로 같
 ---
 
 ## 정답 및 해설
-
 ### 문제 1
 
 Loss에서 시작해 계산 그래프를 입력 방향으로 순회하며, 각 노드에서 Upstream Gradient와 Local Gradient를 Chain Rule로 곱(필요 시 합)하여 모든 학습 파라미터의 Gradient를 구하는 알고리즘이다.
@@ -680,8 +663,7 @@ $b^{(2)}\leftarrow 0.2 - 0.1\times(-0.79)=0.279$.
 
 $\partial L/\partial W^{(2)}=[-0.237,\ -0.2765]$ (shape만 프레임워크 관례에 맞게).
 
-## 17. 다음 강의와 연결
-
+## 다음 강의와 연결
 이번 강의에서 Backprop을 **손으로 완전 분해**했다.
 
 다음 **제18강. Backpropagation NumPy 구현**에서는, 오늘 식을 함수로 옮기고 **학습 루프**로 묶어 Loss가 실제로 내려가는 장면을 만든다.  

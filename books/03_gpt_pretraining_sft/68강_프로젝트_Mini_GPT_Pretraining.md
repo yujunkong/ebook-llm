@@ -1,15 +1,13 @@
-# 제68강. 프로젝트 — Mini GPT Pretraining
+# 68강. 프로젝트 — Mini GPT Pretraining
+## 이번 강에서 배우는 내용
 
-> **학습 목표**
-> - `ch68_mini_gpt_pretrain/`에 `config / data / model / train / generate`를 둔다.
-> - 아주 작은 텍스트 코퍼스에서 next-token CE로 학습하고 loss가 내려가는 곡선을 확인한다.
-> - 주기적으로 val loss · PPL · 샘플 생성을 같은 로그에 남긴다.
-> - (선택) 단순 시퀀스 패킹으로 pad를 줄여 본다.
-> - 실패 시 shape / 시프트 / eval 모드 / 토크나이저를 체계적으로 디버깅한다.
+- `ch68_mini_gpt_pretrain/`에 `config / data / model / train / generate`를 둔다.
+- 아주 작은 텍스트 코퍼스에서 next-token CE로 학습하고 loss가 내려가는 곡선을 확인한다.
+- 주기적으로 val loss · PPL · 샘플 생성을 같은 로그에 남긴다.
+- (선택) 단순 시퀀스 패킹으로 pad를 줄여 본다.
+- 실패 시 shape / 시프트 / eval 모드 / 토크나이저를 체계적으로 디버깅한다.
 
----
-## 1. 왜 이것을 배우는가
-
+## 왜 중요한가?
 부품 강의만으로는 “Pretraining을 돌렸다”고 말하기 어렵다. 실제로 조립하면 드러나는 것들:
 
 - 타깃 시프트 누락 → loss가 비정상적으로 낮음
@@ -32,8 +30,7 @@ tiny corpus
 
 이후 제69강부터는 같은 모델에 **Instruction / SFT**를 얹는다. 지금 Pretraining 루프가 흔들리면 SFT도 흔들린다.
 
-## 2. 프로젝트 개요
-
+## 프로젝트 개요
 ### 2.1 목표와 성공 기준
 
 | 항목 | 성공 기준 |
@@ -79,8 +76,7 @@ ch68_mini_gpt_pretrain/
 
 2권 `ch49_mini_transformer`와 닮았다. 차이는 **Pretraining 운영 습관**(val/PPL/ckpt/별도 generate)을 처음부터 넣는 것이다.
 
-## 3. 먼저 알아야 할 개념 (체크리스트)
-
+## 선수 개념
 - [ ] Causal GPT / Decoder-only (제55·56강)
 - [ ] Next-token CE 목표 (제57강)
 - [ ] Greedy · Temperature (제58·59강)
@@ -93,8 +89,7 @@ ch68_mini_gpt_pretrain/
 
 부족하면 해당 강을 짧게 재독하고 돌아온다.
 
-## 4. 학습 데이터 — 아주 작은 텍스트
-
+## 학습 데이터 — 아주 작은 텍스트
 완벽한 위키피디아가 필요 없다. **반복 패턴이 있는 짧은 텍스트**가 미니 LM에 친절하다.
 
 `input.txt` 예:
@@ -117,8 +112,7 @@ to be or not to be that is the question
 
 한글 코퍼스를 써도 된다. char tokenizer면 한글 음절이 vocab에 그대로 들어간다. 다만 CPU에서 vocab·시퀀스가 커지지 않게 짧게 유지하라.
 
-## 5. `config.py` — 설정 한곳에
-
+## `config.py` — 설정 한곳에
 ```python
 # ch68_mini_gpt_pretrain/config.py
 """Mini GPT Pretraining 하이퍼파라미터."""
@@ -167,8 +161,7 @@ if __name__ == "__main__":
 MiniGPTConfig(vocab_size=128, block_size=64, n_embd=64, n_head=4, n_layer=2, dropout=0.0, bias=False, batch_size=16, lr=0.0003, weight_decay=0.1, max_steps=1000, eval_every=100, eval_batches=20, sample_every=200, ckpt_path='mini_gpt_ckpt.pt', seed=42, device='cpu', pack_sequences=False, val_fraction=0.1)
 ```
 
-## 6. `data.py` — 토큰 · 배치 · (선택) 패킹
-
+## `data.py` — 토큰 · 배치 · (선택) 패킹
 ### 6.1 Char tokenizer
 
 ```python
@@ -270,8 +263,7 @@ y0 'o be or not to be'
 
 `pack_sequences=True`이면 학습 스트림을 `block_size` 배수로 잘라 **남는 꼬리만 버리는** 단순 패킹을 쓸 수 있다. 미니 버전은 문서 경계를 무시하므로, 긴 실전 데이터에서는 EOT 토큰을 넣는 쪽이 맞다. 여기서 목적은 “pad로 채워 평균 NLL이 왜곡되는 감각”을 줄이는 것 정도다.
 
-## 7. `model.py` — MiniGPT
-
+## `model.py` — MiniGPT
 2권 Mini Transformer와 동일한 Causal LM 골격이다. 핵심 shape: `[B,T] → [B,T,V]`.
 
 ```python
@@ -398,8 +390,7 @@ if __name__ == "__main__":
 logits (2, 16, 50)
 ```
 
-## 8. `train.py` — 학습 · Validation · PPL · 샘플
-
+## `train.py` — 학습 · Validation · PPL · 샘플
 ```python
 # ch68_mini_gpt_pretrain/train.py
 """Mini GPT Pretraining 루프."""
@@ -519,8 +510,7 @@ if __name__ == "__main__":
     main()
 ```
 
-## 9. `generate.py` — 학습과 분리된 생성
-
+## `generate.py` — 학습과 분리된 생성
 ```python
 # ch68_mini_gpt_pretrain/generate.py
 """체크포인트에서 텍스트 생성."""
@@ -576,8 +566,7 @@ if __name__ == "__main__":
     main()
 ```
 
-## 10. 실행 순서와 예상 출력
-
+## 실행 순서와 예상 출력
 ### 10.1 준비
 
 ```bash
@@ -629,8 +618,7 @@ to be or not to be that is the question to be or ...
 
 꺾은선이 전반적으로 우하향이면 루프가 살아 있다. 평탄하거나 NaN이면 §13 디버깅으로.
 
-## 11. 한 배치 Overfit 테스트 (필수 습관)
-
+## 한 배치 Overfit 테스트 (필수 습관)
 전체 학습 전에 **고정 배치 하나**만 수백 step 학습해 loss가 매우 낮아지는지 확인한다.
 
 ```python
@@ -652,8 +640,7 @@ for step in range(300):
 - loss가 거의 안 내려가면: 학습률·시프트·mask·step 누락을 의심
 - 한 배치만 잘 되고 전체에서 실패하면: 데이터·평가·생성 쪽을 의심
 
-## 12. 디버깅 가이드
-
+## 디버깅 가이드
 ```text
 1) data.py에서 x/y decode가 한 글자 시프트인지
 2) model.py smoke: logits [B,T,V]
@@ -673,8 +660,7 @@ for step in range(300):
 | 생성 반복 Junk | 학습 부족, temperature, 데이터 과짧음 |
 | 로드 후 난수 문자 | stoi/itos 미저장·불일치 |
 
-## 13. 완성 체크리스트
-
+## 완성 체크리스트
 - [ ] `python data.py`가 vocab·shape·시프트 decode를 인쇄한다
 - [ ] `python model.py`가 `logits (B,T,V)`를 인쇄한다
 - [ ] `python train.py`가 step마다 train/val loss·PPL을 남긴다
@@ -683,8 +669,7 @@ for step in range(300):
 - [ ] `python generate.py --ckpt ... --prompt ...`가 동작한다
 - [ ] (선택) `pack_sequences=True`로 한 번 더 돌려 본다
 
-## 14. 도전 과제
-
+## 도전 과제
 ### 도전 1 — Validation을 문서 단위로
 
 바이트 뒤쪽 절단 대신, 줄 단위로 문서를 나누고 마지막 10% 줄을 val로 두어 누수를 줄여 보라.
@@ -709,24 +694,25 @@ for step in range(300):
 
 제59강 nucleus sampling을 `generate`에 추가하라. 구현이 틀리면 분포가 깨지므로, 먼저 temperature-only와 비교한다.
 
-## 15. 이 프로젝트가 증명하는 것
-
+## 이 프로젝트가 증명하는 것
 끝난 뒤 다음 문장을 말할 수 있어야 한다.
 
 > 나는 작은 텍스트 코퍼스에서 Mini GPT를 next-token CE로 학습시키고, val loss·PPL을 추적하며, 체크포인트에서 프롬프트 이어쓰기를 할 수 있다.
 
 이것이 3권 Pretraining 구간의 실전 관문이다. 규모·데이터를 키우면 “본격 Pretraining”으로 확장되고, 다음 장부터는 **같은 가중치에 지시 따르기를 심는 SFT**로 넘어간다.
 
-## 16. 핵심 정리
+## LLM에서는 어디에 사용될까?
 
+이번 68강에서 배운 개념은 이후 Transformer · GPT · 서빙 강의에서 반복해서 등장합니다. 각 수식·코드 블록을 “실제 모델의 어느 단계인가”와 연결해 다시 읽어 보세요.
+
+## 핵심 요약
 - Mini GPT Pretraining = `config` + `data` + `model` + `train` + `generate`.
 - 성공 기준은 loss 감소 + PPL 로깅 + 패턴을 흉내 내는 생성이다.
 - 초기 loss ≈ $\ln V$, 한 배치 overfit으로 구현 버그를 먼저 제거한다.
 - Packing은 선택이며, 미니 버전은 문서 경계를 단순화한다.
 - 벤치마크 허풍 없이, **재현 가능한 미니 실험**만 남긴다.
 
-## 17. 핵심 용어
-
+## 용어 사전
 | 용어 | 의미 |
 |---|---|
 | Pretraining | 대량(여기선 소량) 텍스트 next-token 학습 |
@@ -737,7 +723,7 @@ for step in range(300):
 | Overfit test | 고정 배치 암기로 구현 검증 |
 | Loss curve | step별 train loss 기록 |
 
-## 18. 연습 문제
+## 연습문제
 ### 문제 1 (개념)
 
 `y`를 `x`와 동일하게 두면 어떤 잘못된 학습이 되는가?
@@ -761,7 +747,6 @@ for step in range(300):
 ---
 
 ## 정답 및 해설
-
 ### 문제 1
 
 다음 토큰이 아니라 “현재 토큰 복사”를 맞추게 되어 loss가 비정상적으로 쉽게 내려가거나, 언어 모델 목표와 어긋난다.
@@ -782,8 +767,7 @@ for step in range(300):
 
 토큰 ID ↔ 문자 매핑이 사라져 올바른 디코딩이 불가능하거나, 새로 fit한 vocab과 가중치가 어긋나 난수에 가까운 문자열이 나온다.
 
-## 19. 다음 강의와 연결
-
+## 다음 강의와 연결
 이제 “텍스트를 많이 읽어 다음 말을 예측하는” **base LM**을 미니 규모로 손에 넣었다.
 
 그런데 ChatGPT 같은 **assistant**는 base LM과 다르다. 다음 **제69강. Instruction Tuning의 개념**에서는 왜 지시 따르기 학습이 필요한지, SFT가 Pretraining과 RLHF 사이에 어디에 앉는지부터 정리한다.

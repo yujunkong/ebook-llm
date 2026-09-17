@@ -11,17 +11,16 @@
 | **4권 79~98강** | **완료** |
 | **5권 99~120강** | **완료** |
 | EPUB 빌드 | **완료** (`epub/01`~`05_*.epub`, MathML) |
-| Markdown 스타일 가이드 재정비 | 완료 |
+| Markdown 스타일 가이드 | 완료 (Apple Books 기준) |
 | Apple Books 가이드 | **완료** (`docs/APPLE_BOOKS_GUIDE.md`) |
-| 10·11강 Apple Books 템플릿 보강 | **완료** |
+| 120강 구조 일괄 반영 | **완료** (`# N강` · 배우는 내용 · 왜 중요한가 · LLM 연결 · 핵심 요약 · 용어 사전 · 연습문제) |
+| 10·11강 내용 보강 | **완료** (도식·예제·실습·LLM 연결 심화) |
 
 ## 작성 순서
 
-120강 본문·EPUB3(1~5권) 산출물·Apple Books 가이드가 있다.
-
-재빌드: `python3 scripts/build_epub.py --book all`
-
-이후 작업: 나머지 강의를 Apple Books 템플릿(배우는 내용 · LLM 연결 · 용어 · 4단계 연습문제 · SVG)으로 순차 정렬.
+1. Apple Books 가이드 구조는 120강에 일괄 반영됨.
+2. 10·11강은 내용(예제·도식·실습·LLM 연결)을 심화 보강.
+3. 재빌드: `python3 scripts/build_epub.py --book all`
 
 ### 커리큘럼 변경 (5권, 번호 유지)
 

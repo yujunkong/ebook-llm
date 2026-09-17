@@ -1,22 +1,19 @@
-# 제39강. Self-Attention 구현
+# 39강. Self-Attention 구현
+## 이번 강에서 배우는 내용
 
-> **학습 목표**
-> - Self-Attention의 순전파를 함수/클래스로 쓰기
-> - NumPy로 끝까지 구현하고 Shape을 검증하기
-> - PyTorch `nn.Module` 스케치로 옮기기
-> - (선택) 출력 투영 $W_O$까지 포함한 단일 헤드 블록
-> - Causal Mask를 넣을 위치만 표시해 40강으로 연결하기
+- Self-Attention의 순전파를 함수/클래스로 쓰기
+- NumPy로 끝까지 구현하고 Shape을 검증하기
+- PyTorch `nn.Module` 스케치로 옮기기
+- (선택) 출력 투영 $W_O$까지 포함한 단일 헤드 블록
+- Causal Mask를 넣을 위치만 표시해 40강으로 연결하기
 
----
-## 1. 왜 이것을 배우는가
-
+## 왜 중요한가?
 LLM 코드베이스를 열면 Attention은 최적화된 fused kernel·FlashAttention·테넌트 설정에 가려져 있다.  
 그 전에 **느리고 명확한 참조 구현**이 있어야, 최적화본이 같은 일을 하는지 검증할 수 있다.
 
 또한 49~50강 Mini Transformer 프로젝트의 핵심 부품이 바로 오늘 모듈이다.
 
-## 2. 먼저 알아야 할 개념
-
+## 선수 개념
 - Q/K/V 투영 (36강)
 - Scaled scores (37강)
 - Softmax Attention (38강)
@@ -29,8 +26,7 @@ LLM 코드베이스를 열면 Attention은 최적화된 fused kernel·FlashAtten
 - RoPE (43강)
 - FlashAttention 알고리즘 (5권)
 
-## 3. 핵심 개념 설명
-
+## 핵심 개념
 ### 3.1 Self-Attention 모듈이 할 일
 
 입력 $X \in \mathbb{R}^{B\times T\times d_{\mathrm{model}}}$에 대해:
@@ -62,8 +58,7 @@ A = softmax(S)
 
 오늘은 `mask=None` 경로를 완성한다.
 
-## 4. 직관적으로 이해하기 — 레고 조립
-
+## 직관적으로 이해하기 — 레고 조립
 | 조각 | 강의 | 코드 함수 |
 |---|---|---|
 | 투영 | 36 | `project_qkv` |
@@ -73,8 +68,7 @@ A = softmax(S)
 
 각 함수를 따로 테스트한 뒤 조립하면 디버깅이 쉽다.
 
-## 5. 수학적으로 이해하기 — 단일 헤드
-
+## 수학적으로 이해하기 — 단일 헤드
 $$
 
 \begin{aligned}
@@ -89,8 +83,7 @@ $$
 잔차 $X+O$, LayerNorm은 44·46강에서 블록 조립 시 붙인다.  
 오늘은 Attention 서브층만.
 
-## 6. 작은 숫자로 모듈 입출력 검증
-
+## 작은 숫자로 모듈 입출력 검증
 $B=1,T=2,d=2$, $W_Q=W_K=I$, $W_V=I$, $W_O=I$.
 
 $$
@@ -130,8 +123,7 @@ $$
 
 구현이 이 숫자에 가까우면 조립이 맞은 것이다.
 
-## 7. 코드로 구현하기 (NumPy 전체)
-
+## 코드로 구현하기
 ```python
 # lecture39_self_attention_numpy.py
 """단일 헤드 Self-Attention 참조 구현 (NumPy)."""
@@ -224,8 +216,7 @@ if __name__ == "__main__":
 
 실행해 7절 근사치와 맞는지 본다.
 
-## 8. PyTorch로 구현하기 (스케치)
-
+## PyTorch로 구현하기 (스케치)
 ```python
 # lecture39_self_attention_torch.py
 """단일 헤드 Self-Attention (PyTorch 스케치)."""
@@ -302,8 +293,7 @@ if __name__ == "__main__":
 `nn.Linear`의 weight shape는 `(out, in)`이다.  
 `copy_(torch.eye)`는 `y = x @ W.T` 규약과 맞물려 identity 동작을 만든다.
 
-## 9. 실제 LLM에서는 어떻게 사용하는가
-
+## LLM에서는 어디에 사용될까?
 ### 9.1 블록 안의 위치
 
 ```text
@@ -327,8 +317,7 @@ X
 실서비스는 fused kernel로 Softmax·마스킹을 합치거나 타일링한다.  
 수치는 같아야 한다.
 
-## 10. 실습
-
+## 실습
 ### 실습 1 — Shape 테스트
 
 `d_model=32`, `T=10`, `B=3`으로 NumPy 모듈을 돌려 출력 Shape을 확인하시오.
@@ -353,8 +342,7 @@ $W_Q=W_K=W_V=I$일 때 $S=XX^\top/\sqrt{d}$가 되는지 임의 $X$로 검사하
 
 `apply_mask`에 “상삼각을 가리는” 마스크를 넣어 보기만 하시오. 값은 40강에서 해석한다.
 
-## 11. 자주 하는 실수
-
+## 자주 하는 실수
 1. **`(T,T)`와 `(T,d)` 곱 순서 오류**  
    `A@V`가 맞다. `V@A`는 관례가 다르면 바로 깨진다.
 
@@ -373,16 +361,14 @@ $W_Q=W_K=W_V=I$일 때 $S=XX^\top/\sqrt{d}$가 되는지 임의 $X$로 검사하
 6. **mask 규약(True=가림 vs True=허용) 혼동**  
    팀/프레임워크마다 다르다. docstring에 고정한다.
 
-## 12. 핵심 정리
-
+## 핵심 요약
 - Self-Attention 모듈 = QKV 투영 + scaled scores + (mask) + Softmax + AV + (W_O).
 - NumPy 참조 구현으로 Shape·손계산을 고정한 뒤 PyTorch로 옮긴다.
 - `mask` 인자를 미리 두면 Causal LM으로 확장하기 쉽다.
 - 단일 헤드 완성이 Multi-Head·Transformer Block의 기초다.
 - 느린 명확한 코드가 최적화 코드의 정답지다.
 
-## 13. 핵심 용어
-
+## 용어 사전
 | 용어 | 의미 |
 |---|---|
 | Self-Attention Module | 입력이 곧 QKV 출처인 Attention 블록 |
@@ -392,7 +378,7 @@ $W_Q=W_K=W_V=I$일 때 $S=XX^\top/\sqrt{d}$가 되는지 임의 $X$로 검사하
 | Mask hook | Softmax 전 점수를 수정하는 자리 |
 | `(B,T,C)` | 배치·시간·채널 Shape |
 
-## 14. 연습 문제
+## 연습문제
 ### 문제 1 (순서)
 
 Self-Attention 순전파 단계를 5단계로 쓰시오.
@@ -416,7 +402,6 @@ NumPy `X @ W_Q`와 `nn.Linear`의 대응을 한 문장으로.
 ---
 
 ## 정답 및 해설
-
 ### 문제 1
 
 투영 → 점수 → (마스크) → Softmax → AV → (출력을 투영).
@@ -437,8 +422,7 @@ NumPy `X @ W_Q`와 `nn.Linear`의 대응을 한 문장으로.
 
 미래 토큰(아직 예측하면 안 되는 위치)을 보는 것을 막는다.
 
-## 15. 다음 강의와 연결
-
+## 다음 강의와 연결
 모듈에 `mask` 자리가 비어 있다.  
 다음 **제40강. Causal Mask**에서 삼각형 마스크로 미래를 가리고, GPT가 왜 그것이 필요한지, `masked_fill(-inf)`를 작은 예제로 확인한다.  
 이어 **제41강. Multi-Head Attention**에서 헤드를 나눈다.

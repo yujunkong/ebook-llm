@@ -1,16 +1,14 @@
-# 제60강. Pretraining Dataset 구성
+# 60강. Pretraining Dataset 구성
+## 이번 강에서 배우는 내용
 
-> **학습 목표**
-> - Pretraining Corpus(말뭉치)의 전형적인 출처 유형을 분류한다
-> - Cleaning(정제) · Filtering(필터) · Deduplication(중복 제거)의 목적과 차이를 구분한다
-> - Document boundary(문서 경계)가 왜 모델 신호에 영향을 주는지 설명한다
-> - Train/Validation 분할의 누수(leakage)를 경계한다
-> - “인터넷 전체”를 숫자로 흉내 내지 않고, 작은 재현 가능 코퍼스로 실습 설계를 한다
-> - 제61강 Tokenization · Packing으로 넘길 산출물이 무엇인지 고정한다
+- Pretraining Corpus(말뭉치)의 전형적인 출처 유형을 분류한다
+- Cleaning(정제) · Filtering(필터) · Deduplication(중복 제거)의 목적과 차이를 구분한다
+- Document boundary(문서 경계)가 왜 모델 신호에 영향을 주는지 설명한다
+- Train/Validation 분할의 누수(leakage)를 경계한다
+- “인터넷 전체”를 숫자로 흉내 내지 않고, 작은 재현 가능 코퍼스로 실습 설계를 한다
+- 제61강 Tokenization · Packing으로 넘길 산출물이 무엇인지 고정한다
 
----
-## 1. 왜 이것을 배우는가
-
+## 왜 중요한가?
 모델과 Loss가 같아도 데이터가 바뀌면 **배우는 언어의 통계**가 바뀐다.
 
 ```text
@@ -23,8 +21,7 @@
 Pretraining을 “큰 파일을 넣으면 된다”로 생각하면, 제61강 packing·제68강 프로젝트에서 반드시 발목을 잡힌다.  
 오늘은 **문서를 고르고 깨끗이 나누는 층**을 만든다.
 
-## 2. 먼저 알아야 할 개념
-
+## 선수 개념
 - Causal LM 목표: 다음 토큰 CE (제57강)
 - Tokenizer가 텍스트→id로 바꾼다는 사실 (2권 제27~30강)
 - Dataset / DataLoader 추상 (제22강)
@@ -33,8 +30,7 @@ Pretraining을 “큰 파일을 넣으면 된다”로 생각하면, 제61강 pa
 
 아직 토큰 packing·BOS/EOS 배치 디테일은 제61강이다. 오늘은 **문서 단위 이전 단계**다.
 
-## 3. 핵심 개념 설명
-
+## 핵심 개념
 ### 3.1 Pretraining Dataset이란?
 
 **Pretraining Dataset**은 특정 지시-응답 쌍에 맞추기 전에, 언어 모델이 next-token 목표로 먼저 학습하도록 모은 **대규모(상대적) 텍스트 집합**이다.
@@ -148,8 +144,7 @@ Pretraining에도 **held-out**가 필요하다.
 
 제66~67강에서 val loss / PPL을 말할 때, “무엇에 대해 잰 값인지”가 이 분할에 달려 있다.
 
-## 4. 직관적으로 이해하기
-
+## 직관적으로 이해하기
 Pretraining 데이터를 **식재료**로 보면:
 
 ```text
@@ -165,8 +160,7 @@ Pretraining 데이터를 **식재료**로 보면:
 고급 레스토랑(상용 모델)은 산지 비율·알레르기 정책이 복잡하다.  
 집밥(Mini GPT)은 **깨끗한 재료 소량**으로 레시피를 익히는 것이 목적이다.
 
-## 5. 수학적으로? — 데이터와 목표의 연결
-
+## 수학적으로? — 데이터와 목표의 연결
 모델이 최대화하는 것은 데이터 분포 $\mathcal{D}$ 위 로그우도다.
 
 $$
@@ -182,8 +176,7 @@ $\mathcal{D}$를 바꾸면 최적 $\theta$가 가리키는 **언어**가 바뀐�
 
 > 데이터 혼합 비율은 곧 학습되는 분포의 사전(prior)이다.
 
-## 6. 작은 숫자로 파이프라인 흉내
-
+## 작은 숫자로 파이프라인 흉내
 장난감 문서 5개:
 
 ```text
@@ -204,8 +197,7 @@ D4: "def add(a, b): return a+b"
 
 이 규모에서는 “통계적 성능”이 아니라 **파이프라인이 문서를 올바르게 다루는지**만 본다.
 
-## 7. 코드로 구현하기 — 문서 리스트 다루기
-
+## 코드로 구현하기 — 문서 리스트 다루기
 ### 7.1 문서 표현
 
 ```python
@@ -291,8 +283,7 @@ def split_docs(docs: List[Document], val_ratio: float = 0.1, seed: int = 0):
 
 문서가 극히 적을 때는 val을 억지로 쪼개기보다, **고정 held-out 문장**을 따로 두는 편이 낫다.
 
-## 8. JSONL로 저장·로드
-
+## JSONL로 저장·로드
 실습에서 다루기 쉬운 형식:
 
 ```json
@@ -320,8 +311,7 @@ def load_jsonl(path: str) -> List[Document]:
 
 제61강은 이 JSONL의 `text`를 tokenize한다.
 
-## 9. 실제 LLM에서는 어떻게 구성하는가
-
+## 실제 LLM에서는 어떻게 구성하는가
 공개 보고·블로그에서 반복적으로 보이는 **개념적** 패턴:
 
 ```text
@@ -340,8 +330,7 @@ def load_jsonl(path: str) -> List[Document]:
 
 라이선스·로봇 배제·개인정보·유해성은 연구·제품 모두에서 **데이터 엔지니어링의 일부**다. Mini 실습은 안전한 텍스트로 절차만 익힌다.
 
-## 10. 실습
-
+## 실습
 ### 실습 1 — 유형 태그
 
 자신이 쓸 Mini 코퍼스 문서 10개에 `source` 태그를 `web|wiki|code|other` 중 하나로 달고 비율을 센다.
@@ -362,8 +351,7 @@ def load_jsonl(path: str) -> List[Document]:
 
 `train.jsonl`, `val.jsonl`을 만들고 README에 “라이선스: 직접 작성 / 허용된 샘플”을 한 줄 기록한다.
 
-## 11. 자주 하는 실수
-
+## 자주 하는 실수
 1. **용량만 키우고 중복을 방치**  
    유일 문서 수는 적은데 토큰 수만 커 보인다.
 
@@ -385,8 +373,7 @@ def load_jsonl(path: str) -> List[Document]:
 7. **SFT 지시 데이터와 Pretraining 코퍼스를 같은 폴더에 섞음**  
    단계가 헷갈린다. 디렉터리를 분리한다.
 
-## 12. Mini Pretraining을 위한 권장 범위
-
+## Mini Pretraining을 위한 권장 범위
 제68강 프로젝트를 염두에 둔 **교육용** 가이드:
 
 - 문서는 직접 작성하거나 명백히 사용 가능한 짧은 텍스트
@@ -404,16 +391,18 @@ def load_jsonl(path: str) -> List[Document]:
         → 생성이 데이터 패턴을 일부 반영
 ```
 
-## 13. 핵심 정리
+## LLM에서는 어디에 사용될까?
 
+이번 60강에서 배운 개념은 이후 Transformer · GPT · 서빙 강의에서 반복해서 등장합니다. 각 수식·코드 블록을 “실제 모델의 어느 단계인가”와 연결해 다시 읽어 보세요.
+
+## 핵심 요약
 - Pretraining 데이터는 출처 유형 · 정제 · 필터 · 중복 제거 · 분할의 층으로 구성된다
 - 문서 경계는 packing·Attention과 맞물리는 신호다
 - 중복과 평가 누수는 숫자 착시를 만든다
 - Mini 실습은 안전·재현 가능한 소량 코퍼스로 절차를 익힌다
 - 다음 단계는 문서를 토큰 창으로 바꾸는 Tokenization Pipeline이다
 
-## 14. 핵심 용어
-
+## 용어 사전
 | 용어 | 의미 |
 |---|---|
 | Corpus | 학습에 쓰는 말뭉치 전체 |
@@ -427,7 +416,7 @@ def load_jsonl(path: str) -> List[Document]:
 | JSONL | 줄 단위 JSON 저장 형식 |
 | Held-out | 학습에 쓰지 않는 평가용 분할 |
 
-## 15. 연습 문제
+## 연습문제
 ### 문제 1 (층위)
 
 Corpus · Document · Training window의 차이를 한 줄씩 쓰시오.
@@ -451,7 +440,6 @@ Mini GPT용 데이터를 고를 때 “규모 숫자” 대신 우선할 기준 
 ---
 
 ## 정답 및 해설
-
 ### 문제 1
 
 Corpus=전체 집합, Document=논리 문서, Training window=모델이 한 번에 먹는 고정 길이 토큰 조각(제61강).
@@ -472,8 +460,7 @@ Cleaning은 텍스트 안 잡음 제거(예: HTML 태그). Filtering은 문서 �
 
 예: 라이선스/안전, 재현 가능성, 정제·분할 가능성(또는 도메인 적합성).
 
-## 16. 다음 강의와 연결
-
+## 다음 강의와 연결
 문서 리스트가 준비되었다. 다음은 **토큰 ID와 고정 길이 창**이다.
 
 **제61강. Tokenization Pipeline과 Dataset Packing**에서는 문서→tokenize ids→`block_size` packing, BOS/EOS, 패딩과의 차이, 경계 마스크를 다룬다. 오늘 만든 `train.jsonl` / `val.jsonl`이 입력이 된다.

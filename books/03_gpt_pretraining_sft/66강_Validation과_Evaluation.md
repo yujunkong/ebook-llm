@@ -1,15 +1,13 @@
-# 제66강. Validation과 Evaluation
+# 66강. Validation과 Evaluation
+## 이번 강에서 배우는 내용
 
-> **학습 목표**
-> - Train loss와 Validation loss의 역할을 구분한다.
-> - 언제 eval을 돌릴지(주기·비용) 설계한다.
-> - `model.eval()` / `torch.no_grad()`가 하는 일을 설명한다.
-> - 발산·과적합·데이터 버그의 조기 신호를 로그에서 읽는다.
-> - 제67강 Perplexity로 넘어가기 전, “loss 평가”의 한계를 말한다.
+- Train loss와 Validation loss의 역할을 구분한다.
+- 언제 eval을 돌릴지(주기·비용) 설계한다.
+- `model.eval()` / `torch.no_grad()`가 하는 일을 설명한다.
+- 발산·과적합·데이터 버그의 조기 신호를 로그에서 읽는다.
+- 제67강 Perplexity로 넘어가기 전, “loss 평가”의 한계를 말한다.
 
----
-## 1. 왜 이것을 배우는가
-
+## 왜 중요한가?
 Train loss만 보면 두 가지를 놓친다.
 
 1. **일반화**: 모델이 학습 토큰에만 맞춰지고 있지는 않은가.
@@ -23,8 +21,7 @@ Held-out val ──► 갱신 없이 Loss 측정 (이번 강)
 
 Pretraining의 val은 분류 정확도처럼 “틀/맞”이 한 방에 보이지 않는다. 그래도 **동일 프로토콜의 held-out CE loss**는 가장 값싼 나침반이다.
 
-## 2. 먼저 알아야 할 개념
-
+## 선수 개념
 1. **Train/Val 분리, 과적합** — 제24강
 2. **Cross Entropy / next-token loss** — 제34, 57강
 3. **Training loop 훅** — 제62강
@@ -33,8 +30,7 @@ Pretraining의 val은 분류 정확도처럼 “틀/맞”이 한 방에 보이�
 
 생성 품질·사람 평가·Perplexity 해석의 깊게는 제67강이다. 여기서는 **loss 기반 평가 운영**이 중심이다.
 
-## 3. 핵심 개념 — Validation이란
-
+## 핵심 개념 — Validation이란
 **Validation(검증)**은 학습 파라미터 갱신에 쓰지 않는 held-out 데이터로 모델 상태를 측정하는 과정이다.
 
 용어 정리:
@@ -48,8 +44,7 @@ Pretraining의 val은 분류 정확도처럼 “틀/맞”이 한 방에 보이�
 
 설명: 실무에서 val/test 이름이 섞여 쓰이기도 한다. 중요한 것은 **갱신에 쓰지 않는 데이터인가**와 **반복 열람으로 선택 편향이 생기지는 않는가**다.
 
-## 4. Held-out Validation Loss
-
+## Held-out Validation Loss
 Causal LM에서 기본 지표는 학습과 같은 **토큰 평균 Cross Entropy**다.
 
 $$
@@ -75,8 +70,7 @@ $N$은 ignore되지 않은 타깃 토큰 수다. PAD·특수 무시 위치는 �
 
 Val 문서가 packing·필터 과정에서 train에 섞이면 val loss는 낙관적으로 왜곡된다. 제60강 샤드·해시 단위 분리 정책을 eval에도 그대로 적용한다.
 
-## 5. 언제 Evaluation을 돌릴 것인가
-
+## 언제 Evaluation을 돌릴 것인가
 Eval은 공짜가 아니다. forward를 여러 배치 돌리고, 심하면 생성을 한다.
 
 설계 축:
@@ -95,8 +89,7 @@ Eval은 공짜가 아니다. forward를 여러 배치 돌리고, 심하면 생�
 
 설명: Pretraining 초반은 불안정하므로 상대적으로 자주 보고, 안정 구간에서는 간격을 늘리는 전략도 있다. 고정 공식은 없다.
 
-## 6. Eval 루프 구현
-
+## Eval 루프 구현
 ```python
 import torch
 import torch.nn.functional as F
@@ -155,8 +148,7 @@ def evaluate(model, val_loader, device, max_batches=None):
 - **토큰 가중 평균**: 배치 평균을 단순 산술평균하면 배치 길이·PAD 비율에 왜곡된다. `reduction="sum"` 후 토큰 수로 나누는 편이 공정하다.
 - 평가 후 **`model.train()` 복귀**를 잊으면 이후 학습이 eval 모드로 진행된다.
 
-## 7. Train 모드 vs Eval 모드
-
+## Train 모드 vs Eval 모드
 | | `model.train()` | `model.eval()` |
 |---|---|---|
 | Dropout | 활성(확률적) | 비활성 |
@@ -167,8 +159,7 @@ def evaluate(model, val_loader, device, max_batches=None):
 
 LLM GPT 스타일(LayerNorm+Dropout)에서는 Dropout on/off가 val loss에 영향을 준다. train 모드로 val을 재면 노이즈가 섞인다.
 
-## 8. Training Loop에 훅 연결
-
+## Training Loop에 훅 연결
 ```python
 best_val = float("inf")
 
@@ -193,8 +184,7 @@ for global_step in range(start_step + 1, total_steps + 1):
 
 로그에는 train과 val을 **같은 step 축**에 남겨 곡선을 겹쳐 보게 한다.
 
-## 9. 조기 신호 — 발산과 이상
-
+## 조기 신호 — 발산과 이상
 숫자 벤치마크를 남발하지 말고, **패턴**을 본다.
 
 ### 9.1 발산(divergence) 후보
@@ -221,8 +211,7 @@ for global_step in range(start_step + 1, total_steps + 1):
 
 제40강 causal mask 버그는 “train loss만 좋게” 만들 수 있다. Val에서도 미래가 보이면 같이 좋아 보이므로, **생성 스모크 테스트**를 간헐적으로 넣는 것이 안전하다(제58~59, 67강).
 
-## 10. Eval 프로토콜을 고정하라
-
+## Eval 프로토콜을 고정하라
 비교 가능한 실험의 조건:
 
 1. 같은 val 샤드·같은 토크나이저
@@ -245,8 +234,7 @@ for global_step in range(start_step + 1, total_steps + 1):
 
 프로토콜이 흔들리면 “어제보다 val이 좋아졌다”는 문장이 무의미해진다.
 
-## 11. Loss 평가의 한계 (제67강 예고)
-
+## Loss 평가의 한계 (제67강 예고)
 Validation CE loss가 내려가도:
 
 - 답이 짧게 끊기거나
@@ -257,8 +245,7 @@ Loss는 **확률 모델로서의 압축/예측 품질**에 가깝다. 사람 기
 
 그럼에도 Pretraining 중반의 자동 나침반으로는 held-out loss가 여전히 1순위다. 비용 대비 정보가 크다.
 
-## 12. 작은 실습 — 곡선 읽기
-
+## 작은 실습 — 곡선 읽기
 다음 가상 로그를 해석해 보자. (숫자는 **예시일 뿐**, 실측 벤치마크가 아니다.)
 
 ```text
@@ -291,8 +278,7 @@ step 1000 train=4.0 val=1.0
 
 → val이 **너무** 좋으면 축하 전에 누수·전처리 불일치를 의심한다. held-out이 진짜 held-out인지부터 확인한다.
 
-## 13. Running train loss와 Val를 같이 보기
-
+## Running train loss와 Val를 같이 보기
 Train은 매 step(또는 window 평균), Val은 희소 샘플이다. 비교할 때:
 
 - 같은 **smoothing 창** 개념으로 train을 보고
@@ -308,8 +294,7 @@ ema = loss if ema is None else (beta * ema + (1 - beta) * loss)
 
 EMA train과 val을 같은 그래프에 올리면 “진짜 일반화 악화”와 “배치 노이즈”를 덜 혼동한다.
 
-## 14. 온라인 Val 부분집합
-
+## 온라인 Val 부분집합
 전체 val이 비싸면:
 
 1. **monitor set**: 매 `eval_every`마다 짧게
@@ -318,8 +303,7 @@ EMA train과 val을 같은 그래프에 올리면 “진짜 일반화 악화”�
 
 설명: monitor로 best를 갱신하면 노이즈 우승 확률이 올라간다. 타협안은 “monitor가 개선되면 full val을 한 번 더 돌려 확인 후 best 확정”이다.
 
-## 15. 생성 스모크 테스트 (짧게)
-
+## 생성 스모크 테스트 (짧게)
 Loss 평가와 별도로, 고정 프롬프트 몇 개에 대해 greedy/sampling 생성을 저장한다.
 
 ```python
@@ -336,8 +320,7 @@ def smoke_generate(model, tokenizer, prompts, max_new_tokens=40):
 
 주기적으로 텍스트를 읽어보면 causal mask 누수·반복·붕괴를 loss보다 일찍 발견하는 경우가 있다. 정량 점수는 제67강.
 
-## 16. Early stopping 개념
-
+## Early stopping 개념
 **Early stopping**은 val 지표가 오래 개선되지 않으면 학습을 멈추거나 best로 되돌리는 전략이다.
 
 Pretraining에서는:
@@ -347,8 +330,7 @@ Pretraining에서는:
 
 사실처럼 “인내 스텝=N이 표준”이라고 쓰지 않는다. 인내 구간은 과제·노이즈에 의존한다.
 
-## 17. 흔한 버그
-
+## 흔한 버그
 1. **eval 후 `train()` 미복귀**
 2. **val에서 `backward` 또는 optim step** — held-out 오염
 3. **배치 평균 loss를 배치 수로만 평균** — 토큰 수 불균형
@@ -357,16 +339,18 @@ Pretraining에서는:
 6. **test를 매일 봐서 사실상 val로 사용** — 최종 보고 신뢰 하락
 7. **AMP train / FP32 val을 아무 기록 없이 비교** — 곡선 해석이 어긋남
 
-## 18. 핵심 정리
+## LLM에서는 어디에 사용될까?
 
+이번 66강에서 배운 개념은 이후 Transformer · GPT · 서빙 강의에서 반복해서 등장합니다. 각 수식·코드 블록을 “실제 모델의 어느 단계인가”와 연결해 다시 읽어 보세요.
+
+## 핵심 요약
 - Held-out validation loss는 Pretraining의 기본 자동 평가 신호다.
 - Eval은 `eval()` + `no_grad()` + 토큰 가중 CE로 돌리고, 학습 모드로 복귀한다.
 - 주기·비용·노이즈 사이에서 간격을 설계한다.
 - Train/Val 곡선 패턴으로 발산·과적합·파이프라인 버그를 조기에 읽는다.
 - Loss만으로 생성 품질을 단정하지 말고, 제67강으로 평가 축을 넓힌다.
 
-## 19. 핵심 용어
-
+## 용어 사전
 | 용어 | 의미 |
 |---|---|
 | Held-out | 학습 갱신에 쓰지 않는 데이터 |
@@ -380,7 +364,7 @@ Pretraining에서는:
 | Monitor set | 저비용 부분 val |
 | Early stopping | 개선 정체 시 중단·되돌리기 |
 
-## 20. 연습 문제
+## 연습문제
 ### 문제 1 (개념)
 
 Train loss가 계속 내려가는데 Val loss가 오른다. 가능한 해석 두 가지를 쓰시오.
@@ -408,7 +392,6 @@ Train/Val이 동시에 NaN이 되었다. 첫으로 확인할 것 세 가지를 �
 ---
 
 ## 정답 및 해설
-
 ### 문제 1
 
 (1) 과적합 — 학습 분포에만 맞춰짐. (2) train/val 전처리·분포 불일치, 또는 val 쪽 데이터/필터 문제. (버그·누수도 후보.)
@@ -434,8 +417,7 @@ Train/Val이 동시에 NaN이 되었다. 첫으로 확인할 것 세 가지를 �
 
 예: 직전 배치 데이터/라벨, lr·AMP scale, grad_norm/클립, 체크포인트 롤백 가능성.
 
-## 21. 다음 강의와 연결
-
+## 다음 강의와 연결
 Validation loss라는 나침반을 달았다.
 
 다음 **제67강. Perplexity와 생성 품질**에서는 $e^{L}$로서의 Perplexity, loss와 체감 품질의 관계, 생성 샘플을 보는 법을 다룬다. 제68강 Mini GPT Pretraining에서 제61~67강의 파이프라인을 한 프로젝트로 묶는다.

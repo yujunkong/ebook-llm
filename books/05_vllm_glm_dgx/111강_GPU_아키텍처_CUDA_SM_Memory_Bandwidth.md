@@ -1,15 +1,13 @@
-# 제111강. GPU 아키텍처 — CUDA, SM, Memory Bandwidth
+# 111강. GPU 아키텍처 — CUDA, SM, Memory Bandwidth
+## 이번 강에서 배우는 내용
 
-> **학습 목표**
-> - CUDA 실행 모델에서 SM(Streaming Multiprocessor), warp, thread block의 역할을 구분한다.
-> - HBM(또는 해당 플랫폼 메모리) 대역폭(bandwidth) 이 LLM decode에 왜 자주 병목이 되는지 설명한다.
-> - compute-bound 와 memory-bound 를 직관과 간단한 roofline 스케치로 구분한다.
-> - 벤더 스펙 시트의 “TFLOPS / GB/s”를 어떻게 읽는지 알고, 임의 성능 수치를 지어내지 않는다.
-> - 제112~116강(엔진 선택·TP·NCCL·DGX Spark·서빙 프로젝트)이 왜 이 기초 위에 올라가는지 연결한다.
+- CUDA 실행 모델에서 SM(Streaming Multiprocessor), warp, thread block의 역할을 구분한다.
+- HBM(또는 해당 플랫폼 메모리) 대역폭(bandwidth) 이 LLM decode에 왜 자주 병목이 되는지 설명한다.
+- compute-bound 와 memory-bound 를 직관과 간단한 roofline 스케치로 구분한다.
+- 벤더 스펙 시트의 “TFLOPS / GB/s”를 어떻게 읽는지 알고, 임의 성능 수치를 지어내지 않는다.
+- 제112~116강(엔진 선택·TP·NCCL·DGX Spark·서빙 프로젝트)이 왜 이 기초 위에 올라가는지 연결한다.
 
----
-## 1. 왜 이것을 배우는가
-
+## 왜 중요한가?
 LLM 서빙에서 자주 나오는 문장들이다.
 
 ```text
@@ -37,8 +35,7 @@ Decode   : 토큰 1개 × 전체 가중치·KV 읽기 → 상대적으로 memory
 
 설명: “항상”이 아니다. 배치 크기, 양자화, 커널, 모델 폭에 따라 경계가 움직인다. 다만 **decode가 memory-bound 쪽에 기울기 쉽다**는 직관은 서빙 설계의 출발점이다.
 
-## 2. 먼저 알아야 할 개념
-
+## 선수 개념
 1. **Training vs Inference** — 제99강
 2. **Prefill / Decode** — 제100강
 3. **KV Cache** — 제101강
@@ -47,8 +44,7 @@ Decode   : 토큰 1개 × 전체 가중치·KV 읽기 → 상대적으로 memory
 
 하드웨어 세대·칩 이름은 빠르게 바뀐다. 이 강의는 **CUDA 실행 모델의 공통 골격**과 **대역폭 직관**에 초점을 둔다. 특정 SKU의 최신 숫자는 벤더 문서를 직접 확인하는 방법을 제115강과 함께 익힌다.
 
-## 3. CUDA란 무엇인가
-
+## CUDA란 무엇인가
 ### 3.1 용어
 
 | 영어 | 한국어 | 쉬운 정의 | 왜 필요한가 |
@@ -82,8 +78,7 @@ Decode   : 토큰 1개 × 전체 가중치·KV 읽기 → 상대적으로 memory
 
 LLM 관점: “한 번의 forward”는 사실 **수많은 커널의 연쇄**다. 엔진(제112강)은 이 연쇄를 배치·그래프·캐시로 재구성한다.
 
-## 4. SM — Streaming Multiprocessor
-
+## SM — Streaming Multiprocessor
 ### 4.1 용어
 
 **SM(Streaming Multiprocessor)** 은 GPU 안의 **연산 공장 단위**다. 여러 SM이 칩에 모여 있고, 각 SM이 워프·블록을 받아 실행한다.
@@ -132,8 +127,7 @@ GPU SM Active / utilization
 
 이다.
 
-## 5. Warp — 스케줄의 기본 묶음
-
+## Warp — 스케줄의 기본 묶음
 ### 5.1 용어
 
 **Warp** 는 CUDA에서 **함께 스케줄되는 스레드 묶음**이다. 전통적으로 **32 threads** 가 한 warp다(아키텍처 문서의 기본 가정; 세부 변형은 세대 문서를 본다).
@@ -160,8 +154,7 @@ LLM 커널 설계에서:
 2. “너무 작은 decode batch” — 계산 밀도가 낮아지고 memory 대기가 드러남
 3. “특수 샘플링·구조화 출력” — 커널 경로가 갈라져 그래프/캐시 이득이 줄 수 있음
 
-## 6. 메모리 계층과 Bandwidth
-
+## 메모리 계층과 Bandwidth
 ### 6.1 계층 스케치
 
 개념적 피라미드(구체 용량·속도는 칩마다 다름):
@@ -205,8 +198,7 @@ LLM 커널 설계에서:
 
 제101강 KV Cache는 **용량** 압박의 대표다. 제103강 양자화는 **용량과 대역폭 모두**에 도움을 줄 수 있다(바이트↓ → 같은 대역폭으로 더 많은 “유효 파라미터”를 읽음 — 설명).
 
-## 7. Compute-bound vs Memory-bound
-
+## Compute-bound vs Memory-bound
 ### 7.1 정의 (직관)
 
 | 구분 | 직관 | LLM에서 자주 보이는 장면 |
@@ -243,8 +235,7 @@ $$
 사실: 실제 intensity는 커널 구현·융합·캐시·양자화에 크게 의존한다.  
 설명: 위 스케치는 **왜 배치·양자화·캐시가 성능 레버인지**를 위한 지도다.
 
-## 8. Roofline — 가볍게
-
+## Roofline — 가볍게
 ### 8.1 그림으로 보는 천장
 
 Roofline 모델은 성능을 두 천장으로 본다.
@@ -285,8 +276,7 @@ Roofline을 “정확한 숫자 예측기”로 쓰지 않는다. 대신:
 
 스펙의 Peak는 **이상적 조건의 상한**인 경우가 많다(정밀도, sparsity, 문제 크기 전제). 각주를 읽는다.
 
-## 9. LLM 연산과 GPU 매핑
-
+## LLM 연산과 GPU 매핑
 ### 9.1 주요 연산 블록
 
 | 블록 | 대략적 성격 (설명) | 메모리 관점 |
@@ -310,8 +300,7 @@ Decode
 
 스펙ulative decoding(제110강)은 “검증·초안”으로 **유효 토큰당 메모리 트래픽**을 바꾸려는 시도로도 읽을 수 있다(성공 여부는 수용률·오버헤드에 달림).
 
-## 10. 대역폭 예산 — 사고 실험 (숫자 예시)
-
+## 대역폭 예산 — 사고 실험 (숫자 예시)
 **예시(설명용 가정, 특정 제품 실측 아님):**
 
 가정:
@@ -336,8 +325,7 @@ $$
 
 이 식을 **측정값처럼 인용하지 말 것**. “병목 후보를 좁히는 사고 도구”다.
 
-## 11. 코드로 감각 잡기 (스케치)
-
+## 코드로 감각 잡기 (스케치)
 아래는 **대역폭 병목을 흉내 내는 사고 코드**다. 벤치마크 결과가 아니다.
 
 ```python
@@ -364,8 +352,7 @@ print("intensity ~", arithmetic_intensity(flops * batch, w_bytes))
 - 배치가 커지면 intensity가 올라갈 **수 있다**(가정이 맞을 때).
 - 반대로 KV가 길어지면 읽기 바이트가 늘어 intensity가 내려갈 **수 있다**.
 
-## 12. nvidia-smi · 프로파일러로 무엇을 볼까
-
+## nvidia-smi · 프로파일러로 무엇을 볼까
 ### 12.1 운영 중 자주 보는 신호
 
 | 신호 | 가능한 해석 (설명) |
@@ -387,8 +374,7 @@ print("intensity ~", arithmetic_intensity(flops * batch, w_bytes))
 
 제115강에서 DGX Spark 공개 스펙을 이 방법으로 읽는다.
 
-## 13. 실습
-
+## 실습
 ### 실습 A — 병목 분류 연습
 
 다음 시나리오를 compute / memory / capacity / 통신 중 **주 후보**로 분류하고 이유를 한 줄로 쓰시오.
@@ -411,8 +397,7 @@ print("intensity ~", arithmetic_intensity(flops * batch, w_bytes))
 
 값을 외우지 말고 **출처를 남긴다**.
 
-## 14. 자주 하는 실수
-
+## 자주 하는 실수
 1. **Utilization = 성능** 으로 단정한다.
 2. **OOM만 메모리 문제**로 보고, bandwidth 병목을 놓친다.
 3. 블로그의 tok/s를 자기 환경 수치로 인용한다.
@@ -420,16 +405,18 @@ print("intensity ~", arithmetic_intensity(flops * batch, w_bytes))
 5. “더 많은 SM / 더 큰 칩”이면 서빙이 무조건 나아진다고 본다.
 6. 통합 메모리 플랫폼에 HBM 가정을 그대로 이식한다.
 
-## 15. 핵심 정리
+## LLM에서는 어디에 사용될까?
 
+이번 111강에서 배운 개념은 이후 Transformer · GPT · 서빙 강의에서 반복해서 등장합니다. 각 수식·코드 블록을 “실제 모델의 어느 단계인가”와 연결해 다시 읽어 보세요.
+
+## 핵심 요약
 - CUDA 실행은 Grid → Block → Warp → Thread로 펼쳐지고, **SM**이 그 공장이다.
 - LLM decode는 종종 **memory-bound** 쪽에 기울며, 배치·양자화·캐시가 산술강도를 바꾼다.
 - **Capacity**와 **Bandwidth**를 분리해 생각해야 KV·양자화·TP 결정을 덜 헷갈린다.
 - Roofline은 예측기가 아니라 **병목 방향 나침반**이다.
 - 성능 숫자는 발명하지 말고, 스펙·프로파일·재현 가능한 측정으로 말한다.
 
-## 16. 핵심 용어
-
+## 용어 사전
 | 용어 | 의미 |
 |---|---|
 | CUDA | NVIDIA GPU 병렬 컴퓨팅 플랫폼·모델 |
@@ -443,7 +430,7 @@ print("intensity ~", arithmetic_intensity(flops * batch, w_bytes))
 | Memory-bound | 대역폭 천장이 지배 |
 | Roofline | intensity에 따른 성능 상한 모델 |
 
-## 17. 연습 문제
+## 연습문제
 ### 문제 1 (구분)
 
 다음 중 **용량(capacity)** 문제에 더 가까운 것은?  
@@ -473,7 +460,6 @@ TTFT만 나쁠 때와 TPOT만 나쁠 때, 각각 우선 의볼 GPU/알고리즘 
 ---
 
 ## 정답 및 해설
-
 ### 문제 1
 
 (a). OOM은 용량. (b)는 대역폭·memory-bound 후보.
@@ -498,8 +484,7 @@ TTFT만 나쁠 때와 TPOT만 나쁠 때, 각각 우선 의볼 GPU/알고리즘 
 
 예: TTFT → prefill 커널·최대 배치 토큰·프롬프트 길이 / TPOT → 배치 효율·양자화·KV 트래픽·샘플러 오버헤드. (환경에 따라 다름)
 
-## 18. 다음 강의와 연결
-
+## 다음 강의와 연결
 GPU의 천장과 병목 종류를 보았다. 다음 질문은 **그 위에서 도는 소프트웨어 엔진을 무엇을 고를까**다.
 
 이전 강의: **제110강. MTP와 Speculative Decoding**  

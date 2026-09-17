@@ -1,14 +1,12 @@
-# 제53강. 최신 Transformer 변형 개요
+# 53강. 최신 Transformer 변형 개요
+## 이번 강에서 배우는 내용
 
-> **학습 목표**
-> - GQA / MQA가 무엇을 바꾸는지(K/V 헤드 공유) 한 문장으로 말한다.
-> - FlashAttention류가 겨냥하는 문제($T\times T$ materialize·메모리 이동)를 개요로 안다.
-> - MoE가 “모든 토큰이 모든 FFN을 쓰지 않을 수 있다”는 아이디어임을 안다.
-> - 사실(구조/동기)과 설명(대략적 이득)과 시시각각 변하는 세부를 구분한다.
+- GQA / MQA가 무엇을 바꾸는지(K/V 헤드 공유) 한 문장으로 말한다.
+- FlashAttention류가 겨냥하는 문제($T\times T$ materialize·메모리 이동)를 개요로 안다.
+- MoE가 “모든 토큰이 모든 FFN을 쓰지 않을 수 있다”는 아이디어임을 안다.
+- 사실(구조/동기)과 설명(대략적 이득)과 시시각각 변하는 세부를 구분한다.
 
----
-## 1. 왜 이것을 배우는가
-
+## 왜 중요한가?
 논문을 펼치면 약어가 쏟아진다. 전부 외울 필요는 없다. 대신 제52강의 압력 지도를 기억한다.
 
 ```text
@@ -19,8 +17,7 @@
 
 변형들은 대개 이 압력 중 하나를 완화하려는 **공학적 응답**이다. 오늘의 목표는 이름과 동기이며, “지금 당장 프로덕션 커널을 짜는 것”이 아니다.
 
-## 2. 읽기 규칙 — 사실 / 설명 / 변동
-
+## 읽기 규칙 — 사실 / 설명 / 변동
 이 강의의 문장은 세 층으로 읽는다.
 
 | 층 | 의미 | 예 |
@@ -33,8 +30,7 @@
 
 세부 알고리즘·API는 해마다 바뀐다. 개념 좌표만 고정하자.
 
-## 3. 복습 — 표준 Multi-Head의 KV
-
+## 복습 — 표준 Multi-Head의 KV
 표준 MHA(제41강):
 
 - Query / Key / Value 각각 헤드 수 $H$
@@ -44,8 +40,7 @@
 
 > Q는 풍부하게 두고, K/V 표현은 공유해 **캐시와 대역폭**을 줄일 수 있지 않을까?
 
-## 4. MQA — Multi-Query Attention
-
+## MQA — Multi-Query Attention
 **사실(구조):**  
 Multi-Query Attention에서는 **Query는 여러 헤드**, **Key/Value는 헤드 하나(또는 동등한 공유)**를 쓰는 형태가 일반적 정의다.
 
@@ -62,8 +57,7 @@ Multi-Query Attention에서는 **Query는 여러 헤드**, **Key/Value는 헤드
 MQA:       Q1 Q2 Q3 Q4   K_shared        V_shared
 ```
 
-## 5. GQA — Grouped-Query Attention
-
+## GQA — Grouped-Query Attention
 **사실(구조):**  
 Grouped-Query Attention은 MHA와 MQA **사이**다. Query 헤드를 그룹으로 나누고, 그룹마다 K/V를 공유한다.
 
@@ -81,8 +75,7 @@ MQA만큼 극단적으로 공유하지 않으면서도 KV 메모리를 줄이려
 
 Mini Transformer(제49강)는 표준 MHA로 충분하다. GQA/MQA는 **읽을 줄 아는 약어**로 남긴다.
 
-## 6. FlashAttention — 아이디어만
-
+## FlashAttention — 아이디어만
 제52강에서 $T\times T$ 행렬 materialize가 메모리·대역폭을 압박한다고 했다.
 
 **사실(동기·방향):**  
@@ -99,8 +92,7 @@ FlashAttention류 기법은 **exact Attention**(수학적으로 같은 softmax a
 
 이 강의에서 커널 코드를 작성하지 않는다. 제52강의 “$T^2$ 통증”에 대한 **응답 중 하나**로만 기억한다.
 
-## 7. MoE — Mixture of Experts 티저
-
+## MoE — Mixture of Experts 티저
 표준 FFN은 모든 토큰이 같은 MLP를 지난다.
 
 **사실(아이디어):**  
@@ -118,8 +110,7 @@ Mixture of Experts(MoE)는 여러 **전문가(FFN)** 후보를 두고, 토큰(�
 
 지금은 “FFN 자리가 MoE로 바뀔 수 있다”는 **지도의 핀**만 꽂는다.
 
-## 8. 그 밖에 이름만 알아둘 것들
-
+## 그 밖에 이름만 알아둘 것들
 깊이 설명하지 않고 목록만 둔다(검색 키워드).
 
 | 이름 | 한 줄 힌트 |
@@ -131,8 +122,7 @@ Mixture of Experts(MoE)는 여러 **전문가(FFN)** 후보를 두고, 토큰(�
 
 이것들도 **세부·수치는 변동**이다.
 
-## 9. Mini Transformer와의 관계
-
+## Mini Transformer와의 관계
 | 주제 | Mini (49~50) | 현대 LLM |
 |---|---|---|
 | Attention | 표준 MHA | MHA/GQA/MQA 등 |
@@ -143,16 +133,18 @@ Mixture of Experts(MoE)는 여러 **전문가(FFN)** 후보를 두고, 토큰(�
 
 미니로 원리를 익힌 뒤, 약어가 나와도 “어느 압력을 줄이려는가?”로 분류하면 길을 잃지 않는다.
 
-## 10. 핵심 정리
+## LLM에서는 어디에 사용될까?
 
+이번 53강에서 배운 개념은 이후 Transformer · GPT · 서빙 강의에서 반복해서 등장합니다. 각 수식·코드 블록을 “실제 모델의 어느 단계인가”와 연결해 다시 읽어 보세요.
+
+## 핵심 요약
 - 최신 변형은 대개 $T^2$·KV 메모리·규모 비용에 대한 응답이다.
 - MQA/GQA는 K/V 공유로 캐시 쪽 부담을 줄이려는 구조 변형이다.
 - FlashAttention류는 exact attention의 IO-aware 구현 방향이다(세부 변동).
 - MoE는 FFN 용량과 토큰당 연산의 트레이드오프를 여는 티저다.
 - 벤치 수치·채택 현황은 시점에 따라 변하므로 개요 이상으로 단정하지 않는다.
 
-## 11. 핵심 용어
-
+## 용어 사전
 | 용어 | 의미 |
 |---|---|
 | MQA | Query 다중, K/V 공유가 강한 Attention |
@@ -162,7 +154,7 @@ Mixture of Experts(MoE)는 여러 **전문가(FFN)** 후보를 두고, 토큰(�
 | MoE | 라우팅으로 전문가 FFN 일부만 활성화 |
 | Exact vs approximate | 수학적 동일성 유지 여부 |
 
-## 12. 연습 문제
+## 연습문제
 ### 문제 1 (사실)
 
 MQA와 표준 MHA의 구조적 차이를 K/V 관점에서 쓰시오.
@@ -186,7 +178,6 @@ MoE가 바꾸는 블록이 Attention인지 FFN인지 고르고, 이유를 한 �
 ---
 
 ## 정답 및 해설
-
 ### 문제 1
 
 MHA는 헤드마다 K/V가 있고, MQA는 K/V를 공유(보통 한 세트)한다. Q 헤드는 여러 개일 수 있다.
@@ -207,8 +198,7 @@ KV 메모리가 헤드 수에 비례하므로 K/V 헤드를 줄이는 GQA/MQA는
 
 FFN(전문가 MLP). 라우터가 토큰별로 어느 MLP를 실행할지 고른다.
 
-## 13. 다음 강의와 연결
-
+## 다음 강의와 연결
 변형의 지도까지 보았다. **제54강. 2권 총정리 — GPT로 가는 길**에서 Tokenizer부터 Mini Transformer까지를 한 줄로 다시 잇고, 3권 제55강(GPT란 무엇인가)으로 넘어갈 체크리스트를 만든다.
 
 <!-- LECTURE_NAV -->

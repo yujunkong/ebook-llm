@@ -1,15 +1,13 @@
-# 제81강. Policy와 Value Function
+# 81강. Policy와 Value Function
+## 이번 강에서 배우는 내용
 
-> **학습 목표**
-> - $\pi(a\mid s)$, $V^\pi(s)$, $Q^\pi(s,a)$의 정의
-> - LLM에서 $\pi$가 곧 next-token softmax라는 점
-> - $V$ / $Q$가 RLHF·PPO value head와 어떻게 연결되는지
-> - “좋은 정책”과 “높은 가치”의 관계
-> - 제82강 Policy Gradient로 넘어갈 준비（$\nabla\log\pi$）
+- $\pi(a\mid s)$, $V^\pi(s)$, $Q^\pi(s,a)$의 정의
+- LLM에서 $\pi$가 곧 next-token softmax라는 점
+- $V$ / $Q$가 RLHF·PPO value head와 어떻게 연결되는지
+- “좋은 정책”과 “높은 가치”의 관계
+- 제82강 Policy Gradient로 넘어갈 준비（$\nabla\log\pi$）
 
----
-## 1. 왜 이것을 배우는가
-
+## 왜 중요한가?
 RLHF 구현 저장소를 열면 보통 두 머리가 보인다.
 
 ```text
@@ -24,15 +22,13 @@ PPO는 **value**로 baseline·Advantage를 만들어 분산을 줄인다（제83
 기호 없이 “점수가 높은 쪽으로 확률을 올린다”만 반복하면,  
 왜 KL을 $\pi$에 걸고 value loss를 따로 두는지가 설명되지 않는다.
 
-## 2. 먼저 알아야 할 개념
-
+## 선수 개념
 - State / Action / Reward / Return $G_t$（제80강）
 - Softmax · logit（2권 33강）
 - Autoregressive LM: $p(y_t\mid y_{<t},x)$（3권）
 - 기댓값 $\mathbb{E}[\cdot]$ — “분포로 평균”
 
-## 3. 핵심 개념 설명
-
+## 핵심 개념
 ### 3.1 Policy (정책)
 
 **Policy(폴리시, 정책)** $\pi$는 각 상태에서의 **행동 분포**다.
@@ -150,8 +146,7 @@ $$
 실무 LLM RLHF는 “전 우주 최적 $\pi^*$”를 보장하지 않는다.  
 참조 정책 근처에서 보상을 올리는 **지역적 개선**에 가깝다.
 
-## 4. 직관적으로 이해하기
-
+## 직관적으로 이해하기
 ### 4.1 식당 메뉴
 
 - State: 배고픔·예산·날씨
@@ -189,8 +184,7 @@ RM이 매긴 점수의 기대가 $V$에 가깝다.
 다만 진짜 $Q$ 테이블을 $|\mathcal{S}|\times|\mathcal{V}|$로 만들 수 없으므로,  
 신경망·샘플 추정·Advantage로 우회한다.
 
-## 5. 수학적으로 이해하기
-
+## 수학적으로 이해하기
 ### 5.1 벨만 기대 방정식（읽기용）
 
 $$
@@ -256,8 +250,7 @@ L_V(\psi) = \mathbb{E}_t\big[\big(V_\psi(s_t) - \hat{G}_t\big)^2\big]
 
 $$
 
-## 6. 작은 숫자로 직접 계산하기
-
+## 작은 숫자로 직접 계산하기
 어휘 $\{0,1\}$, 에피소드 길이 1（한 번 행동하고 보상）.
 
 보상: $r(0)=0$, $r(1)=1$.  
@@ -289,8 +282,7 @@ $$
 같은 보상 스케일이어도 **상태 가치**가 다르다.  
 Advantage는 이 차이를 빼서 “원래 쉬운데 잘한 것”과 “어려운데 잘한 것”을 공정히 비교하려는 방향으로 간다.
 
-## 7. 코드로 구현하기
-
+## 코드로 구현하기
 테이블형 미니 정책·가치.
 
 ```python
@@ -333,8 +325,7 @@ if __name__ == "__main__":
     print("pi2", pi2, "V2", expected_V(pi2, Q))
 ```
 
-## 8. PyTorch로 Policy · Value head 스케치
-
+## PyTorch로 Policy · Value head 스케치
 ```python
 # policy_value_heads.py
 import torch
@@ -380,8 +371,7 @@ if __name__ == "__main__":
 DPO 경로（제90강）는 별도 value head 없이 정책만 업데이트하는 경우가 많다.  
 지도（제79강）에서 갈라진 이유이기도 하다.
 
-## 9. 실제 LLM에서는 어떻게 사용하는가
-
+## LLM에서는 어디에 사용될까?
 ### 9.1 Policy = LM head
 
 Hugging Face `AutoModelForCausalLM`의 `lm_head`가 $\pi$다.  
@@ -433,8 +423,7 @@ Value는 “참조보다 얼마나 좋은가”가 아니라 “현재 정책의
 | $V$ | PPO 안정화·baseline |
 | $Q$/$A$ | “어느 토큰을 강화할지”의 방향 |
 
-## 10. 실습
-
+## 실습
 ### 실습 A
 
 $p=\pi(1\mid s)=0.8$, $Q(s,1)=1$, $Q(s,0)=0$일 때 $V,A(s,1),A(s,0)$을 구하시오.
@@ -453,8 +442,7 @@ $p=\pi(1\mid s)=0.8$, $Q(s,1)=1$, $Q(s,0)=0$일 때 $V,A(s,1),A(s,0)$을 구하�
 (a) $V^\pi$는 정책과 무관하다  
 (b) $V^\pi$는 정책 $\pi$에 의존한다
 
-## 11. 자주 하는 실수
-
+## 자주 하는 실수
 1. **Policy와 Value를 같은 출력이라 생각**  
    → 하나는 분포, 하나는 스칼라（또는 $|\mathcal{A}|$차원 Q）.
 
@@ -473,16 +461,14 @@ $p=\pi(1\mid s)=0.8$, $Q(s,1)=1$, $Q(s,0)=0$일 때 $V,A(s,1),A(s,0)$을 구하�
 6. **높은 entropy = 항상 좋음**  
    → 탐색에는 도움, 과도하면 보상·안전이 무너질 수 있다.
 
-## 12. 핵심 정리
-
+## 핵심 요약
 - Policy $\pi(a\mid s)$는 상태에서의 행동 분포이고, LLM에서는 next-token softmax다.
 - $V^\pi(s)$는 정책 하 기대 반환, $Q^\pi(s,a)$는 특정 행동을 강제했을 때의 기대 반환이다.
 - $V=\mathbb{E}_{a\sim\pi}[Q]$, Advantage는 $Q-V$로 제83강에서 본격 사용한다.
 - PPO류는 policy head + value head, DPO류는 주로 policy만.
 - 다음 강의는 $\pi$의 파라미터를 **보상 방향으로** 미는 Policy Gradient다.
 
-## 13. 핵심 용어
-
+## 용어 사전
 | 용어 | 한 줄 의미 |
 |---|---|
 | Policy $\pi(a\mid s)$ | 상태 조건 행동 분포 |
@@ -494,7 +480,7 @@ $p=\pi(1\mid s)=0.8$, $Q(s,1)=1$, $Q(s,0)=0$일 때 $V,A(s,1),A(s,0)$을 구하�
 | $\pi_{\mathrm{ref}}$ | KL용 참조 정책（보통 SFT） |
 | Entropy | 정책 불확실성·탐색 지표 |
 
-## 14. 연습 문제
+## 연습문제
 ### 문제 1
 
 LLM에서 $\pi_\theta(a\mid s_t)$를 수식으로 쓰시오（softmax·로짓）.
@@ -522,7 +508,6 @@ PPO에 value head가 필요한 이유（분산/baseline）를 예고 수준으�
 ---
 
 ## 정답 및 해설
-
 ### 문제 1
 
 $\pi_\theta(a\mid s_t)=\mathrm{softmax}(W\,h_\theta(s_t))_a$（표기는 동등하면 인정）.
@@ -544,8 +529,7 @@ $Q^\pi(s,a)=\mathbb{E}_\pi[G_t\mid S_t=s,A_t=a]$.
 
 `Policy`.
 
-## 15. 다음 강의와 연결
-
+## 다음 강의와 연결
 정책과 가치를 이름으로 불렀다.  
 다음 **제82강. Policy Gradient**에서는 목적 $J(\theta)=\mathbb{E}[R]$를 $\theta$로 미분해,
 

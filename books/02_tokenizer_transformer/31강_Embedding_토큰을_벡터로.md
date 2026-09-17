@@ -1,15 +1,13 @@
-# 제31강. Embedding — 토큰을 벡터로
+# 31강. Embedding — 토큰을 벡터로
+## 이번 강에서 배우는 내용
 
-> **학습 목표**
-> - Embedding(임베딩)이 무엇인지, 왜 one-hot보다 쓰는가
-> - Embedding 행렬 $E \in \mathbb{R}^{|V| \times d}$에서 lookup이 일어나는 방식
-> - Embedding이 학습 가능한 파라미터라는 점
-> - 작은 숫자 예제로 id → 벡터 변환을 손으로 추적하기
-> - LLM에서 토큰 임베딩 + (이후) positional 정보가 첫 층 입력이 되는 위치
+- Embedding(임베딩)이 무엇인지, 왜 one-hot보다 쓰는가
+- Embedding 행렬 $E \in \mathbb{R}^{|V| \times d}$에서 lookup이 일어나는 방식
+- Embedding이 학습 가능한 파라미터라는 점
+- 작은 숫자 예제로 id → 벡터 변환을 손으로 추적하기
+- LLM에서 토큰 임베딩 + (이후) positional 정보가 첫 층 입력이 되는 위치
 
----
-## 1. 왜 이것을 배우는가
-
+## 왜 중요한가?
 Token id `3797` 자체에는 기하적 의미가 없다. `3797`과 `3798`이 “비슷한 단어”라는 보장도 없다.
 
 모델이 필요한 것은 대략 이런 성질이다.
@@ -29,8 +27,7 @@ Embedding을 이해하지 못하면:
 - vocab size를 바꿀 때 어떤 가중치가 깨지는지 모른다
 - Attention 입력이 왜 `[T, d]` 형태인지 설명이 안 된다
 
-## 2. 먼저 알아야 할 개념
-
+## 선수 개념
 - Token ID / Vocabulary size $|V|$ (27·30강)
 - Vector / Matrix / 행렬곱 (1권 9·10강)
 - `nn.Module`과 학습 파라미터 (1권 21강)
@@ -39,8 +36,7 @@ Embedding을 이해하지 못하면:
 
 아직 몰라도 되는 것: Positional Encoding의 상세 수식, Attention score.
 
-## 3. 핵심 개념 설명
-
+## 핵심 개념
 ### 3.1 Embedding (임베딩)
 
 **Embedding(임베딩)**은 이산적인 토큰 id를 고정 길이의 **밀집 실수 벡터(dense vector)**로 바꾸는 표현 또는 그 변환 계층이다.
@@ -180,8 +176,7 @@ $$
 
 필수는 아니다. 구조 선택이다.
 
-## 4. 직관적으로 이해하기
-
+## 직관적으로 이해하기
 Vocabulary를 도서관 서가, Embedding 벡터를 각 책의 “좌표 카드”라고 보자.
 
 - id는 청구 기호(정수)
@@ -194,8 +189,7 @@ Embedding은 “요약 좌표”를 부여한다.
 또 다른 비유: 국가 번호를 위도·경도로 바꾸는 것.  
 번호 82와 81이 가깝다는 뜻은 없지만, 임베딩 공간에서는 “한국어/일본어 문맥”이 가깝게 묶일 수 있다. (보장 아님, 학습 결과)
 
-## 5. 수학적으로 이해하기
-
+## 수학적으로 이해하기
 단일 토큰:
 
 $$
@@ -239,8 +233,7 @@ $$
 
 $$
 
-## 6. 작은 숫자로 직접 계산하기
-
+## 작은 숫자로 직접 계산하기
 설정:
 
 ```text
@@ -338,8 +331,7 @@ $$
 
 이 숫자 자체에 의미 부여는 이르다. 다만 **벡터 공간에서 비교가 가능해졌다**는 점이 one-hot과의 차이다.
 
-## 7. 코드로 구현하기 — NumPy Lookup
-
+## 코드로 구현하기 — NumPy Lookup
 ```python
 # embedding_numpy.py
 import numpy as np
@@ -370,8 +362,7 @@ print("one-hot path:", one_hot_lookup(E, 2))
 print("index  path:", E[2])
 ```
 
-## 8. PyTorch로 구현하기
-
+## PyTorch로 구현하기
 ```python
 # embedding_torch.py
 import torch
@@ -427,8 +418,7 @@ loss.backward()  # Embedding.weight에도 grad 전달
 optimizer.step()
 ```
 
-## 9. One-hot Softmax 분류와의 관계
-
+## One-hot Softmax 분류와의 관계
 고전적인 선형 분류:
 
 $$
@@ -453,8 +443,7 @@ id
 첫 Embedding은 **문맥 없음(context-free)** 초기 표현이다.  
 같은 `"bank"` 토큰도 문맥에 따라 이후 층에서 다른 벡터가 된다. (Contextualized Representation)
 
-## 10. 실제 LLM에서는 어떻게 사용하는가
-
+## LLM에서는 어디에 사용될까?
 대표 설정 예 (대략적 스케일):
 
 | 모델 규모 감각 | \|V\| | d |
@@ -485,8 +474,7 @@ x = wte(input_ids) + wpe(positions)
 2. Embedding dtype(fp16/bf16)과 안정성
 3. 대형 vocab은 메모리 대역폭 이슈가 될 수 있음 (추론 최적화 주제는 후반 권)
 
-## 11. 실습
-
+## 실습
 ### 실습 1. Lookup과 행렬곱 등가
 
 NumPy로 `E[ids]`와 one-hot 행렬곱 결과가 같은지 `np.allclose`로 검증하시오.
@@ -504,8 +492,7 @@ NumPy로 `E[ids]`와 one-hot 행렬곱 결과가 같은지 `np.allclose`로 검�
 같은 토큰 id가 문장 앞·뒤에 와도 **Embedding 직후 벡터는 동일**함을 코드로 보이시오.  
 (문맥화는 Transformer 이후라는 점 고정)
 
-## 12. 자주 하는 실수
-
+## 자주 하는 실수
 1. **id를 float 벡터로 착각**  
    `nn.Linear`에 id를 직접 넣지 않는다. 먼저 Embedding.
 
@@ -524,8 +511,7 @@ NumPy로 `E[ids]`와 one-hot 행렬곱 결과가 같은지 `np.allclose`로 검�
 6. **유사도 과해석**  
    학습 초기·소량 데이터에서 코사인 유사도를 “의미”로 단정하지 말 것.
 
-## 13. 핵심 정리
-
+## 핵심 요약
 - Embedding은 token id를 $d$차원 밀집 벡터로 바꾼다.
 - 수학적으로 one-hot × $E$와 같고, 구현은 행 lookup이다.
 - $E$는 학습 파라미터이며 크기 $|V|\times d$이다.
@@ -533,8 +519,7 @@ NumPy로 `E[ids]`와 one-hot 행렬곱 결과가 같은지 `np.allclose`로 검�
 - Embedding 직후 벡터는 문맥 없음; 문맥화는 이후 Transformer가 담당한다.
 - LLM 파이프라인에서 Tokenizer 다음, Attention 이전의 필수 계층이다.
 
-## 14. 핵심 용어
-
+## 용어 사전
 | 용어 | 의미 |
 |---|---|
 | Embedding | id→밀집 벡터 변환/표현 |
@@ -546,7 +531,7 @@ NumPy로 `E[ids]`와 one-hot 행렬곱 결과가 같은지 `np.allclose`로 검�
 | Weight Tying | Embedding과 LM Head 가중치 공유 |
 | `padding_idx` | 패딩 행 학습 억제 옵션 |
 
-## 15. 연습 문제
+## 연습문제
 ### 문제 1 (개념)
 
 Embedding이 one-hot보다 선호되는 이유 두 가지를 쓰시오.
@@ -574,7 +559,6 @@ one-hot 벡터와 $E$의 곱이 lookup과 같다는 것을 한 줄로 설명하�
 ---
 
 ## 정답 및 해설
-
 ### 문제 1
 
 (1) 차원이 $d \ll |V|$로 압축되어 효율적이다.  
@@ -601,8 +585,7 @@ Embedding은 문맥 없는 초기 표현만 제공한다. 문맥에 따른 차�
 
 one-hot이 켜진 위치의 행만 남기므로 $E$의 해당 행을 선택하는 것과 같다.
 
-## 16. 다음 강의와 연결
-
+## 다음 강의와 연결
 이번 강의에서 id가 벡터가 되는 통로를 열었다.
 
 다음 **제32강. Language Model과 Next Token Prediction**에서는, 이 벡터 서열을 조건으로 **다음 토큰 확률** $P(x_{t+1}\mid x_{\le t})$을 모델링한다는 목표를 정식화한다. Teacher Forcing의 미리보기도 포함한다.

@@ -1,26 +1,22 @@
-# 제110강. MTP와 Speculative Decoding
+# 110강. MTP와 Speculative Decoding
+## 이번 강에서 배우는 내용
 
-> **학습 목표**
-> - Draft + Verify 파이프라인의 직관
-> - 수락(acceptance)과 거절 시 어떻게 진행이 이어지는가
-> - MTP가 “훈련 목표/헤드” 쪽 이야기와 어떻게 맞닿는지
-> - 언제 TPOT에 도움이 되고, 언제 오버헤드만 남는가
-> - 제107강 지표로 이득을 정의·측정하는 방법(숫자 날조 없이)
+- Draft + Verify 파이프라인의 직관
+- 수락(acceptance)과 거절 시 어떻게 진행이 이어지는가
+- MTP가 “훈련 목표/헤드” 쪽 이야기와 어떻게 맞닿는지
+- 언제 TPOT에 도움이 되고, 언제 오버헤드만 남는가
+- 제107강 지표로 이득을 정의·측정하는 방법(숫자 날조 없이)
 
----
-## 1. 왜 이것을 배우는가
-
+## 왜 중요한가?
 제107강에서 긴 답의 체감은 대개 **TPOT / ITL**이다. Continuous Batching·양자화·TP로도 한계에 부딪히면, “스텝당 확정 토큰 수를 늘릴 수 있는가?”가 다음 레버가 된다. 반대로 수락률이 낮으면 **검증 비용만 두 번** 치른다.
 
-## 2. 먼저 알아야 할 개념
-
+## 선수 개념
 1. Prefill / Decode · KV (제100~101강)
 2. TPOT vs Throughput (제107강)
 3. 모델 계열 지도의 MTP 칸 (제108강)
 4. (배경) 샘플링·온도 (3권)
 
-## 3. Speculative Decoding — Draft + Verify
-
+## Speculative Decoding — Draft + Verify
 ### 3.1 역할 분담
 
 | 역할 | 하는 일 | 흔히 기대하는 성질 |
@@ -57,8 +53,7 @@ $$
 
 (정의·구현에 따라 상수 항은 달라질 수 있음 — **공식 암기보다 측정**)
 
-## 4. MTP — Multi-Token Prediction과의 관계
-
+## MTP — Multi-Token Prediction과의 관계
 ### 4.1 훈련 쪽 이야기
 
 MTP는 모델이 다음 토큰뿐 아니라 **더 먼 위치의 토큰**도 예측하도록 학습 신호·헤드를 두는 계열을 가리키는 데 쓰인다. 세부(손실 가중, 독립 헤드, depth depth 등)는 모델마다 다르다.
@@ -77,8 +72,7 @@ MTP로 단련된 헤드·깊이가 **draft 토큰을 싸게 내는 장치**가 �
 **사실:** 체크포인트가 MTP로 학습되었다 해서, 서버가 자동으로 speculative을 켠다는 보장은 없다.  
 **해석:** 모델 카드의 훈련 특징과 엔진의 `speculative`/`mtp` 설정을 **따로** 확인한다.
 
-## 5. 직관 그림
-
+## 직관 그림
 ```text
 시간(이상화, draft 성공 시)
 
@@ -89,8 +83,7 @@ speculative:   [D D D][V───][D D][V──] ← draft 묶음 + verify로 �
 
 Verify는 “큰 모델을 $\gamma$번 순차 호출”이 아니라, **한 번의 parallel forward로 여러 위치를 본다**는 쪽이 이득의 핵심인 경우가 많다. 구현이 그 병렬을 못 살리면 가속이 사라진다.
 
-## 6. 작은 산수 연습（가상）
-
+## 작은 산수 연습（가상）
 가정(**미측정 예시**):
 
 - Target 단독: 스텝당 20 ms, 1토큰 → 50 tok/s (단일 스트림)
@@ -100,8 +93,7 @@ Verify는 “큰 모델을 $\gamma$번 순차 호출”이 아니라, **한 번�
 
 이 숫자는 교재용이다. 실무는 제107강 템플릿으로만 보고한다.
 
-## 7. 언제 도움이 되는가 / 안 되는가
-
+## 언제 도움이 되는가 / 안 되는가
 ### 도움이 되기 쉬운 조건（직관）
 
 - Decode가 **메모리 바운드**이고, verify forward 한 번에 여러 위치를 싸게 볼 여유가 있을 때
@@ -119,8 +111,7 @@ Verify는 “큰 모델을 $\gamma$번 순차 호출”이 아니라, **한 번�
 **사실:** 동시성이 매우 높을 때 speculative이 시스템 throughput를 항상 올린다고 단정할 수 없다.  
 **해석:** SLO가 TTFT인지 TPOT인지 Throughput인지에 따라 on/off가 갈린다. A/B는 제107·118강 방식으로.
 
-## 8. 서빙 스택에서의 위치
-
+## 서빙 스택에서의 위치
 ```text
 요청 → Scheduler(제106) → 실행 엔진
               │
@@ -138,8 +129,7 @@ Verify는 “큰 모델을 $\gamma$번 순차 호출”이 아니라, **한 번�
 
 엔진 플래그 이름·기본값은 버전 의존(제112강).
 
-## 9. 코드로 “라운드”만 스케치
-
+## 코드로 “라운드”만 스케치
 ```python
 from dataclasses import dataclass
 
@@ -177,8 +167,7 @@ def speculative_round_sketch(
 
 **경고:** 위 동등성 스케치는 실제 알고리즘의 분포 보존 증명을 대체하지 않는다. 구현·논문의 수락 함수를 따르라.
 
-## 10. 지표와의 연결（템플릿 필드 재강조）
-
+## 지표와의 연결（템플릿 필드 재강조）
 Speculative on/off 비교 시 제107강 필드에 추가:
 
 ```text
@@ -190,8 +179,7 @@ Speculative on/off 비교 시 제107강 필드에 추가:
 
 `acceptance_rate`에 예시 숫자를 꾸며 넣지 말 것.
 
-## 11. 수락 규칙을 과도하게 단순화하지 말 것
-
+## 수락 규칙을 과도하게 단순화하지 말 것
 교육용으로 “draft와 target 토큰이 같으면 수락”이라고 말했지만, 문헌의 speculative sampling은 **확률비**로 수락·거절·재수량을 정의하는 경우가 많다. 목표는 target 분포와의 **동등성(또는 명시적 근사)** 이다.
 
 학생에게 남길 문장:
@@ -200,8 +188,7 @@ Speculative on/off 비교 시 제107강 필드에 추가:
 
 이 책의 스케치는 분포 증명을 대체하지 않는다.
 
-## 12. $\gamma$（제안 길이）선택 직관
-
+## $\gamma$（제안 길이）선택 직관
 | $\gamma$ 작음 | $\gamma$ 큼 |
 |---|---|
 | 오버헤드 적음 | draft·verify 비용 ↑ |
@@ -210,8 +197,7 @@ Speculative on/off 비교 시 제107강 필드에 추가:
 
 도메인·온도·프롬프트가 바뀌면 최적 $\gamma$가 움직인다. **고정 상수 암기 금지.** 제107 템플릿으로 스윕한다.
 
-## 13. 동시성과 speculative
-
+## 동시성과 speculative
 단일 스트림에서는 TPOT 이득이 잘 보인다.  
 동시성이 높아 GPU가 이미 포화면:
 
@@ -222,8 +208,7 @@ Speculative on/off 비교 시 제107강 필드에 추가:
 **사실:** 고동시성에서 이득이 항상 양의 부호라고 단정할 수 없다.  
 **해석:** SLO가 “단일 사용자 타자감”이면 on, “최대 토큰/초 용량”이면 곡선으로 재검증.
 
-## 14. 품질 회귀를 어떻게 감시하는가
-
+## 품질 회귀를 어떻게 감시하는가
 속도만 보고 배포하지 말 것.
 
 체크(형식):
@@ -232,8 +217,7 @@ Speculative on/off 비교 시 제107강 필드에 추가:
 2. 내부 벤치(정답률·선호) — **숫자를 책에 기재하지 말고 각자 측정**
 3. 수락률 모니터링 알림 — 급락 시 draft 부적합·데이터 시프트 의심
 
-## 15. 스케줄러·KV와의 상호작용
-
+## 스케줄러·KV와의 상호작용
 수락된 토큰이 $m$개면 KV에 $m$ 스텝분이 append된다.  
 거절 후 재수량 토큰은 한 개라도 상태가 갱신된다.
 
@@ -244,8 +228,7 @@ PagedAttention 관점(제105):
 
 스케줄러(제106)는 speculative 배치의 토큰 예산을 일반 decode와 다르게 잡을 수 있다 — **버전 의존**.
 
-## 16. 실습 — on/off A/B 절차（숫자 금지）
-
+## 실습 — on/off A/B 절차（숫자 금지）
 ```text
 1) 템플릿 8필드 고정
 2) method만 speculative=off → 측정 파일 A
@@ -255,8 +238,7 @@ PagedAttention 관점(제105):
 6) EXAMPLE 값을 결과에 복사하지 말 것
 ```
 
-## 17. 의사코드 — 수락률 로깅
-
+## 의사코드 — 수락률 로깅
 ```python
 def log_spec_metrics(rounds: list) -> dict:
     acc_lens = [len(r.accepted) for r in rounds]
@@ -268,8 +250,7 @@ def log_spec_metrics(rounds: list) -> dict:
     }
 ```
 
-## 18. 자주 하는 실수
-
+## 자주 하는 실수
 1. Draft 품질을 무시하고 $\gamma$만 키움
 2. 분포 보존이 깨진 채 “비슷하면 됐네”로 배포
 3. Prefill 병목에 speculative만 반복 튜닝
@@ -279,8 +260,7 @@ def log_spec_metrics(rounds: list) -> dict:
 7. 수락률 모니터링 없이 평균 TPOT만 봄
 8. 고동시성 곡선을 생략한 채 용량 계획
 
-## 19.5 Draft가 틀리는 전형적인 이유
-
+## 5 Draft가 틀리는 전형적인 이유
 1. Draft가 너무 작아 구문·사실에서 자주 빗나감
 2. Target만 domain-adapt/SFT 되었고 draft는 base
 3. 온도·top-p가 높아 다음 토큰 엔트로피가 큼
@@ -289,8 +269,7 @@ def log_spec_metrics(rounds: list) -> dict:
 
 처방전은 “$\gamma$만 키우기”가 아니라 **draft 정렬·도메인 적합성·샘플링**을 먼저 본다.
 
-## 19.6 Medusa·EAGLE 등 이름과의 관계（지도만）
-
+## 6 Medusa·EAGLE 등 이름과의 관계（지도만）
 문헌·엔진에는 Medusa, EAGLE, look-ahead 등 **변형 이름**이 많다.  
 공통 분모는 여전히 **값싼 다중 후보 + 큰 모델 검증**에 가깝다.  
 차이(트리 주의, 특성 재사용, 헤드 구조)는 원논문·릴리스 노트로 두고, 이 강의는 이름을 암기하지 않는다.
@@ -298,8 +277,7 @@ def log_spec_metrics(rounds: list) -> dict:
 **사실:** 지원 목록은 엔진 버전마다 갱신된다.  
 **해석:** 새 이름을 볼 때마다 Draft/Verify/수락률 프레임으로 재분류하면 학습 비용이 줄어든다.
 
-## 19.7 벽시계 분해 — 라운드 하나
-
+## 7 벽시계 분해 — 라운드 하나
 교육용 타이머 구간:
 
 ```text
@@ -314,8 +292,7 @@ t2 verify_end / accept_done
 
 값을 책에 쓰지 말고, 하네스에 구간을 남기는 습관만 가져간다.
 
-## 19.8 제108 Family Card에 적을 speculative 칸
-
+## 8 제108 Family Card에 적을 speculative 칸
 ```text
 prediction: next_token | mtp | speculative_ready
 draft_source: none | small_model | mtp_heads | other
@@ -325,16 +302,14 @@ gamma_default: <unknown until sweep>
 
 모델 카드의 MTP 언급과 `engine_spec_flag`가 동시에 채워져야 “켠다”가 된다.
 
-## 19.9 요약 시나리오 세 가지
-
+## 9 요약 시나리오 세 가지
 1. **코딩 어시스턴트, 저동시성:** TPOT 민감 → speculative A/B 우선 후보
 2. **RAG QA, 긴 컨텍스트:** TTFT·prefill 우선 → speculative 전 입력 경로 정리
 3. **멀티테넌트 고동시성:** 시스템 throughput 곡선에서 on/off 재검증
 
 시나리오를 `method`에 명시하지 않은 채 팀 내 “빠르다/느리다” 논쟁을 하지 말 것.
 
-## 19.10 안전장치 — 언제 끌 것인가
-
+## 10 안전장치 — 언제 끌 것인가
 운영 기본값을 on으로 두지 말고, 다음이면 **끄거나 롤백**을 검토한다.
 
 - 수락률이 내부 임계 아래로 지속
@@ -345,12 +320,10 @@ gamma_default: <unknown until sweep>
 
 임계 숫자 자체는 팀 SLO로 정하고 이 책에 고정하지 않는다.
 
-## 19.11 한 문단 복습
-
+## 11 한 문단 복습
 Speculative decoding은 decode가 대역폭에 묶일 때, 값싼 draft로 여러 토큰을 제안하고 target이 한 번에 검증해 **스텝당 확정 토큰**을 늘리려는 기법이다. MTP는 그 draft를 모델 안쪽 다중 예측으로 제공하는 갈래일 수 있다. 이득은 수락률·구현·동시성에 달려 있으며, 제107강 템플릿 없는 속도 주장은 기각한다.
 
-## 19.12 커리큘럼 앵커 — 104에서 111로
-
+## 12 커리큘럼 앵커 — 104에서 111로
 ```text
 104 vLLM 개요
 105 PagedAttention     ← KV 화폐
@@ -364,16 +337,18 @@ Speculative decoding은 decode가 대역폭에 묶일 때, 값싼 draft로 여�
 
 110을 건너뛰면 “대역폭 Bound decode” 처방전 중 한 축이 비고, 111만 읽으면 하드웨어 용어만 남는다. 두 강을 한 세트로 보라.
 
-## 19.13 측정 전에 적을 가설 문장
-
+## 13 측정 전에 적을 가설 문장
 가설 예:
 
 > “이 워크로드에서 speculative on은 off 대비 TPOT_p50을 개선하고, TTFT_p95는 크게 해치지 않는다. 동시성 c=1에서 먼저 확인하고 c=c_high에서 throughput을 재확인한다.”
 
 가설에 **수치 목표를 책에 박지 말고**, 팀 문서에만 적는다. 실험 후 가설을 유지·기각으로 표시한다.
 
-## 19. 핵심 정리
+## LLM에서는 어디에 사용될까?
 
+이번 110강에서 배운 개념은 이후 Transformer · GPT · 서빙 강의에서 반복해서 등장합니다. 각 수식·코드 블록을 “실제 모델의 어느 단계인가”와 연결해 다시 읽어 보세요.
+
+## 핵심 요약
 - Speculative decoding = **값싼 draft 제안 + target verify**로 스텝당 확정 토큰을 늘리려는 기법.
 - MTP는 **다중 토큰 예측** 쪽 훈련/헤드 변이이며, draft 구현의 한 갈래와 연결된다.
 - 이득의 열쇠는 **수락률**과 verify 병렬 효율이다.
@@ -381,8 +356,7 @@ Speculative decoding은 decode가 대역폭에 묶일 때, 값싼 draft로 여�
 - $\gamma$·draft 선택은 워크로드 의존 — 암기 상수 없음.
 - 명칭·플래그는 변한다. **Draft/Verify/수락/측정 템플릿**이 남는다.
 
-## 20. 핵심 용어
-
+## 용어 사전
 | 용어 | 설명 |
 |---|---|
 | Speculative Decoding | Draft로 제안하고 target으로 검증하는 가속 골격 |
@@ -392,7 +366,7 @@ Speculative decoding은 decode가 대역폭에 묶일 때, 값싼 draft로 여�
 | $\gamma$ | 라운드당 draft 제안 길이 |
 | MTP | Multi-Token Prediction — 다중 미래 토큰 예측 계열 |
 
-## 21. 연습 문제
+## 연습문제
 ### 문제 1
 
 Speculative decoding에서 draft와 target의 역할을 한 문장씩 쓰시오.
@@ -436,7 +410,6 @@ $\gamma$를 과도하게 키울 때의 위험을 쓰시오.
 ---
 
 ## 정답 및 해설
-
 ### 문제 1
 
 Draft는 미래 토큰 후보를 싸게 제안하고, target은 그 후보를 기준 분포로 검증·수정한다.
@@ -477,8 +450,7 @@ draft/verify 비용 증가와 수락 실패 시 낭비가 커져 오히려 느�
 
 구조 축: 제108~109(계열·MoE)와 MTP. 하드웨어 축: 이어지는 제111강(CUDA/SM/대역폭).
 
-## 22. 다음 강의와 연결
-
+## 다음 강의와 연결
 왜 decode가 대역폭에 묶이는지, SM·HBM이 무엇인지 뼈대를 알아야 튜닝 우선순위가 선다.  
 다음 **제111강. GPU 아키텍처 — CUDA, SM, Memory Bandwidth**에서 하드웨어 좌표를 펼친다.
 

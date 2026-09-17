@@ -1,15 +1,13 @@
-# 제29강. BPE Tokenizer 직접 구현
+# 29강. BPE Tokenizer 직접 구현
+## 이번 강에서 배우는 내용
 
-> **학습 목표**
-> - BPE의 학습(merge)과 추론(encode)이 어떻게 다른지
-> - Merge Table(병합 표)이 무엇인지, 왜 순서가 중요한지
-> - 초소형 코퍼스에서 pair 빈도를 세고 병합을 반복하는 절차
-> - encode / decode를 직접 작성하고, 결과가 왕복되는지 검증하기
-> - GPT식 Byte-level BPE가 같은 아이디어의 어디에 해당하는지
+- BPE의 학습(merge)과 추론(encode)이 어떻게 다른지
+- Merge Table(병합 표)이 무엇인지, 왜 순서가 중요한지
+- 초소형 코퍼스에서 pair 빈도를 세고 병합을 반복하는 절차
+- encode / decode를 직접 작성하고, 결과가 왕복되는지 검증하기
+- GPT식 Byte-level BPE가 같은 아이디어의 어디에 해당하는지
 
----
-## 1. 왜 이것을 배우는가
-
+## 왜 중요한가?
 라이브러리(`tiktoken`, `sentencepiece`, Hugging Face `tokenizers`)만 쓰면 `encode`는 한 줄이다.  
 그러나 다음 질문이 남는다.
 
@@ -23,8 +21,7 @@ BPE를 한 번 구현해 두면:
 2. Embedding 행 수 $V$가 어디서 오는지 설명한다.
 3. “토큰 효율”을 개선하려면 **코퍼스와 merge 횟수**를 손봐야 한다는 감각이 생긴다.
 
-## 2. 먼저 알아야 할 개념
-
+## 선수 개념
 - Token / Vocabulary / OOV (27·28강)
 - Python `dict`, `Counter`, 문자열 슬라이싱
 - “빈도(frequency)”가 통계적 학습의 가장 단순한 신호라는 직관
@@ -33,8 +30,7 @@ BPE를 한 번 구현해 두면:
 BPE 학습은 신경망 학습이 아니다. **통계적 병합 규칙 학습**이다.  
 Gradient도 Loss도 없다. 그래도 LLM 파이프라인의 입구를 결정한다.
 
-## 3. 핵심 개념 설명
-
+## 핵심 개념
 ### 3.1 BPE (Byte Pair Encoding)
 
 **BPE(Byte Pair Encoding, 바이트 쌍 인코딩)**는 원래 데이터 압축 기법에서 출발해, NLP에서는 **빈도가 높은 기호 쌍을 반복적으로 병합**해 Subword Vocabulary를 만드는 알고리즘이다.
@@ -116,8 +112,7 @@ lo + w → low
 
 순서를 바꾸면 분할 결과가 달라질 수 있다. 그래서 Tokenizer 파일에는 merges가 **순서 그대로** 저장된다.
 
-## 4. 직관적으로 이해하기
-
+## 직관적으로 이해하기
 어린아이가 글자를 익히는 과정에 비유할 수 있다.
 
 1. 처음에는 글자만 안다: `c a t`
@@ -127,8 +122,7 @@ lo + w → low
 BPE는 “의미”를 이해하지 않는다. **빈도**만 본다.  
 그래도 자연언어의 통계가 의미를 어느 정도 반영하기 때문에, 결과 조각이 종종 접두·접미·어근처럼 보인다.
 
-## 5. 수학적으로 / 절차적으로 이해하기
-
+## 수학적으로 / 절차적으로 이해하기
 코퍼스를 단어 빈도 맵으로 둔다.
 
 $$
@@ -179,8 +173,7 @@ $$
 
 (실제로는 special token, byte fallback 등으로 더 늘어난다.)
 
-## 6. 작은 숫자로 직접 계산하기
-
+## 작은 숫자로 직접 계산하기
 초소형 코퍼스:
 
 ```text
@@ -253,8 +246,7 @@ wider: w i d er </w>
 
 손으로 전부 따라가는 것보다 **코드를 실행해 merge 목록을 인쇄**하는 편이 정확하다. 다음 절의 구현이 그 역할을 한다.
 
-## 7. 코드로 구현하기 — 학습
-
+## 코드로 구현하기 — 학습
 아래는 의존성 없는 교육용 BPE이다. 실전 성능·유니코드 엣지케이스보다 **알고리즘 투명성**을 우선한다.
 
 ```python
@@ -358,8 +350,7 @@ if __name__ == "__main__":
 
 실행하면 merge 순서가 인쇄된다. 이 목록이 Tokenizer의 “유전자”이다.
 
-## 8. 코드로 구현하기 — Encode / Decode
-
+## 코드로 구현하기 — Encode / Decode
 ```python
 # bpe_codec.py
 """학습된 merges로 encode/decode."""
@@ -453,8 +444,7 @@ if __name__ == "__main__":
 `"widest"`처럼 학습 때 없던 단어도, `w`, `i`, `d`, `est</w>` 같은 조각으로 분해되면 `<unk>` 없이 처리될 수 있다.  
 이것이 28강에서 말한 Subword의 OOV 내성이다.
 
-## 9. 한 파일로 합친 미니 실험
-
+## 한 파일로 합친 미니 실험
 학습·인코딩·왕복 검증을 한 스크립트로 묶는다.
 
 ```python
@@ -545,8 +535,7 @@ if __name__ == "__main__":
     train_and_roundtrip()
 ```
 
-## 10. Byte-level BPE로 가는 다리
-
+## Byte-level BPE로 가는 다리
 교육용 구현은 “단어 문자 + `</w>`”에서 시작했다.  
 GPT-2식 **Byte-level BPE**는 대략 다음이 다르다.
 
@@ -573,8 +562,7 @@ GPT-2식 **Byte-level BPE**는 대략 다음이 다르다.
 
 실전 Tokenizer를 읽을 때 `merges.txt` / `tokenizer.json`이 보이면, 오늘 구현한 목록의 대형 버전이라고 보면 된다.
 
-## 11. 실제 LLM에서는 어떻게 사용하는가
-
+## LLM에서는 어디에 사용될까?
 사전학습 준비 파이프라인 (단순화):
 
 ```text
@@ -601,8 +589,7 @@ text_out = tokenizer.decode(input_ids + [next_id])
 2. merge 순서를 바꾸면 같은 텍스트의 id가 바뀌어 Embedding이 무의미해진다.
 3. vocab size $V$가 바뀌면 출력 Linear 층 `[d, V]`도 다시 맞춰야 한다.
 
-## 12. 실습
-
+## 실습
 ### 실습 1. merge 횟수 실험
 
 `DEMO_CORPUS`에서 `num_merges`를 5, 10, 20으로 바꿔 보고:
@@ -636,8 +623,7 @@ decode(encode(text))
 
 `list(word)` 대신 `list(word.encode("utf-8"))`처럼 바이트에서 시작해, 한글 한 단어가 어떻게 쪼개지는지 관찰하시오.
 
-## 13. 자주 하는 실수
-
+## 자주 하는 실수
 1. **인코딩 중에 pair 빈도를 다시 계산해 병합**  
    학습과 추론을 섞은 오류이다. 추론은 고정 merges만 적용한다.
 
@@ -656,8 +642,7 @@ decode(encode(text))
 6. **실전 Tokenizer와 교육용 BPE를 동일시**  
    정규화, regex pre-tokenize, byte map, special tokens가 추가된다.
 
-## 14. 핵심 정리
-
+## 핵심 요약
 - BPE는 빈도 높은 인접 쌍을 반복 병합해 Subword를 만든다.
 - 학습 결과물은 **순서 있는 Merge Table**과 Vocabulary이다.
 - Encoding은 새 텍스트에 **같은 merges를 순서대로** 적용하는 과정이다.
@@ -665,8 +650,7 @@ decode(encode(text))
 - GPT의 Byte-level BPE는 초기 단위가 바이트인 같은 가족이다.
 - LLM에서 Tokenizer 아티팩트는 모델 가중치만큼 중요한 인터페이스이다.
 
-## 15. 핵심 용어
-
+## 용어 사전
 | 용어 | 의미 |
 |---|---|
 | BPE | 빈번 쌍 병합 기반 서브워드 알고리즘 |
@@ -677,7 +661,7 @@ decode(encode(text))
 | encode / decode | 텍스트↔id 변환 |
 | vocab size $V$ | Embedding·LM head 차원과 직결 |
 
-## 16. 연습 문제
+## 연습문제
 ### 문제 1 (개념)
 
 BPE 학습과 인코딩의 차이를 한 문장씩 쓰시오.
@@ -705,7 +689,6 @@ Merge Table에서 순서가 중요한 이유를 예를 들어 설명하시오.
 ---
 
 ## 정답 및 해설
-
 ### 문제 1
 
 학습: 코퍼스 통계로 merge 순서를 결정한다.  
@@ -731,8 +714,7 @@ Merge Table에서 순서가 중요한 이유를 예를 들어 설명하시오.
 
 $26 + 1 + 100 = 127$
 
-## 17. 다음 강의와 연결
-
+## 다음 강의와 연결
 이번 강의에서 BPE의 merge·encode·decode를 밑바닥에서 만들었다.
 
 다음 **제30강. Vocabulary와 Special Tokens**에서는, vocab size가 모델 파라미터에 미치는 영향과 `<unk>`, `<pad>`, `<bos>`, `<eos>`, 챗 special token이 LLM 대화 형식에서 하는 일을 정리한다.  

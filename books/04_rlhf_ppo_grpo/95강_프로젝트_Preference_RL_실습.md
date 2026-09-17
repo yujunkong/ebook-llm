@@ -1,14 +1,12 @@
-# 제95강. 프로젝트 — Preference / RL 실습
+# 95강. 프로젝트 — Preference / RL 실습
+## 이번 강에서 배우는 내용
 
-> **학습 목표**
-> - `ch95_preference_rl/`에 선호 데이터·토이 LM·DPO 경로·（선택）RM+REINFORCE 경로를 둔다
-> - 초소형 preference JSONL로 chosen이 rejected보다 높은  implicit reward（DPO）또는 RM 점수를 확인한다
-> - 학습 전·후 메트릭을 `artifacts/`에 남긴다
-> - 제96강에서 다룰 실패 모드를 미니 스케일에서 일부러 관찰할 여지를 남긴다
+- `ch95_preference_rl/`에 선호 데이터·토이 LM·DPO 경로·（선택）RM+REINFORCE 경로를 둔다
+- 초소형 preference JSONL로 chosen이 rejected보다 높은  implicit reward（DPO）또는 RM 점수를 확인한다
+- 학습 전·후 메트릭을 `artifacts/`에 남긴다
+- 제96강에서 다룰 실패 모드를 미니 스케일에서 일부러 관찰할 여지를 남긴다
 
----
-## 1. 왜 이것을 배우는가
-
+## 왜 중요한가?
 문서의 DPO 수식과 PPO 다이어그램은 매끄럽다. 손구현은 지저분하다.
 
 | 읽기만 할 때 | 미니 구현에서 드러나는 것 |
@@ -20,8 +18,7 @@
 
 제76강 Mini SFT가 “response mask”를 몸에 익혔듯, 이번 강은 **preference margin**을 몸에 익힌다.
 
-## 2. 두 경로（하나만 완료해도 성공）
-
+## 두 경로（하나만 완료해도 성공）
 ```text
 경로 A（권장 기본）:  Preference JSONL → DPO loss → before/after margin
 경로 B（확장）:       Preference JSONL → Reward Model → REINFORCE on toy policy
@@ -36,8 +33,7 @@
 
 성공 기준은 **경로 A 완료**다. 경로 B는 시간이 남으면 켠다.
 
-## 3. 프로젝트 목표와 성공 기준
-
+## 프로젝트 목표와 성공 기준
 ### 3.1 목표
 
 1. 장난감 preference 20~40쌍 작성（train/eval 분리）
@@ -56,8 +52,7 @@
 
 “문장이 유창하다”는 필수 기준이 아니다. toy vocab에서는 유창성보다 **선호 방향**이 우선이다.
 
-## 4. 권장 디렉터리
-
+## 권장 디렉터리
 ```text
 ch95_preference_rl/
 ├── README.md
@@ -84,8 +79,7 @@ ch95_preference_rl/
 
 외부 거대 체크포인트는 쓰지 않는다. CPU에서 수분 안에 끝나도록 규모를  фикси한다.
 
-## 5. 초소형 Preference 데이터
-
+## 초소형 Preference 데이터
 ### 5.1 형식
 
 한 줄 JSON:
@@ -120,8 +114,7 @@ ch95_preference_rl/
 
 eval은 숫자·색·예아니오·번역을 **다른 표면 문장**으로 4~8쌍.
 
-## 6. `config.py`
-
+## `config.py`
 ```python
 # ch95_preference_rl/config.py
 from dataclasses import dataclass
@@ -149,8 +142,7 @@ class CFG:
 
 규모를 더 줄여도 된다. loss가 NaN이면 `lr`을 낮춘다.
 
-## 7. 토이 토크나이저
-
+## 토이 토크나이저
 공백 없는 한글을 위해 **문자 단위**가 안전하다. 영어·숫자는 문자/기호 단위로 묶어도 된다.
 
 ```python
@@ -226,8 +218,7 @@ class CharTokenizer:
         return cls(stoi)
 ```
 
-## 8. 토이 LM
-
+## 토이 LM
 설명용으로 **Embedding + GRU + Linear**면 충분하다.（Transformer로 바꿔도 인터페이스만 같으면 된다.）
 
 ```python
@@ -280,8 +271,7 @@ class ToyLM(nn.Module):
 
 평균 NLL（또는 평균 logprob）을 쓰는 이유: 길이 차만으로 margin이 지배되지 않게 하기 위함이다. 합（sum）logprob를 쓰는 변형도 있으며, report에 **어느 쪽인지** 명시한다.
 
-## 9. 데이터 로더
-
+## 데이터 로더
 ```python
 # ch95_preference_rl/data_pref.py
 """Load preference JSONL and build padded batches."""
@@ -347,8 +337,7 @@ def collate_pref(batch: list[dict], tok, max_len: int) -> dict[str, torch.Tensor
     }
 ```
 
-## 10. 경로 A — DPO
-
+## 경로 A — DPO
 ### 10.1 손실（복습을 코드에 고정）
 
 참조 정책 $\pi_{\mathrm{ref}}$（보통 SFT/워밍 스냅샷）와 학습 정책 $\pi_\theta$에 대해:
@@ -505,8 +494,7 @@ saved artifacts/ckpt_dpo.pt
 성공 판정: `eval_margin_after > eval_margin_before`.  
 실패 시 §16 챌린지를 본다.
 
-## 11. （선택）워밍 SFT
-
+## （선택）워밍 SFT
 preference만으로 처음부터 돌리면 toy LM이 노이즈에 가깝다. chosen 응답에 짧은 CE 워밍을 넣을 수 있다.
 
 ```python
@@ -573,8 +561,7 @@ python train_dpo.py
 python evaluate.py
 ```
 
-## 12. 경로 B — Reward Model + REINFORCE
-
+## 경로 B — Reward Model + REINFORCE
 ### 12.1 RM
 
 프롬프트+응답을 이어 붙여 스칼라 점수를 낸다. BT 손실:
@@ -770,8 +757,7 @@ if __name__ == "__main__":
 
 경로 B의 성공은 “생성 문장이 아름다움”이 아니라 **RM이 선호하는 쪽 토큰이 샘플에 더 자주 등장**하는 조짐이다. 분산이 커서 실패하기 쉽다 — 그 실패 자체가 학습 목표다.
 
-## 13. `evaluate.py`
-
+## `evaluate.py`
 ```python
 # ch95_preference_rl/evaluate.py
 """Summarize DPO margins and write artifacts/report.md."""
@@ -851,8 +837,7 @@ if __name__ == "__main__":
     main()
 ```
 
-## 14. `README.md`（프로젝트 폴더용 초안）
-
+## `README.md`（프로젝트 폴더용 초안）
 ```markdown
 # ch95_preference_rl
 
@@ -879,8 +864,7 @@ python train_reinforce.py
 - `artifacts/report.md`
 ```
 
-## 15. 챌린지 · 실패 실험（권장）
-
+## 챌린지 · 실패 실험（권장）
 완벽 성공만 기록하지 말고, 아래를 **하나씩** 깨본다.
 
 | ID | 실험 | 관찰할 것 |
@@ -894,8 +878,7 @@ python train_reinforce.py
 
 제96강（reward hacking, sycophancy 등）의 **축소판 감각**을 남기는 것이 목적이다.
 
-## 16. 채점 루브릭（자가）
-
+## 채점 루브릭（자가）
 | 점수 | 기준 |
 |---|---|
 | 필수 | 경로 A 실행 + margin 개선 + report |
@@ -904,8 +887,7 @@ python train_reinforce.py
 | 감점 | 외부 대형 모델 API에 의존 |
 | 감점 | 벤치마크 숫자를 책 밖으로 날조해 report에 기입 |
 
-## 17. 4권 이론과의 대응표
-
+## 4권 이론과의 대응표
 | 코드 | 강의 |
 |---|---|
 | preference JSONL | 84 |
@@ -918,14 +900,24 @@ python train_reinforce.py
 
 Reasoning outcome RL을 이 폴더에 억지로 넣지 않아도 된다. 여력이 있으면 `outcome_reward`로 숫자 퀴즈만 검증하는 스크립트를 **별도 파일**로 추가하라.
 
-## 18. 핵심 정리
+## LLM에서는 어디에 사용될까?
 
+이번 95강에서 배운 개념은 이후 Transformer · GPT · 서빙 강의에서 반복해서 등장합니다. 각 수식·코드 블록을 “실제 모델의 어느 단계인가”와 연결해 다시 읽어 보세요.
+
+## 핵심 요약
 - 미니 프로젝트의 완결 조건은 유창한 챗봇이 아니라 **선호 방향 메트릭의 이동**이다.
 - 경로 A（DPO）만으로 4권 중반의 수식을 코드에 고정할 수 있다.
 - 경로 B는 “RM이 곧 보상”인 RLHF 스케치이며 분산과 해킹 여지가 드러난다.
 - 챌린지 실험이 제96강으로 가는 다리이다.
 
-## 19. 연습 문제
+
+## 용어 사전
+
+| 용어 | 설명 |
+|---|---|
+| (이 강 핵심어) | 본문에서 강조한 용어를 다시 적어 보세요. |
+
+## 연습문제
 ### 문제 1
 
 DPO에서 `ref = copy.deepcopy(model)` 후 `requires_grad_(False)`를 하는 이유를 쓰시오.
@@ -949,7 +941,6 @@ sum logprob와 mean logprob 중, 길이 bias에 더 민감한 쪽은?
 ---
 
 ## 정답 및 해설
-
 ### 문제 1
 
 DPO 항이 $\pi_\theta$와 $\pi_{\mathrm{ref}}$의 로그비에 의존하므로, 참조 분포를 학습 중 움직이지 않게 고정하기 위함이다.
@@ -970,7 +961,7 @@ sum logprob.
 
 보상/선호 신호 자체가 오염되면 최적화는 “틀린 목표”를 잘 푸는 쪽으로 간다（reward misspecification·해킹의 입구）.
 
-## 20. 다음 강의와 연결
+## 다음 강의와 연결
 **제96강. Alignment의 한계와 부작용**에서 reward hacking, sycophancy, over-refusal, 분포 이동, 평가 한계를 정리한다. 제95강 report의 실패 로그가 있으면 사례로 삼아라.
 
 <!-- LECTURE_NAV -->

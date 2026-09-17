@@ -1,15 +1,13 @@
-# 제69강. Instruction Tuning의 개념
+# 69강. Instruction Tuning의 개념
+## 이번 강에서 배우는 내용
 
-> **학습 목표**
-> - Base LM과 Assistant(대화·지시 수행 모델)가 목표·데이터·평가에서 어떻게 다른지
-> - Instruction following(지시 따르기)이 무엇을 의미하는지
-> - SFT(Supervised Fine-Tuning)가 파이프라인에서 Pretraining과 RLHF 사이에 앉는 위치
-> - Instruction Tuning이 “만능 정렬”이 아닌 이유와 한계
-> - 제70강 데이터 형식·제71강 구현으로 넘어가기 전 지도
+- Base LM과 Assistant(대화·지시 수행 모델)가 목표·데이터·평가에서 어떻게 다른지
+- Instruction following(지시 따르기)이 무엇을 의미하는지
+- SFT(Supervised Fine-Tuning)가 파이프라인에서 Pretraining과 RLHF 사이에 앉는 위치
+- Instruction Tuning이 “만능 정렬”이 아닌 이유와 한계
+- 제70강 데이터 형식·제71강 구현으로 넘어가기 전 지도
 
----
-## 1. 왜 이것을 배우는가
-
+## 왜 중요한가?
 Pretraining만 끝난 모델에게 이렇게 물어보면 자주 당황스럽다.
 
 ```text
@@ -30,8 +28,7 @@ RLHF / Preference    →  선호·안전·미묘한 정렬      (4권)
 
 Instruction Tuning을 빼먹고 RLHF만 말하면, **지도 신호가 있는 쉬운 단계**를 건너뛴 설계가 된다.
 
-## 2. 먼저 알아야 할 개념
-
+## 선수 개념
 - Causal LM / Next-token prediction (제57강, 2권 제32강)
 - Mini GPT Pretraining 루프 (제68강)
 - Fine-tuning 일반 개념: 이미 학습된 가중치를 다른 목표·데이터로 추가 학습
@@ -43,8 +40,7 @@ Instruction Tuning을 빼먹고 RLHF만 말하면, **지도 신호가 있는 쉬
 - Reward Model, PPO, DPO (4권)
 - 특정 상용 모델의 “지시 성능 점수” 날조
 
-## 3. 핵심 개념 설명
-
+## 핵심 개념
 ### 3.1 Base LM이란?
 
 **Base LM(베이스 언어 모델)**은 주로 대량 텍스트의 next-token 목표로 Pretraining된 모델이다. 강점:
@@ -116,8 +112,7 @@ SFT의 역할:
 
 SFT가 없는 상태에서 preference만 적용하면, 모델이 아직도 “위키 문체 이어쓰기”일 수 있어 학습이 비효율·불안정해지기 쉽다.
 
-## 4. 직관적으로 이해하기
-
+## 직관적으로 이해하기
 비유:
 
 | 단계 | 비유 |
@@ -133,8 +128,7 @@ SFT가 없는 상태에서 preference만 적용하면, 모델이 아직도 “�
 
 Instruction Tuning은 마법이 아니라 **분포를 바꾸는 학습**이다.
 
-## 5. 수학적으로 이해하기 (목표만)
-
+## 수학적으로 이해하기 (목표만)
 Pretraining 목표(복습):
 
 $$
@@ -165,8 +159,7 @@ $\mathcal{T}_{\mathrm{resp}}$는 assistant(응답) 구간 토큰 집합이다. �
 - Pretraining: “모든 토큰이 타깃”
 - SFT: “사용자가 이미 말한 부분은 맞출 필요 없고, **답할 부분**을 맞춘다”
 
-## 6. 작은 예시로 보기
-
+## 작은 예시로 보기
 ### 예 1 — Base LM의 이어쓰기
 
 입력:
@@ -205,8 +198,7 @@ Base LM이 학습 분포에 FAQ가 많다면 답을 이을 수도 있다. 하지
 
 SFT는 이런 쌍을 많이 보여 주어, “지시 뒤에 응답이 온다”는 **조건부 분포**를 학습한다.
 
-## 7. Instruction Tuning이 잘하는 것 / 못하는 것
-
+## Instruction Tuning이 잘하는 것 / 못하는 것
 ### 잘하는 편
 
 - 대화·QA·요약 등 **형식 전환**
@@ -220,8 +212,7 @@ SFT는 이런 쌍을 많이 보여 주어, “지시 뒤에 응답이 온다”�
 - 안전·거부·미묘한 선호는 SFT만으로 불완전한 경우가 많음 → 4권
 - Pretraining이 약하면 SFT로 “지식 구멍”을 다 메우기 어려움
 
-## 8. 실제 LLM에서는 어떻게 사용하는가
-
+## LLM에서는 어디에 사용될까?
 공개·산업 파이프라인에서 흔히 관찰되는 패턴:
 
 1. 대량 Pretraining으로 base 확보
@@ -233,8 +224,7 @@ SFT는 이런 쌍을 많이 보여 주어, “지시 뒤에 응답이 온다”�
 
 Hugging Face 등의 `Instruct` / `Chat` 체크포인트는 대개 base 위에 이런 단계가 올라간 결과물이다. 이름만 보고 base와 chat을 섞어 쓰면 프롬프트 형식이 깨진다. (제72강 Chat Template)
 
-## 9. 실습
-
+## 실습
 ### 실습 1 — Base vs Instruct 행동 관찰 (개념)
 
 가능하다면 같은 계열의 base와 instruct 체크포인트에 동일 프롬프트를 넣어 차이를 관찰한다. API가 없으면, 제68강 Mini GPT에 “지시문만” 넣었을 때와, 다음 강 형식의 모범 응답을 학습시킨 뒤의 차이를 **미니 실험으로** 비교할 계획을 적어 보라.
@@ -259,8 +249,7 @@ Pretraining → (  ①  ) → (  ②  preference  )
 
 ① SFT/Instruction Tuning, ② RLHF 등.
 
-## 10. 자주 하는 실수
-
+## 자주 하는 실수
 1. **Base LM에게 ChatML만 넣고 instruct가 되길 기대**  
    템플릿은 형식이지 학습이 아니다. (학습 + 동일 템플릿이 필요)
 
@@ -276,16 +265,14 @@ Pretraining → (  ①  ) → (  ②  preference  )
 5. **Pretraining을 건너뛰고 작은 모델에 SFT만**  
    미니 실험은 가능하지만, “지식”과 “형식”을 혼동하지 말 것.
 
-## 11. 핵심 정리
-
+## 핵심 요약
 - Base LM은 문서 이어쓰기에 강하고, Assistant는 지시 수행에 맞춰 추가 학습된다.
 - Instruction Tuning(주로 SFT)은 “(지시→응답)” 분포를 가르친다.
 - SFT는 Pretraining 이후, RLHF 이전에 위치하는 **지도 미세조정**이다.
 - 응답 토큰에 loss를 집중하는 것이 Pretraining 목표와의 핵심 차이다.
 - SFT는 형식·과제 적응에 강력하지만, 선호·안전의 전부는 아니다.
 
-## 12. 핵심 용어
-
+## 용어 사전
 | 용어 | 의미 |
 |---|---|
 | Base LM | Pretraining된 원천 언어 모델 |
@@ -297,7 +284,7 @@ Pretraining → (  ①  ) → (  ②  preference  )
 | Response | 모델이 생성·학습하는 응답 구간 |
 | RLHF | 인간 피드백 기반 강화학습 정렬 (4권) |
 
-## 13. 연습 문제
+## 연습문제
 ### 문제 1 (개념)
 
 Base LM과 Assistant의 차이를 “학습 목표” 관점에서 두 문장으로 쓰시오.
@@ -321,7 +308,6 @@ Instruction Tuning만으로 부족한 정렬 문제의 예를 하나 드시오.
 ---
 
 ## 정답 및 해설
-
 ### 문제 1
 
 Base LM은 일반 텍스트 next-token 예측이 목표다. Assistant는 사용자 지시에 대한 유용한 응답을 내도록 추가 학습된 모델이다.
@@ -342,8 +328,7 @@ Base LM은 일반 텍스트 next-token 예측이 목표다. Assistant는 사용�
 
 Pretraining(base) 단계의 미니 산출물이다. 제70강에서는 Instruction Dataset 형식(Alpaca식·messages)을 준비한다.
 
-## 14. 다음 강의와 연결
-
+## 다음 강의와 연결
 개념상 “무엇을 왜 가르치는가”는 정리되었다. 다음은 **데이터 스키마**다.
 
 다음 **제70강. Instruction Dataset 형식**에서는 Alpaca-like 필드, `system`/`user`/`assistant` messages, 그리고 프롬프트 마스킹의 미리보기를 다룬다.

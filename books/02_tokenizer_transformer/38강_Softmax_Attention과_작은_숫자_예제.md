@@ -1,15 +1,13 @@
-# 제38강. Softmax Attention과 작은 숫자 예제
+# 38강. Softmax Attention과 작은 숫자 예제
+## 이번 강에서 배우는 내용
 
-> **학습 목표**
-> - 행 Softmax로 $\alpha_{ij}$를 구하는 절차
-> - $O = \alpha V = \mathrm{softmax}(S)\,V$의 Shape
-> - 2~3토큰 예제를 끝까지 손계산하기
-> - 손계산 ↔ NumPy ↔ PyTorch 결과가 같은지 검증하기
-> - 33강 Softmax와의 연결, 39강 모듈화로 넘어갈 준비
+- 행 Softmax로 $\alpha_{ij}$를 구하는 절차
+- $O = \alpha V = \mathrm{softmax}(S)\,V$의 Shape
+- 2~3토큰 예제를 끝까지 손계산하기
+- 손계산 ↔ NumPy ↔ PyTorch 결과가 같은지 검증하기
+- 33강 Softmax와의 연결, 39강 모듈화로 넘어갈 준비
 
----
-## 1. 왜 이것을 배우는가
-
+## 왜 중요한가?
 Attention의 정의는 짧다.
 
 $$
@@ -21,16 +19,14 @@ $$
 짧아서 위험하다. Softmax 축, Value 곱 순서, 마스크 위치를 한 번만 헷갈려도 조용히 틀린다.  
 작은 숫자로 한 바퀴 돌리면, 이후 구현·디버깅이 압도적으로 쉬워진다.
 
-## 2. 먼저 알아야 할 개념
-
+## 선수 개념
 - Softmax (33강)
 - Q/K/V (36강)
 - Scaled scores $S$ (37강)
 - 행렬곱 (1권 10강)
 - Cross Entropy는 “출력단”; 오늘은 “문맥 혼합단”
 
-## 3. 핵심 개념 설명
-
+## 핵심 개념
 ### 3.1 Softmax Attention이란?
 
 **Softmax Attention**은 점수 $S$의 각 행에 Softmax를 적용해 **확률형 가중치** $\alpha$를 만든 뒤, Value를 가중합하는 Attention이다.
@@ -85,8 +81,7 @@ $$
 | 출력 의미 | 다음 토큰 확률 | 어느 위치를 볼지 |
 | 뒤에 오는 것 | CE Loss (34강) | Value 가중합 |
 
-## 4. 직관적으로 이해하기
-
+## 직관적으로 이해하기
 ### 4.1 예산을 나누는 일
 
 각 Query 위치는 “주목 예산” 1.0을 가진다.  
@@ -103,8 +98,7 @@ Softmax는 그 예산을 Key 위치들에 나눠 준다.
 35강에서 본 `weights @ E`가 바로 이것이다.  
 오늘은 $\alpha$를 Softmax로 **계산**한다.
 
-## 5. 수학적으로 이해하기
-
+## 수학적으로 이해하기
 ### 5.1 안정 Softmax
 
 행 점수 $\mathbf{s}$에 대해
@@ -135,8 +129,7 @@ $$
 Attention 가중치는 이후 Loss(34강)까지 이어지는 경로의 일부다.  
 지금은 순전파 숫자에 집중한다.
 
-## 6. 작은 숫자로 직접 계산하기
-
+## 작은 숫자로 직접 계산하기
 ### 6.1 예제 1 — 2토큰 완전 계산
 
 37강 설정 B를 이어받는다.
@@ -327,8 +320,7 @@ $$
 
 거의 hard selection에 가깝다. Attention이 “거의 argmax”처럼 동작하는 극단이다.
 
-## 7. 코드로 구현하기 (NumPy) — 손계산 대조
-
+## 코드로 구현하기 (NumPy) — 손계산 대조
 ```python
 # lecture38_softmax_attention.py
 # Softmax Attention 전체: scores → weights → output
@@ -375,8 +367,7 @@ if __name__ == "__main__":
 
 손계산 $\mathbf{o}_0\approx[1.203,\ 1.000]$과 오차 $10^{-3}$ 수준인지 확인한다.
 
-## 8. PyTorch로 구현하기
-
+## PyTorch로 구현하기
 ```python
 # lecture38_attention_torch.py
 
@@ -411,8 +402,7 @@ if __name__ == "__main__":
 
 `F.softmax(..., dim=-1)`의 `dim`이 틀리면 즉시 붕괴한다. 항상 Key 축인지 확인한다.
 
-## 9. 실제 LLM에서는 어떻게 사용하는가
-
+## LLM에서는 어디에 사용될까?
 ### 9.1 Self-Attention 한 헤드의 본체
 
 오늘 식이 Multi-Head의 헤드 하나다.  
@@ -433,8 +423,7 @@ $O$는 잔차 연결·LayerNorm·FFN을 거쳐 (44~46강) 결국 LM Head → CE(
 $A$의 행을 히트맵으로 보면 주목 패턴이 보인다 (51강).  
 오늘 예제의 $A$를 손으로 그려 보는 것이 시작이다.
 
-## 10. 실습
-
+## 실습
 ### 실습 1 — 손계산 Softmax
 
 점수 $[1, 1, 1]$의 Softmax를 구하시오.
@@ -466,8 +455,7 @@ NumPy와 PyTorch로 예제 2의 $O[0]$을 구해 손계산과 비교하시오.
 
 33강 Softmax와 38강 Softmax의 차이를 “축의 의미”로 한 문장 쓰시오.
 
-## 11. 자주 하는 실수
-
+## 자주 하는 실수
 1. **Softmax 축 오류**  
    `dim=-1`이 Key 축이 되게 Shape을 맞춰야 한다.
 
@@ -486,16 +474,14 @@ NumPy와 PyTorch로 예제 2의 $O[0]$을 구해 손계산과 비교하시오.
 6. **스케일을 Softmax 뒤에 적용**  
    스케일은 Softmax **전** 점수에 적용한다.
 
-## 12. 핵심 정리
-
+## 핵심 요약
 - Softmax Attention은 $A=\mathrm{softmax}(S)$, $O=AV$다.
 - Softmax는 각 Query 행에서 Key 방향으로 적용한다.
 - 가중치 행 합은 1이며, 출력은 Value의 가중합이다.
 - 작은 행렬로 손계산↔코드 대조가 Attention 이해의 핵심 훈련이다.
 - 33강의 Softmax와 형태는 같고 해석 대상이 다르다.
 
-## 13. 핵심 용어
-
+## 용어 사전
 | 용어 | 의미 |
 |---|---|
 | Attention weights $A$ | Softmax 후 주목 가중치 |
@@ -505,7 +491,7 @@ NumPy와 PyTorch로 예제 2의 $O[0]$을 구해 손계산과 비교하시오.
 | Row-wise Softmax | 행마다 정규화 |
 | Scaled Dot-Product Attention | 스케일+Softmax+V의 표준 세트 |
 
-## 14. 연습 문제
+## 연습문제
 ### 문제 1 (계산)
 
 $s=[0,0]$의 Softmax는?
@@ -529,7 +515,6 @@ $s=[0,0]$의 Softmax는?
 ---
 
 ## 정답 및 해설
-
 ### 문제 1
 
 $[0.5,\ 0.5]$.
@@ -550,8 +535,7 @@ $[0.5,\ 0.5]$.
 
 입력 $Q,K,V$ (또는 $X$와 투영 포함), 출력 $O$ (필요 시 $A$까지).
 
-## 15. 다음 강의와 연결
-
+## 다음 강의와 연결
 이제 식과 숫자와 짧은 함수가 준비되었다.  
 다음 **제39강. Self-Attention 구현**에서는 투영·점수·Softmax·출력을 **하나의 모듈**로 묶고, NumPy 구현 후 PyTorch 스케치로 정리한다.
 

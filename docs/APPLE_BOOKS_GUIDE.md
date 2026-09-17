@@ -335,7 +335,11 @@ NumPy + PyTorch를 **최소 2개** 이상 권장한다.
 ### 빌드
 
 ```bash
+# 구조 정규화(필요 시)
+python3 scripts/apply_apple_books_structure.py
+
 python3 scripts/build_epub.py --book all
+python3 scripts/check_lecture.py
 ```
 
 산출물: `epub/01_…` ~ `epub/05_….epub` (EPUB3 + MathML)

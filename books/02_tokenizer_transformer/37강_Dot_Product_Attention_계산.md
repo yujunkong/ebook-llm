@@ -1,15 +1,13 @@
-# 제37강. Dot-Product Attention 계산
+# 37강. Dot-Product Attention 계산
+## 이번 강에서 배우는 내용
 
-> **학습 목표**
-> - Dot-Product Attention에서 점수가 $\mathbf{q}\cdot\mathbf{k}$인 이유
-> - 행렬 형태 $S = QK^\top$의 Shape와 한 칸의 의미
-> - Scaled Dot-Product: $S = QK^\top / \sqrt{d_k}$와 스케일이 필요한 이유
-> - 토큰 2~3개, 차원 2짜리로 손계산하기
-> - Softmax 전 단계까지를 코드로 재현하기
+- Dot-Product Attention에서 점수가 $\mathbf{q}\cdot\mathbf{k}$인 이유
+- 행렬 형태 $S = QK^\top$의 Shape와 한 칸의 의미
+- Scaled Dot-Product: $S = QK^\top / \sqrt{d_k}$와 스케일이 필요한 이유
+- 토큰 2~3개, 차원 2짜리로 손계산하기
+- Softmax 전 단계까지를 코드로 재현하기
 
----
-## 1. 왜 이것을 배우는가
-
+## 왜 중요한가?
 Attention 공식의 중심에는 내적이 있다.
 
 $$
@@ -23,8 +21,7 @@ $$
 
 점수를 손으로 한 칸씩 채워 본 사람만, 이후 Causal Mask(40강)와 Multi-Head(41강)를 안전하게 다룬다.
 
-## 2. 먼저 알아야 할 개념
-
+## 선수 개념
 - 내적·행렬곱 (1권 10강)
 - Q, K, V 투영 (36강)
 - Softmax는 “다음에” (33강 복습 + 38강 본적용)
@@ -41,8 +38,7 @@ $$
 | $S \in \mathbb{R}^{T\times T}$ | 점수 행렬 |
 | $s_{ij}$ | 위치 $i$가 $j$를 보는 점수 |
 
-## 3. 핵심 개념 설명
-
+## 핵심 개념
 ### 3.1 Dot-Product Attention이란?
 
 **Dot-Product Attention(닷 프로덕트 어텐션)**은 Query와 Key의 **내적**으로 유사도 점수를 매기는 Attention이다.
@@ -110,8 +106,7 @@ $d_k=64$면 $\sqrt{64}=8$로 나눈다. GPT류에서 흔한 헤드 차원이다.
 마스크를 쓸 때는 Softmax **직전**의 $S$에 $-\infty$를 넣는 것이 표준이다 (40강).  
 그래서 점수 단계를 분리해 이해하는 것이 중요하다.
 
-## 4. 직관적으로 이해하기
-
+## 직관적으로 이해하기
 ### 4.1 성적표 비유
 
 $T\times T$ 점수 행렬은 교실 성적표와  alike하다.
@@ -136,8 +131,7 @@ Q (T × d)  @  K^T (d × T)  =  S (T × T)
 Softmax 입력을 상수로 나누는 것은 **온도(temperature)**를 올리는 것과 비슷하다.  
 분포가 덜 뾰족해져, 초기에 여러 Key를 고루 볼 여지가 생긴다.
 
-## 5. 수학적으로 이해하기
-
+## 수학적으로 이해하기
 ### 5.1 정의 정리
 
 $$
@@ -188,8 +182,7 @@ $$
 
 Multi-Head면 보통 `(B, h, T, d_k)` (41강).
 
-## 6. 작은 숫자로 직접 계산하기
-
+## 작은 숫자로 직접 계산하기
 ### 6.1 설정 A — 토큰 2개, $d_k=2$
 
 토큰: `나`(0), `책`(1)
@@ -319,8 +312,7 @@ Softmax에 넣기 전 입력이 한없이 커지는 것을 완화한다.
 아직 Softmax 전이지만, 차이 $2.121-0.707=1.414$가 이미 크다.  
 38강에서 $e^{2.121}/(e^{0.707}+e^{2.121})$를 계산하면 책에 쏠림이 보인다.
 
-## 7. 코드로 구현하기 (NumPy)
-
+## 코드로 구현하기
 ```python
 # lecture37_dot_product_scores.py
 # Scaled Dot-Product의 점수 행렬만 계산한다.
@@ -370,8 +362,7 @@ if __name__ == "__main__":
 
 손계산과 `max abs diff == 0`인지 확인한다.
 
-## 8. PyTorch로 구현하기
-
+## PyTorch로 구현하기
 ```python
 # lecture37_scores_torch.py
 
@@ -399,8 +390,7 @@ if __name__ == "__main__":
 `torch.nn.functional.scaled_dot_product_attention`은 Softmax·V·마스크까지 한 번에 처리하는 API다.  
 학습 목적이므로 지금은 점수만 분리한다.
 
-## 9. 실제 LLM에서는 어떻게 사용하는가
-
+## LLM에서는 어디에 사용될까?
 ### 9.1 매 Attention 층의 핵심 GEMM
 
 학습·추론 모두에서 $QK^\top$는 거대한 행렬곱이다.  
@@ -420,8 +410,7 @@ Causal / padding mask는 Softmax 전 $S$에 더하거나 `masked_fill(-inf)`한�
 
 헤드마다 $d_k$가 작아지고, 스케일도 헤드의 $d_k$를 쓴다 (41강).
 
-## 10. 실습
-
+## 실습
 ### 실습 1 — 2×2 손계산
 
 $$
@@ -453,8 +442,7 @@ $B=4,T=16,d_k=64$일 때 $S$의 Shape는?
 
 `Q @ K` (전치 없음)를 하면 Shape/의미가 어떻게 깨지는지 $T=3,d_k=2$로 설명하시오.
 
-## 11. 자주 하는 실수
-
+## 자주 하는 실수
 1. **$KK^\top$나 $QQ^\top$만 쓰고 Q/K가 다른 경우를 잊는다**  
    일반식은 $QK^\top$다. $Q=K$는 특수 예제다.
 
@@ -473,16 +461,14 @@ $B=4,T=16,d_k=64$일 때 $S$의 Shape는?
 6. **배치 축까지 transpose**  
    `K.T`는 2D에서만 안전. 3D+는 `transpose(-2,-1)`.
 
-## 12. 핵심 정리
-
+## 핵심 요약
 - Dot-Product Attention의 점수는 Query–Key 내적이다.
 - 행렬로 $S_{\mathrm{raw}}=QK^\top\in\mathbb{R}^{T\times T}$.
 - Scaled 버전은 $S=QK^\top/\sqrt{d_k}$로 Softmax 입력을 완화한다.
 - $(i,j)$ 칸은 “토큰 $i$가 토큰 $j$를 보는 점수”다.
 - 다음 단계는 행 Softmax로 가중치를 만들고 $V$를 섞는 것 (38강).
 
-## 13. 핵심 용어
-
+## 용어 사전
 | 용어 | 의미 |
 |---|---|
 | Dot-Product Attention | 내적으로 점수를 내는 Attention |
@@ -492,7 +478,7 @@ $B=4,T=16,d_k=64$일 때 $S$의 Shape는?
 | $d_k$ | Query/Key 차원 |
 | GEMM | 일반 행렬곱; Attention 점수의 구현 뼈대 |
 
-## 14. 연습 문제
+## 연습문제
 ### 문제 1 (계산)
 
 $\mathbf{q}=[2,0],\ \mathbf{k}=[0,3]$, $d_k=2$일 때 scaled score는?
@@ -516,7 +502,6 @@ $Q\in\mathbb{R}^{2\times3\times8},\ K$ 동 Shape일 때 $S$ Shape는?
 ---
 
 ## 정답 및 해설
-
 ### 문제 1
 
 내적 $2\cdot0+0\cdot3=0$, scaled도 $0$.
@@ -537,8 +522,7 @@ $(2,3,3)$.
 
 점수 행렬 $S$ (또는 raw scores)에 Softmax **전**에 적용한다.
 
-## 15. 다음 강의와 연결
-
+## 다음 강의와 연결
 점수가 생겼다.  
 다음 **제38강. Softmax Attention과 작은 숫자 예제**에서는
 

@@ -1,15 +1,13 @@
-# 제19강. PyTorch Tensor
+# 19강. PyTorch Tensor
+## 이번 강에서 배우는 내용
 
-> **학습 목표**
-> - `torch.tensor` / `torch.Tensor`로 텐서를 만드는 방법
-> - dtype, device, shape를 읽고 바꾸는 방법
-> - Broadcasting(브로드캐스팅) 규칙을 NumPy와 비교해 설명
-> - NumPy ↔ PyTorch 변환과 메모리 공유 함정
-> - LLM 코드에서 텐서 shape를 먼저 보는 습관
+- `torch.tensor` / `torch.Tensor`로 텐서를 만드는 방법
+- dtype, device, shape를 읽고 바꾸는 방법
+- Broadcasting(브로드캐스팅) 규칙을 NumPy와 비교해 설명
+- NumPy ↔ PyTorch 변환과 메모리 공유 함정
+- LLM 코드에서 텐서 shape를 먼저 보는 습관
 
----
-## 1. 왜 이것을 배우는가
-
+## 왜 중요한가?
 현대 LLM 구현의 거의 모든 값은 Tensor이다.
 
 ```text
@@ -22,16 +20,14 @@ token ids → Embedding Tensor
 NumPy만으로도 원리는 되지만, GPU·Autograd·생태계(transformers, vLLM 등)는 PyTorch Tensor를 중심으로 돌아간다.  
 Tensor를 못 읽으면 모델 코드를 읽어도 “행렬이 어디로 가는지”가 안 보인다.
 
-## 2. 먼저 알아야 할 개념
-
+## 선수 개념
 - ndarray의 shape, dtype, broadcasting (제8~9강)
 - 행렬곱과 배치 차원 (제10강, 제16강)
 - (설치) `pip install torch` 또는 환경에 이미 포함된 PyTorch
 
 CPU만 있어도 충분하다. GPU는 `device` 개념만 이해하면 된다.
 
-## 3. 핵심 개념 설명
-
+## 핵심 개념
 ### 3.1 Tensor (PyTorch)
 
 **Tensor(텐서)**는 PyTorch에서 다차원 배열을 담는 기본 객체이다.  
@@ -159,8 +155,7 @@ b = t.numpy()             # requires_grad=False, CPU만
 **함정:** `from_numpy`로 만든 텐서를 바꾸면 NumPy 배열도 바뀐다.  
 GPU 텐서는 `.cpu().numpy()`가 필요하다.
 
-## 4. 직관적으로 이해하기
-
+## 직관적으로 이해하기
 NumPy ndarray가 “숫자 격자 상자”라면,  
 PyTorch Tensor는 그 상자에 **택배 송장**이 붙은 것이다.
 
@@ -174,8 +169,7 @@ PyTorch Tensor는 그 상자에 **택배 송장**이 붙은 것이다.
 연산은 송장이 호환될 때만 진행된다.  
 CPU 상자와 CUDA 상자를 바로 더할 수 없는 이유가 이것이다.
 
-## 5. 수학적으로 이해하기
-
+## 수학적으로 이해하기
 Tensor $T$의 rank-$k$는
 
 \[
@@ -200,8 +194,7 @@ Y = torch.matmul(X, W.T)
 `torch.nn.Linear`는 내부적으로 $y = xW^{\top}+b$ (x가 행벡터 배치)를 쓴다.  
 18강 NumPy 관례와 맞춰 두면 이식하기 쉽다.
 
-## 6. 작은 숫자로 직접 계산하기
-
+## 작은 숫자로 직접 계산하기
 18강과 같은 단샘플 Forward를 Tensor로 재현한다.
 
 ```text
@@ -214,8 +207,7 @@ b2 = [0.2]
 
 손계산 결과: $a1=[0.3,0.35]$, $\hat{y}=0.21$.
 
-## 7. 코드로 구현하기
-
+## 코드로 구현하기
 ### 7.1 생성과 속성
 
 ```python
@@ -388,8 +380,7 @@ if __name__ == "__main__":
 
 아직 `requires_grad`는 켜지 않았다. 다음 강에서 같은 코드에 추적만 켜면 Backprop이 자동으로 붙는다.
 
-## 8. NumPy 학습기를 Tensor 연산으로 옮길 때 체크리스트
-
+## NumPy 학습기를 Tensor 연산으로 옮길 때 체크리스트
 | NumPy | PyTorch |
 |---|---|
 | `np.array` | `torch.tensor` / `torch.asarray` |
@@ -403,8 +394,7 @@ if __name__ == "__main__":
 오늘은 `requires_grad`를 켜지 않아도 Forward는 동일하다.  
 켜는 순간부터 계산 그래프가 기록되기 시작한다(제20강).
 
-## 9. 실제 LLM에서는 어떻게 사용하는가
-
+## LLM에서는 어디에 사용될까?
 예: Causal LM 배치의 전형적 shape
 
 ```text
@@ -424,8 +414,7 @@ logits:         (batch, seq, vocab)
 
 5권 vLLM·최적화로 가면 dtype(FP8 등)과 device 배치가 성능의 중심이 된다. 출발점은 오늘이다.
 
-## 10. 실습
-
+## 실습
 ### 실습 1 — 손계산 재현
 
 8.2 코드로 `y_hat==0.21`을 `torch.allclose`로 검증한다.
@@ -448,8 +437,7 @@ CUDA가 있으면 한쪽만 `.cuda()`로 옮겨 더하기를 시도한다.
 
 공유/복사 차이를 출력으로 증명하는 미니 스크립트를 작성한다.
 
-## 11. 자주 하는 실수
-
+## 자주 하는 실수
 1. **`torch.Tensor(data)`와 `torch.tensor(data)` 혼동**  
    생성은 `torch.tensor` / `torch.as_tensor`를 권장. `Tensor`는 구식 생성자 함정이 있다.
 
@@ -468,15 +456,13 @@ CUDA가 있으면 한쪽만 `.cuda()`로 옮겨 더하기를 시도한다.
 6. **silent dtype promotion 기대**  
    환경/연산에 따라 규칙이 엄격하다. 명시적 `.to(dtype)`이 디버깅에 유리하다.
 
-## 12. 핵심 정리
-
+## 핵심 요약
 - PyTorch Tensor는 shape·dtype·device를 가진 다차원 배열이며 LLM 코드의 기본 화폐이다.
 - Broadcasting·행렬곱·view/reshape 규칙을 읽어야 Attention 코드를 따라갈 수 있다.
 - NumPy와 왕복할 때 메모리 공유 여부를 의식한다.
 - 같은 Forward를 Tensor로 재현할 수 있으면 Autograd로 넘어갈 준비다 된 것이다.
 
-## 13. 핵심 용어
-
+## 용어 사전
 | 용어 | 의미 |
 |---|---|
 | Tensor | PyTorch의 다차원 배열 객체 |
@@ -490,7 +476,7 @@ CUDA가 있으면 한쪽만 `.cuda()`로 옮겨 더하기를 시도한다.
 | matmul / `@` | 행렬곱 |
 | torch.relu | ReLU의 PyTorch 구현 |
 
-## 14. 연습 문제
+## 연습문제
 ### 문제 1 (개념)
 
 Tensor의 dtype과 device가 각각 무엇을 답하는지 한 줄씩 쓰시오.
@@ -514,7 +500,6 @@ LLM logits 텐서의 전형적 3축은 무엇인가?
 ---
 
 ## 정답 및 해설
-
 ### 문제 1
 
 - dtype: 숫자 표현 형식(float32, int64 등)
@@ -537,8 +522,7 @@ LLM logits 텐서의 전형적 3축은 무엇인가?
 
 `(batch, seq, vocab)` (또는 동등 순서의 배치·시퀀스·어휘).
 
-## 15. 다음 강의와 연결
-
+## 다음 강의와 연결
 이번 강의에서 PyTorch의 기본 화폐인 Tensor를 익혔다.
 
 다음 **제20강. Autograd — 자동 미분**에서는 `requires_grad=True`로 계산 그래프를 기록하고, `loss.backward()`가 제17~18강의 수동 Backprop을 대신해 `tensor.grad`를 채우는 과정을 다룬다.  

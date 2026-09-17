@@ -1,16 +1,14 @@
-# 제91강. DPO 구현
+# 91강. DPO 구현
+## 이번 강에서 배우는 내용
 
-> **학습 목표**
-> - 시퀀스 로그확률을 logits에서 모으는 방법
-> - chosen/rejected · policy/ref 네 갈래 로그확률 정리
-> - `logsigmoid`로 $\mathcal{L}_{\mathrm{DPO}}$ 구현
-> - $\beta$·마스크·no_grad 참조 forward
-> - 최소 트레이닝 스케치와 로깅 항목
-> - 구현에서 자주 터지는 버그
+- 시퀀스 로그확률을 logits에서 모으는 방법
+- chosen/rejected · policy/ref 네 갈래 로그확률 정리
+- `logsigmoid`로 $\mathcal{L}_{\mathrm{DPO}}$ 구현
+- $\beta$·마스크·no_grad 참조 forward
+- 최소 트레이닝 스케치와 로깅 항목
+- 구현에서 자주 터지는 버그
 
----
-## 1. 왜 이것을 배우는가
-
+## 왜 중요한가?
 DPO는 수식은 짧지만 구현에서 실수 포인트가 많다.
 
 ```text
@@ -24,16 +22,14 @@ DPO는 수식은 짧지만 구현에서 실수 포인트가 많다.
 
 한 군데만 뒤집혀도 “학습은 되는데 정렬이 반대로” 갈 수 있다. 장난감으로 **부호·마스크·참조 고정**을 몸에 익힌다.
 
-## 2. 먼저 알아야 할 개념
-
+## 선수 개념
 - DPO 손실 (90강)
 - `F.log_softmax`, `gather`, `masked sum`
 - `torch.no_grad()` / `requires_grad`
 - SFT 학습 루프 감각 (3권 71강)
 - PPO 구현에서 봤던 logprob 유틸 (88강) — 있으면 재사용
 
-## 3. 손실을 코드 변수로 번역
-
+## 손실을 코드 변수로 번역
 $$
 
 \mathcal{L}=-\log\sigma\Big(
@@ -64,8 +60,7 @@ loss = -F.logsigmoid(logits).mean()
 
 `logsigmoid`는 $\log\sigma(z)$를 수치적으로 더 안정적으로 계산한다. `-log(sigmoid(z))`를 직접 쓰면 극단 $z$에서 언더플로가 나기 쉽다.
 
-## 4. 시퀀스 로그확률 유틸
-
+## 시퀀스 로그확률 유틸
 Causal LM logits는 보통 “다음 토큰” 예측이므로, label을 한 칸 shift한다.
 
 ```python
@@ -90,8 +85,7 @@ def sequence_logprobs_from_logits(logits, labels, mask):
 - 길이 정규화(`sum` vs `mean`)는 팀 규약에 따른다. 원형 식은 보통 **합(joint logprob)**
 - pad label은 gather 전에 0 등으로 바꿔도 되지만, mask로 반드시 제외
 
-## 5. 장난감 배치로 손·코드 일치
-
+## 장난감 배치로 손·코드 일치
 어휘가  Tiny하고, 이미 시퀀스 로그확률을 알고 있다고 가정한다(모델 forward를 생략한 단위 테스트).
 
 검산용으로 **시퀀스 로그확률을 직접 넣은** 단위 테스트를 쓴다(모델 forward 생략).
@@ -140,8 +134,7 @@ loss.backward()
 
 한 번 실행해 부호·평균 손실을 확인하는 것이 이 강의의 최소 합격선이다.
 
-## 6. 모델 forward까지 붙인 최소 스케치
-
+## 모델 forward까지 붙인 최소 스케치
 실제로는 policy/ref 두 모델이 있다. 참조는 freeze.
 
 ```python
@@ -206,8 +199,7 @@ for step, batch in enumerate(loader):
 
 스케치일 뿐이다. 실제 LLM에서는 bf16, gradient checkpointing, packing, LoRA 등이 붙는다(3권·88강 인프라를 재사용).
 
-## 7. 학습 스케치 — 체크리스트
-
+## 학습 스케치 — 체크리스트
 ```text
 1. SFT 체크포인트 로드 → policy
 2. 동일 가중치로 ref 복사 후 requires_grad=False
@@ -220,8 +212,7 @@ for step, batch in enumerate(loader):
 
 초기에는 `acc`(암묵 보상이 chosen을 이기는 비율)가 0.5 근처에서 올라가는지를 본다. loss만 보면 스케일 착시가 있다.
 
-## 8. 구현 변형과 “정본” 고지
-
+## 구현 변형과 “정본” 고지
 오픈소스(TRL 등)는 다음을 추가로 넣기도 한다.
 
 - average logprob(길이 정규화)
@@ -232,8 +223,7 @@ for step, batch in enumerate(loader):
 
 이 강의 코드는 **교육용 원형 DPO**다. 라이브러리 기본값과 숫자가 다를 수 있다. 프로덕션에서는 해당 라이브러리 문서의 식을 기준으로 맞춘다.
 
-## 9. 흔히 하는 실수
-
+## 흔히 하는 실수
 1. **ref에 그래디언트가 흐름**  
    `no_grad` 누락 또는 ref가 policy와 파라미터 공유.
 
@@ -252,8 +242,7 @@ for step, batch in enumerate(loader):
 6. **배치 평균 위치**  
    토큰 평균과 시퀀스 평균을 섞지 않는다.
 
-## 10. 작은 통합 예제 — 가짜 logits
-
+## 작은 통합 예제 — 가짜 logits
 모델 없이 “gather 경로”만 검증하는 패턴이다.
 
 ```python
@@ -286,8 +275,7 @@ assert logits_pi.grad is not None
 
 이 테스트가 통과하면 “로그확률 파이프 + 손실 연결”은 산 것이다.
 
-## 11. LLM 파이프라인에서의 위치
-
+## LLM 파이프라인에서의 위치
 ```text
 88 PPO 구현 (online, RM, value)
   → 89 KL 역할
@@ -298,8 +286,7 @@ assert logits_pi.grad is not None
 
 91강까지가 “선호 쌍 → 정책”의 최소 완결이다. 95강 프로젝트에서 작은 데이터로 다시 묶는다.
 
-## 12. Collator 설계 메모
-
+## Collator 설계 메모
 선호 배치를 만들 때 최소 필드:
 
 ```text
@@ -319,8 +306,7 @@ attention_mask_*
 
 잘못된 template은 DPO보다 먼저 성능을 망친다. “손실은 맞는데 생성이 이상”하면 template부터 의심한다.
 
-## 13. LoRA로 DPO 돌리기
-
+## LoRA로 DPO 돌리기
 메모리가 빡세면 policy에 LoRA를 얹고 ref는 베이스(+필요 시 병합된 SFT)를 freeze한다(3권 73~74강).
 
 체크:
@@ -331,8 +317,7 @@ attention_mask_*
 
 LoRA rank가 과하면 오프라인 선호에 과적합하기 쉽다. 작은 $r$로 시작해 margin·holdout을 본다.
 
-## 14. 디버그 시나리오 네 가지
-
+## 디버그 시나리오 네 가지
 | 증상 | 가능한 원인 | 첫 확인 |
 |---|---|---|
 | loss≈0.693 고정 | lr=0, mask 전부 0, ref=policy 공유 | mask sum, param grad |
@@ -344,8 +329,7 @@ LoRA rank가 과하면 오프라인 선호에 과적합하기 쉽다. 작은 $r$
 
 > 가짜 로그확률로 loss 숫자와 grad 부호를 **손계산과 일치**시킨 뒤에야 큰 모델을 붙인다.
 
-## 15. 레퍼런스 로그확률 캐시
-
+## 레퍼런스 로그확률 캐시
 ref는 고정이므로, 데이터셋 전부에 대해 `lp_w_ref`, `lp_l_ref`를 **미리 계산해 디스크에 저장**하는 최적화가 가능하다.  
 장점: 매 스텝 ref forward 제거.  
 단점: tokenizer/template/모델 버전이 바뀌면 캐시 무효. 캐시 키에 커밋 해시를 넣는다.
@@ -380,8 +364,11 @@ backward 후:
 - [ ] response mask에 프롬프트가 섞이지 않음
 - [ ] chat template이 SFT와 동일
 
-## 16. 핵심 정리
+## LLM에서는 어디에 사용될까?
 
+이번 91강에서 배운 개념은 이후 Transformer · GPT · 서빙 강의에서 반복해서 등장합니다. 각 수식·코드 블록을 “실제 모델의 어느 단계인가”와 연결해 다시 읽어 보세요.
+
+## 핵심 요약
 - DPO 구현의 핵은 네 로그확률과 `-logsigmoid(β·margin)`이다.
 - 참조 모델은 반드시 freeze + `no_grad`.
 - 응답 마스크와 shift를 단위 테스트로 고정한다.
@@ -389,16 +376,14 @@ backward 후:
 - 라이브러리 변형이 많으니, 원형 식으로 먼저 검증한 뒤 옵션을 켠다.
 - Collator·chat template·LoRA·ref 캐시는 실무에서 성능을 좌우한다.
 
-## 17. 수치 안정과 mixed precision
-
+## 수치 안정과 mixed precision
 bf16/fp16에서 log_softmax·logsigmoid는 대체로 안정적이지만, 다음을 지킨다.
 
 1. 손실은 fp32로 누적하는 편이 안전하다(`loss.float()`).
 2. `exp(logp_theta - logp_old)` 형태의 ratio는 PPO/GRPO에서 더 민감하고, DPO는 log-space margin이라 상대적으로 낫다.
 3. Grad scaler를 쓰면 DPO에서도 overflow 로그를 본다.
 
-## 18. 미니 학습 일지 템플릿
-
+## 미니 학습 일지 템플릿
 ```text
 step | loss | margin | pair_acc | chosen_Δ | rejected_Δ | lr | notes
 ---- | ---- | ------ | -------- | -------- | ----------- | -- | -----
@@ -409,8 +394,7 @@ step | loss | margin | pair_acc | chosen_Δ | rejected_Δ | lr | notes
 `chosen_Δ = mean(logπ_θ(y_w)-logπ_ref(y_w))`  
 `rejected_Δ`도 같이 보면 “승자만 올리는지, 패자만 내리는지”가 보인다.
 
-## 19. 핵심 용어
-
+## 용어 사전
 | 용어 | 한 줄 의미 |
 |---|---|
 | sequence logprob | 응답 토큰 $\sum\log p$ |
@@ -422,7 +406,7 @@ step | loss | margin | pair_acc | chosen_Δ | rejected_Δ | lr | notes
 | ref cache | 고정 참조 로그확률 사전계산 |
 | collator | 선호 쌍을 텐서 배치로 묶는 전처리 |
 
-## 20. 연습 문제
+## 연습문제
 ### 문제 1（코드）
 
 `loss = -F.logsigmoid(beta * ((lp_w_pi - lp_w_ref) - (lp_l_pi - lp_l_ref))).mean()`에서 rejected 로그비를 **더하는** 쪽으로 괄호를 잘못 치면 학습이 어떻게  degenerates 하는가?
@@ -458,7 +442,6 @@ policy만 LoRA 학습하고 ref는 베이스 SFT를 freeze한다. ref에도 같�
 ---
 
 ## 정답 및 해설
-
 ### 문제 1
 
 rejected를 올리거나 chosen을 내리는 쪽으로 기울기가 반전되어, 선호와 **반대 정책**을 학습한다.
@@ -491,8 +474,7 @@ $\log(\pi/\pi_{\mathrm{ref}})$의 참조 쪽도 같이 움직여 KL 닻·상대 
 
 전자는 chosen 강화 위주, 후자는 rejected 억제 위주. margin은 둘 다 커질 수 있으나 생성 품질 부작용이 다를 수 있어 정성 평가가 필요하다.
 
-## 21. 다음 강의와 연결
-
+## 다음 강의와 연결
 오프라인 선호 학습의 손이 끝났다.  
 다음 **제92강. GRPO**에서는 PPO식 클리핑·그룹 샘플·**비평가(value) 없이** 상대 이득으로 정책을 올리는 최근 흐름을 **설명 관점**으로 정리한다. 세부 하이퍼파라미터는 논문·구현마다 다르다는 전제를 명시한다.
 
