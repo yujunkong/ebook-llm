@@ -415,6 +415,11 @@ Tokenizer → Embed → (RoPE/PE) → Block×N → LM Head → logits
 
 세대별 옵션(Norm, GQA, SwiGLU)은 제53강 지도 — 초반은 고전 골격으로 충분.
 
+
+### 한 줄 요약 수식
+
+$$\mathrm{GPT\ (book)}=\mathrm{Decoder\text{-}only\ Causal\ LM}+\mathrm{Pretrain}(+\mathrm{SFT}).$$
+
 ## 핵심 요약
 - GPT는 이 책에서 **Decoder-only Causal LM + (대규모) Pretraining** 계열을 가리킨다.
 - 본체 배선은 2권의 Causal LM과 동일하다: embed → Block×N → lm_head.

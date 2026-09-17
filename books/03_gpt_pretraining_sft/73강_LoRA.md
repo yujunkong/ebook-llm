@@ -409,6 +409,11 @@ LoRA가 줄이는 것: trainable·optimizer.
 제74강은 베이스를 4-bit로 두어 $M_W$를 깎는다.  
 수식은 동일: $y=x\widetilde W_0^\top+\frac{\alpha}{r}(xA^\top)B^\top$.
 
+
+### 한 줄 요약 수식
+
+$$\Delta W=\frac{\alpha}{r}BA,\quad W\leftarrow W_0+\Delta W\ (\mathrm{merge}).$$
+
 ## 핵심 요약
 - LoRA는 $\Delta W \approx BA$（또는 $\frac{\alpha}{r}BA$）로 저랭크 갱신만 학습한다.
 - 파라미터 수는 대략 $r(d_{\mathrm{in}}+d_{\mathrm{out}})$이며, full 대비 크게 줄어든다.

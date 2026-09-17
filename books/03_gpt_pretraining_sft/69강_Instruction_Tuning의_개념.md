@@ -404,6 +404,11 @@ $$
 
 지금 외울 문장: **SFT는 모범 응답 모방이지, 선호 최적화 전체가 아니다.**
 
+
+### 한 줄 요약 수식
+
+$$\mathcal{L}_{\mathrm{SFT}}=-\sum_{t\in\mathrm{resp}}\log p_\theta(x_t\mid x_{<t}).$$
+
 ## 핵심 요약
 - Base LM은 문서 이어쓰기에 강하고, Assistant는 지시 수행에 맞춰 추가 학습된다.
 - Instruction Tuning(주로 SFT)은 “(지시→응답)” 분포를 가르친다.
