@@ -271,6 +271,36 @@ $\tau\to 0$이면 greedy에 가깝고, $\tau$가 크면 분포가 평평해집�
 
 Top-$k$는 확률 상위 $k$개만 남기고 재정규화합니다. Top-$p$(nucleus)는 누적확률 $\ge p$가 되는 최소 집합을 남깁니다.
 
+## 수식·정량 보강 — 디코딩 정책
+
+Greedy: $x_t=\arg\max_v z_{t,v}$.
+
+Sampling: $x_t\sim\mathrm{Categorical}(\mathrm{softmax}(z_t))$.
+
+Temperature(제59강 예고): $p=\mathrm{softmax}(z/\tau)$.
+
+### 워크드 예
+
+$z=(3,2,0.5,-1)$, $\mathrm{softmax}\approx(0.644,0.237,0.053,0.012)$.
+
+| 정책 | 결과 |
+|---|---|
+| Greedy | 항상 0 |
+| Sample | 0 자주 |
+| Top-$k=2$ 후 | $p'=(0.731,0.269,0,0)$ |
+
+### 경로 확률이 보여주는 비최적성
+
+두 스텝 장난감에서 첫 토큰 mode가 전체 곱 최대를 보장하지 않을 수 있음 → 빔 서치 동기.
+
+엔트로피 $H(p)=-\sum p\log p$가 큰 위치에서 sampling 다양성↑.
+
+경로:
+
+$$
+P(x_{t_0+1:t_0+K}\mid x_{1:t_0})=\prod_{k}P(x_{t_0+k}\mid x_{<t_0+k})
+$$
+
 ## LLM에서는 어디에 사용될까?
 제품 챗봇은 드물게 순수 greedy만 쓴다. 보통:
 

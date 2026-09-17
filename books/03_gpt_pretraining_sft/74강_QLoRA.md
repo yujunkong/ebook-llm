@@ -345,6 +345,29 @@ $$
 
 에 가깝습니다. LoRA가 $\mathcal{E}x$의 일부를 보상하도록 학습되는 셈입니다.
 
+## 수식·정량 보강 — QLoRA 메모리
+
+$$
+\mathrm{Mem}\approx M_W+M_G+M_{\mathrm{opt}}+M_{\mathrm{act}}
+$$
+
+4-bit $M_W\approx0.5N$ bytes vs FP16 $2N$ → 이상적 $1/4$(메타 제외).
+
+Forward:
+
+$$
+y=x\widetilde W_0^\top+\frac{\alpha}{r}(xA^\top)B^\top
+$$
+
+$\partial L/\partial W_0^{(q)}=0$, $\partial L/\partial A,\partial L/\partial B$만 학습.
+
+손계산: $N=7\cdot10^9$ FP16≈14GB 가중치 감각 → 4-bit≈3.5GB 감각(설명용).  
+LoRA $r=8,C=4096,N_{\mathrm{layer}}=32$ on $W_q,W_v$ → trainable ≈ $4.2\cdot10^6$.
+
+NF4: 블록 스케일 $s$와 코드북 인덱스 $q_i$, $\hat w_i=s\cdot q_i$.
+
+학습 양자화 ≠ 추론 양자화. Merge 후 BF16 서빙 가능.
+
 ## LLM에서는 어디에 사용될까?
 
 이번 74강에서 배운 개념은 이후 Transformer · GPT · 서빙 강의에서 반복해서 등장합니다. 각 수식·코드 블록을 “실제 모델의 어느 단계인가”와 연결해 다시 읽어 보세요.

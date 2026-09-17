@@ -252,6 +252,30 @@ $$
 
 예: “불릿 3개”면 줄 수·마커를 규칙으로 검사. PPL과 별개인 **행동 지표**다(제75강).
 
+## 수식·정량 보강 — Instruction / SFT
+
+$$
+\mathcal{L}_{\mathrm{SFT}}=-\sum_{t\in\mathcal{T}_{\mathrm{resp}}}\log p_\theta(x_t\mid x_{<t})
+$$
+
+$$
+p_\theta(a\mid u)=\prod_{t\in a}p_\theta(x_t\mid x_{<t})
+$$
+
+$$
+\theta\leftarrow\arg\min_\theta\mathbb{E}_{(u,a^*)}\big[-\log p_\theta(a^*\mid u)\big]
+$$
+
+프롬프트 $L_p$, 응답 $L_r$: 전체 CE 항 $L_p+L_r$ vs 응답만 $L_r$.
+
+데이터 효율(설명): 응답 토큰 $N\bar L_r\ll T_{\mathrm{PT}}$인 경우가 많아, SFT는 **형식 이동**에 가깝다.
+
+제약 만족율 스케치(벤치 금지):
+
+$$
+\mathrm{Sat}=\frac1M\sum_m\mathbf{1}\{\text{응답}_m\text{이 제약}_m\text{만족}\}
+$$
+
 ## LLM에서는 어디에 사용될까?
 공개·산업 파이프라인에서 흔히 관찰되는 패턴:
 

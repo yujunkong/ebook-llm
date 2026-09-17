@@ -288,6 +288,52 @@ $$
 
 모델은 각 $t$에서 logits $\mathbf{z}_t\in\mathbb{R}^{V}$를 내고 $p(\cdot\mid x_{<t})=\mathrm{softmax}(\mathbf{z}_t)$로 둡니다. 학습은 $-\log p$의 토큰 평균을 최소화합니다.
 
+## 수식·정량 보강 — CLM 전체 배선
+
+### 결합 분포와 손실
+
+$$
+\log P_\theta(x_{1:T})=\sum_{t=1}^{T}\log P_\theta(x_t\mid x_{<t})
+$$
+
+$$
+\mathcal{L}=-\frac{1}{|\mathcal{B}|}\sum_{x\in\mathcal{B}}\sum_{t}\log P_\theta(x_t\mid x_{<t})
+$$
+
+(패딩은 `ignore_index`.)
+
+### 파라미터 수
+
+$$
+\#\mathrm{params}\approx VC+T_{\max}C+N\cdot 12C^2
+\quad(+\,VC\ \text{if not tied})
+$$
+
+Mini 예: $V=100,C=64,T_{\max}=32,N=2$, tying →  
+emb $6400$ + pos $2048$ + blocks $2\cdot12\cdot64^2=98304$ → $\approx 1.07\times10^5$.
+
+### 타깃 시프트 손계산
+
+입력 $\mathbf{x}=[7,3,9,1]$, 타깃 $\mathbf{y}=[3,9,1,\mathrm{EOS}]$.  
+위치 0 logit → 토큰 3, 위치 1 → 9.
+
+### Weight tying
+
+$$
+z_t=h_t W_e^\top,\qquad z_{t,v}=h_t^\top(W_e)_{v,:}
+$$
+
+$$
+P(x_{t+1}=v\mid x_{\le t})=\frac{e^{z_{t,v}}}{\sum_u e^{z_{t,u}}}
+$$
+
+### 생성 vs 학습 shape
+
+```text
+학습: logits[B,T,V] 전원 CE
+생성: logits[:, -1, :] 만 decode → append
+```
+
 ## LLM에서는 어디에 사용될까?
 
 이번 48강에서 배운 개념은 이후 Transformer · GPT · 서빙 강의에서 반복해서 등장합니다. 각 수식·코드 블록을 “실제 모델의 어느 단계인가”와 연결해 다시 읽어 보세요.

@@ -323,6 +323,25 @@ $$
 
 (일반적으로). 체크포인트에 저장할 것도 $A,B$(+설정)면 충분하다.
 
+## 수식·정량 보강 — LoRA 심화
+
+$$
+\Delta W=\frac{\alpha}{r}BA,\quad
+\mathrm{rank}(BA)\le r,\quad
+\#\mathrm{params}=r(d_{\mathrm{in}}+d_{\mathrm{out}})
+$$
+
+$d=k=4096,r=8$ → LoRA $65536$ vs full $16{,}777{,}216$ ≈ $0.39\%$(한 층).
+
+$W_q,W_v$만 $N$층: $\approx 4NrC$, full attn 투영 대비 비율 $r/C$.
+
+Merge: $W\leftarrow W_0+\frac{\alpha}{r}BA$.  
+미merge 추론 추가비용 $O(r(d_{\mathrm{in}}+d_{\mathrm{out}}))$.
+
+Adam 상태도 $P_{\mathrm{lora}}$에만 비례해 축소.
+
+$B=0$ 초기화 ⇒ 시작 시 $\Delta W=0$ ⇒ 사전학습 forward 유지.
+
 ## LLM에서는 어디에 사용될까?
 
 이번 73강에서 배운 개념은 이후 Transformer · GPT · 서빙 강의에서 반복해서 등장합니다. 각 수식·코드 블록을 “실제 모델의 어느 단계인가”와 연결해 다시 읽어 보세요.

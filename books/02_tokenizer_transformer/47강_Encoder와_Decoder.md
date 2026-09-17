@@ -239,6 +239,75 @@ Shape 감각: $X_{\mathrm{dec}}\in\mathbb{R}^{T_\mathrm{dec}\times d}$, $X_{\mat
 
 GPT처럼 decoder-only면 cross-attention이 없고 causal self-attention만 남습니다.
 
+## 수식·정량 보강 — 세 가족의 마스크와 손실
+
+### Causal vs Bidirectional 마스크
+
+$T=4$ Causal 마스크(score에 더함):
+
+$$
+M_{\mathrm{causal}}=
+\begin{bmatrix}
+0&-\infty&-\infty&-\infty\\
+0&0&-\infty&-\infty\\
+0&0&0&-\infty\\
+0&0&0&0
+\end{bmatrix}
+$$
+
+Encoder(패딩 없음)는 $M=0$. Softmax 전 $S+M$에서 미래는 $e^{-\infty}=0$.
+
+유효 Causal 연결 수:
+
+$$
+\sum_{i=1}^{T}i=\frac{T(T+1)}{2}=O(T^2)
+$$
+
+### Cross-Attention shape
+
+Decoder 길이 $T_d$, Encoder 길이 $T_e$:
+
+$$
+Q\in\mathbb{R}^{T_d\times d},\ 
+K,V\in\mathbb{R}^{T_e\times d},\ 
+S=\frac{QK^\top}{\sqrt{d}}\in\mathbb{R}^{T_d\times T_e}
+$$
+
+예: $T_e=100$, $T_d=30$ → cross 원소 3000 vs encoder self $10^4$.
+
+### 학습 목표 비교
+
+**Causal LM**
+
+$$
+\mathcal{L}=-\sum_t\log p_\theta(x_t\mid x_{<t})
+$$
+
+**MLM 스케치** (마스크 집합 $\mathcal{M}$)
+
+$$
+\mathcal{L}=-\sum_{t\in\mathcal{M}}\log p_\theta(x_t\mid x_{\setminus\mathcal{M}})
+$$
+
+**Encoder-Decoder 번역**
+
+$$
+\mathcal{L}=-\sum_t\log p_\theta(y_t\mid y_{<t},x_{1:T_e})
+$$
+
+### 파라미터 감각
+
+층당 $\approx 12C^2$라 두면 Decoder-only $N$층 $\sim 12NC^2$, Encoder-Decoder $2N$층 $\sim 24NC^2$(+cross).  
+과제에 맞는 입출력 포트가 우선이며, “항상 Decoder-only가 싸다”는 결론이 아니다.
+
+### 정보 흐름 한 줄
+
+```text
+Enc-only  : 모든 위치 ↔ 모든 위치
+Dec-only  : 위치 t → 과거 ≤t 만
+Enc-Dec   : Dec self(causal) + Dec query↔Enc memory
+```
+
 ## LLM에서는 어디에 사용될까?
 사실:
 

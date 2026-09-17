@@ -323,6 +323,31 @@ $$
 
 입니다.
 
+## 수식·정량 보강 — GPT를 확률 모델로
+
+$$
+p_\theta(x_t\mid x_{<t})=\mathrm{softmax}(W_U h_t)_{x_t}
+$$
+
+$$
+\min_\theta\ \mathbb{E}_{x\sim\mathcal{D}}\Big[-\sum_t\log p_\theta(x_t\mid x_{<t})\Big]
+$$
+
+체인:
+
+$$
+e_t=W_e[x_t]+p_t,\ 
+h^{(0)}=e,\ 
+h^{(\ell)}=\mathrm{Block}^{(\ell)}(h^{(\ell-1)}),\ 
+z_t=W_U\,\mathrm{LN}(h^{(N)}_t)
+$$
+
+손계산: $z=(2,1,0)$ → $p\approx(0.665,0.245,0.090)$, 정답 0이면 NLL $-\log0.665\approx0.408$.
+
+파라미터 감각: $\#\mathrm{params}\sim N\cdot12C^2+VC$ (벤치·상용 수치 단정 금지).
+
+Pretraining vs SFT는 같은 CE 껍질, **데이터·마스크**가 다름.
+
 ## LLM에서는 어디에 사용될까?
 
 이번 55강에서 배운 개념은 이후 Transformer · GPT · 서빙 강의에서 반복해서 등장합니다. 각 수식·코드 블록을 “실제 모델의 어느 단계인가”와 연결해 다시 읽어 보세요.

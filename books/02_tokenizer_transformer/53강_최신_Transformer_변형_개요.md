@@ -342,6 +342,38 @@ $$
 
 선형 Attention·SSM 계열은 점수 $T^2$를 $O(T)$에 가깝게 줄이는 것이 목표입니다. 정확한 상수는 구현·하드웨어에 따라 달라 **임의 벤치마크 숫자는 적지 않습니다**.
 
+## 수식·정량 보강 — 변형의 비례식
+
+### GQA/MQA
+
+$$
+\frac{\mathrm{Mem}_{\mathrm{KV}}^{\mathrm{(GQA)}}}{\mathrm{Mem}_{\mathrm{KV}}^{\mathrm{(MHA)}}}=\frac{H_{\mathrm{kv}}}{H_q}
+$$
+
+예: $H_q=32,H_{\mathrm{kv}}=4$ → $1/8$. MQA면 $H_{\mathrm{kv}}=1$ → $1/32$.
+
+Prefill의 $T^2$ FLOPs가 자동으로 $H_{\mathrm{kv}}/H_q$배 줄지는 **않는다**(저장·대역 이득이 1차).
+
+### FlashAttention IO 관점
+
+Exact softmax를 유지하며 $T\times T$를 HBM에 덜 materialize.  
+연산은 여전히 $O(T^2d)$ 수준, 병목은 종종 **메모리 이동**.
+
+### MoE
+
+$$
+\mathbf{g}=xW_r\in\mathbb{R}^{E},\quad
+y=\sum_{i\in\mathrm{top}k}\pi_i\,\mathrm{FFN}_i(x)
+$$
+
+토큰 비용 $\sim O(k\cdot C\cdot C_{\mathrm{ff}})$, 저장 용량 $\sim E$배 전문가.
+
+작은 예: $E=4,k=2,g=(0.1,2.0,0.5,-1)$ → top2는 전문가 2·3.
+
+### Sliding window
+
+창 $w$면 연결 $O(Tw)$ vs $O(T^2)$.
+
 ## LLM에서는 어디에 사용될까?
 
 이번 53강에서 배운 개념은 이후 Transformer · GPT · 서빙 강의에서 반복해서 등장합니다. 각 수식·코드 블록을 “실제 모델의 어느 단계인가”와 연결해 다시 읽어 보세요.
