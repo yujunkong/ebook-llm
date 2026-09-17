@@ -308,6 +308,234 @@ $$
 
 입니다. 행 분할이면 all-reduce가 필요합니다. Attention의 QKV/출력 투영도 같은 방식으로 샤딩합니다.
 
+## 수학적으로 이해하기 — 샤드 행렬곱
+
+### 5b.1 Column-parallel
+
+$W\in\mathbb{R}^{d_{\mathrm{in}}\times d_{\mathrm{out}}}$를 TP size $N$으로 열 분할한다.
+
+$$
+
+W=\big[W^{(0)}\,\big|\,W^{(1)}\,\big|\,\cdots\,\big|\,W^{(N-1)}\big],
+\quad
+W^{(r)}\in\mathbb{R}^{d_{\mathrm{in}}\times(d_{\mathrm{out}}/N)}
+
+$$
+
+각 순위 $r$에서
+
+$$
+
+Y^{(r)}=X W^{(r)}
+
+$$
+
+필요 시
+
+$$
+
+Y=\mathrm{AllGather}\big(Y^{(0)},\ldots,Y^{(N-1)}\big)
+$$
+
+또는 다음 층이 행 분할이면 gather 없이 이어질 수 있다(구현 패턴 의존).
+
+### 5b.2 Row-parallel
+
+입력을 분할해 두었다면
+
+$$
+
+X=\big[X^{(0)}\,\big|\,\cdots\,\big|\,X^{(N-1)}\big],
+\quad
+W=\begin{bmatrix}W^{(0)}\\ \vdots \\ W^{(N-1)}\end{bmatrix}
+
+$$
+
+$$
+
+Y^{(r)}=X^{(r)} W^{(r)},\qquad
+Y=\mathrm{AllReduce}\sum_{r} Y^{(r)}
+
+$$
+
+Megatron 스타일 MLP는 대략 **column-parallel $W_1$ + row-parallel $W_2$** 로, 층 끝에 all-reduce가 한 번 들어가게 맞춘다(세부는 문헌·엔진).
+
+### 5b.3 Attention 헤드 샤딩
+
+쿼리 헤드 $H_q$를 $N$으로 나눈다.
+
+$$
+
+H_q \bmod N = 0
+\quad\text{(이상적 조건)}
+
+$$
+
+GQA에서 KV 헤드 $H_{kv}$도 마찬가지로 나누어떨어지는지 확인한다.
+
+$$
+
+H_{kv} \bmod N = 0
+$$
+
+만족하지 않으면 엔진이 거절하거나 패딩·비효율이 생긴다. **설정 전 산수**.
+
+## 정량 스케치 — 통신 vs 계산
+
+### 6b.1 All-reduce 메시지 크기
+
+은닉 크기 $d$, 마이크로배치 토큰 수 $M$, 원소당 $b$ 바이트일 때, 층 출력 all-reduce 페이로드 감각:
+
+$$
+
+\mathrm{Bytes}_{\mathrm{msg}} \approx M\cdot d\cdot b
+
+$$
+
+층마다 1회라면 디코더 $L$층에서
+
+$$
+
+\mathrm{Bytes}_{\mathrm{per\,token\,step}} \propto L\cdot d\cdot b
+$$
+
+(실제는 알고리즘·퓨전·overlapp에 따라 달라짐. **비례 감각**만.)
+
+### 6b.2 Latency 항
+
+유효 대역폭 $B_w$, 지연 $\alpha$라 두면 매우 거친 모형:
+
+$$
+
+T_{\mathrm{comm}} \approx \alpha + \frac{\mathrm{Bytes}_{\mathrm{msg}}}{B_w}
+
+$$
+
+Decode에서 $M$이 작으면 $\mathrm{Bytes}/B_w$보다 **$\alpha\cdot L$** 누적이 두드러질 수 있다.  
+이것이 “NVLink에선 괜찮은 TP가 노드 간에선 아프다”는 이야기의 골격이다.
+
+### 6b.3 계산 분할 이득（이상화）
+
+단일 GPU GEMM 시간 $T_{\mathrm{compute}}$가 대략 행렬 크기에 비례한다면, 이상적 $N$분할은
+
+$$
+
+T_{\mathrm{compute}}^{(N)} \approx \frac{T_{\mathrm{compute}}^{(1)}}{N}
+
+$$
+
+총 시간 스케치:
+
+$$
+
+T_{\mathrm{total}}^{(N)} \approx \frac{T_{\mathrm{compute}}^{(1)}}{N} + T_{\mathrm{comm}}(N)
+$$
+
+$T_{\mathrm{comm}}$이 $N$과 함께 늘거나 줄어드는 형태는 토폴로지에 달렸다.  
+**교차점**은 측정으로만 확정한다. 여기서 숫자를 발명하지 않는다.
+
+### 6b.4 손계산 — 나누어떨어짐
+
+| $H_q$ | $H_{kv}$ | TP=2 | TP=4 | TP=8 |
+|---:|---:|---|---|---|
+| 32 | 8 | OK | OK | OK |
+| 32 | 4 | OK | OK | 불가($4\nmid 8$은 아님; $H_{kv}=4$, TP=8이면 $4\bmod 8\neq0$) |
+| 40 | 8 | OK | 불가 | 불가 |
+
+표는 **산수 연습**이다. 실제 모델 헤드 수는 문서 확인.
+
+## Prefill·Decode 수치 사고실험（가정）
+
+가정(설명용, 벤치 아님):
+
+- $L=40$ 층
+- 층당 all-reduce 1회
+- 링크 왕복 지연 항이 decode 토큰당 $\alpha_{\mathrm{eff}}$
+
+그러면 통신만의 하한 감각:
+
+$$
+
+T_{\mathrm{comm}}^{\mathrm{decode}} \gtrsim L\cdot \alpha_{\mathrm{eff}}
+$$
+
+$\alpha_{\mathrm{eff}}$가 커지면 목표 TPOT 예산을 통신이 먼저 잠식한다.  
+Prefill은 $M$이 커 $T_{\mathrm{compute}}$ 비중이 커서 TP 이득이 **상대적으로** 보이기 쉽다.
+
+## DP×TP 메모리 감각
+
+레플리카(DP) $R$개, 각 복제본이 TP size $N$이면 GPU 수는 $R\cdot N$이다.
+
+| 목표 | 노브 |
+|---|---|
+| 모델이 안 들어감 | $N$↑ (또는 양자화·PP) |
+| 동시 요청 | $R$↑ |
+| 둘 다 | 메모리 여유를 측정하며 $R,N$ 격자 탐색 |
+
+잘못된 기본값: “GPU가 8장이니 TP=8”.  
+올바른 질문: “한 복제본을 몇 장에 쪼갤 것인가?”
+
+## 구현 — row-parallel 수치 검증
+
+```python
+import torch
+
+def row_parallel_demo():
+    B, In, Out, N = 2, 8, 4, 2
+    assert In % N == 0
+    x = torch.randn(B, In)
+    w = torch.randn(In, Out)
+    # 행 분할: 입력을 In/N 조각, W도 행 분할
+    x_shards = x.chunk(N, dim=-1)
+    w_shards = w.chunk(N, dim=0)
+    partials = [xs @ ws for xs, ws in zip(x_shards, w_shards)]
+    y_tp = sum(partials)  # all-reduce SUM
+    y_ref = x @ w
+    assert torch.allclose(y_tp, y_ref, atol=1e-5)
+    print("row-parallel match OK")
+
+row_parallel_demo()
+```
+
+column/row를 **둘 다** 손으로 맞춰 보면, 엔진 로그의 collective 위치가 덜 무섭다.
+
+## 실패 모드 카탈로그（확장）
+
+| 증상 | 후보 원인 | 다음 행동 |
+|---|---|---|
+| 기동 시 hang | NCCL/토폴로지 | 제114강 체크리스트 |
+| OOM 해소·TPOT 악화 | 통신 latency | TP↓ 또는 복제 재설계 |
+| 이상한 수치 출력 | 샤드 로딩 불일치 | 가중치 리비전·맵핑 확인 |
+| 특정 TP size만 실패 | 헤드 수 비분할 | $H_q,H_{kv}$ 산수 |
+| Prefill만 개선 | decode 통신 지배 | 국면별 지표 분리 |
+
+## FAQ（TP）
+
+**Q. TP=2가 TP=1보다 항상 빠른가?**  
+A. 아니다. 용량이 필요할 때는 필수일 수 있으나, 속도는 통신·행렬 두께에 달렸다.
+
+**Q. PP와 동시에 쓰면?**  
+A. 층 구간(PP) + 층 내부(TP). 통신 패턴이  alike다. 격자 탐색이 필요하다.
+
+**Q. MoE의 EP와 TP 중 무엇을 먼저?**  
+A. 모델·엔진 권장 토폴로지를 따른다. 일반 규칙은 “항상 TP 먼저”가 아니다.
+
+## 미니 실측 프로토콜（숫자 기입란만）
+
+```text
+model:
+TP_size: 1 | 2 | 4
+GPU_topology: single-node NVLink | multi-node
+workload: prefill_tokens=  decode_tokens=  concurrency=
+TTFT_p50/p95:
+TPOT_p50/p95:
+mem_per_gpu:
+notes_nccl:
+```
+
+칸을 채우는 값은 **해당 환경 실측**이다. 강의 본문에 예시 벤치 숫자를 넣지 않는다.
+
+
 ## LLM에서는 어디에 사용될까?
 
 이번 113강에서 배운 개념은 이후 Transformer · GPT · 서빙 강의에서 반복해서 등장합니다. 각 수식·코드 블록을 “실제 모델의 어느 단계인가”와 연결해 다시 읽어 보세요.

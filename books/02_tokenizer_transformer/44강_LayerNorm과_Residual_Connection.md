@@ -354,6 +354,26 @@ class PreLNResidual(nn.Module):
 
 RMSNorm을 쓰려면 `nn.LayerNorm` 대신 커스텀 모듈을 넣으면 된다.
 
+## 수식 보강 — LayerNorm · Residual
+
+Residual:
+
+$$
+y = x + F(x)
+$$
+
+LayerNorm(특징 차원 $d$ 위):
+
+$$
+\hat{x}_i=\frac{x_i-\mu}{\sqrt{\sigma^2+\varepsilon}},\quad
+\mathrm{LN}(x)=\gamma\odot\hat{x}+\beta
+$$
+
+$$
+\mu=\frac{1}{d}\sum_i x_i,\quad
+\sigma^2=\frac{1}{d}\sum_i (x_i-\mu)^2
+$$
+
 ## LLM에서는 어디에 사용될까?
 사실:
 

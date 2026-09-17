@@ -8,10 +8,14 @@
 - Causal Mask를 넣을 위치만 표시해 40강으로 연결하기
 
 ## 왜 중요한가?
-LLM 코드베이스를 열면 Attention은 최적화된 fused kernel·FlashAttention·테넌트 설정에 가려져 있다.  
-그 전에 **느리고 명확한 참조 구현**이 있어야, 최적화본이 같은 일을 하는지 검증할 수 있다.
+LLM 코드베이스를 열면 Attention은 최적화된 fused kernel·FlashAttention·테넌트 설정에 가려져 있습니다.  
+그 전에 **느리고 명확한 참조 구현**이 있어야, 최적화본이 같은 일을 하는지 검증할 수 있습니다.
 
-또한 49~50강 Mini Transformer 프로젝트의 핵심 부품이 바로 오늘 모듈이다.
+또한 49~50강 Mini Transformer 프로젝트의 핵심 부품이 바로 오늘 모듈입니다.
+
+> **핵심**
+>
+> 오늘은 새 이론보다 **조립**입니다. 36~38강의 부품을 함수로 고정하고, Shape `(B,T,d)`로 검증합니다.
 
 ## 선수 개념
 - Q/K/V 투영 (36강)
@@ -121,7 +125,137 @@ O = A X \approx \begin{bmatrix}0.6682&0.3318\\0.3318&0.6682\end{bmatrix}
 
 $$
 
-구현이 이 숫자에 가까우면 조립이 맞은 것이다.
+구현이 이 숫자에 가까우면 조립이 맞은 것입니다.
+
+### 6.1 배치 차원까지 포함한 손계산
+
+$B=1$을 명시하면:
+
+$$
+
+X \in \mathbb{R}^{1\times 2\times 2},\quad
+Q,K,V \in \mathbb{R}^{1\times 2\times 2},\quad
+S,A \in \mathbb{R}^{1\times 2\times 2},\quad
+O \in \mathbb{R}^{1\times 2\times 2}
+
+$$
+
+$$
+
+S_{0} = \frac{1}{\sqrt{2}}
+\begin{bmatrix}
+1 & 0 \\
+0 & 1
+\end{bmatrix}
+=
+\begin{bmatrix}
+0.7071 & 0 \\
+0 & 0.7071
+\end{bmatrix}
+
+$$
+
+행별 Softmax:
+
+$$
+
+A_{0} \approx
+\begin{bmatrix}
+0.6700 & 0.3300 \\
+0.3300 & 0.6700
+\end{bmatrix}
+
+$$
+
+$$
+
+O_0 = A_0 V_0 = A_0 X
+\approx
+\begin{bmatrix}
+0.6700 & 0.3300 \\
+0.3300 & 0.6700
+\end{bmatrix}
+
+$$
+
+> ⚠️ **주의**
+>
+> `(T,T) @ (T,d)`는 `(T,d)`입니다.  
+> 배치가 있으면 `(B,T,T) @ (B,T,d) → (B,T,d)`입니다. 축을 한 칸만 밀려도 전체가 깨집니다.
+
+### 6.2 $T=3$ 삼각이 아닌 점수 예제
+
+$W_Q=W_K=W_V=I$, 
+
+$$
+
+X=
+\begin{bmatrix}
+1 & 0 \\
+0 & 1 \\
+1 & 1
+\end{bmatrix}
+
+$$
+
+이면
+
+$$
+
+XX^\top=
+\begin{bmatrix}
+1 & 0 & 1 \\
+0 & 1 & 1 \\
+1 & 1 & 2
+\end{bmatrix},\qquad
+S=\frac{XX^\top}{\sqrt{2}}
+
+$$
+
+$$
+
+S\approx
+\begin{bmatrix}
+0.7071 & 0 & 0.7071 \\
+0 & 0.7071 & 0.7071 \\
+0.7071 & 0.7071 & 1.4142
+\end{bmatrix}
+
+$$
+
+행0 Softmax ($[0.7071,0,0.7071]$):
+
+$$
+
+e^{0.7071}\approx 2.028,\quad e^{0}=1,\quad \sum\approx 5.056,\quad
+\alpha_0\approx [0.401,\ 0.198,\ 0.401]
+
+$$
+
+$$
+
+\mathbf{o}_0 \approx 0.401\,\mathbf{x}_0 + 0.198\,\mathbf{x}_1 + 0.401\,\mathbf{x}_2
+\approx [0.802,\ 0.599]
+
+$$
+
+코드의 `forward`가 같은 근사치를 내면 $QK^\top$/Softmax/`AV` 경로가 맞은 것입니다.
+
+### 6.3 출력 투영 $W_O$까지
+
+$$
+
+W_O=
+\begin{bmatrix}
+2 & 0 \\
+0 & 0.5
+\end{bmatrix},\quad
+O' = O W_O
+
+$$
+
+위 $O\approx A X$에 곱하면 행0은 대략 $[1.604,\ 0.299]$가 됩니다.  
+$W_O$는 “Attention이 모은 내용을 모델 채널로 재배치”하는 마지막 선형층입니다.
 
 ## 코드로 구현하기
 ```python
@@ -575,7 +709,81 @@ A = softmax(S)
 O = A V
 ```
 
-`j > i` 규칙이 40강이다.
+`j > i` 규칙이 40강입니다.
+
+---
+
+## 부록 P. 전체 수식 블록 (복습 카드)
+
+$$
+
+\begin{aligned}
+Q &= X W_Q,\quad K = X W_K,\quad V = X W_V \\
+S &= \frac{Q K^\top}{\sqrt{d_k}} \\
+S &\leftarrow \mathrm{mask}(S) \\
+A &= \mathrm{softmax}(S) \\
+O &= A V W_O
+\end{aligned}
+
+$$
+
+Shape (단일 헤드, $d_k=d_v=d$):
+
+$$
+
+\begin{aligned}
+X,Q,K,V,O &\in \mathbb{R}^{B\times T\times d} \\
+S,A &\in \mathbb{R}^{B\times T\times T} \\
+W_Q,W_K,W_V,W_O &\in \mathbb{R}^{d\times d}
+\end{aligned}
+
+$$
+
+## 부록 Q. 두 배치가 독립인지 확인
+
+$B=2$일 때 배치0과 배치1의 $S$가 서로 섞이면 버그입니다.  
+테스트:
+
+$$
+
+X=\mathrm{stack}(X^{(0)}, X^{(1)})
+\Rightarrow
+S[0]=f(X^{(0)}),\ 
+S[1]=f(X^{(1)})
+
+$$
+
+$X^{(1)}$만 바꿔도 $S[0]$이 불변이어야 합니다.
+
+## 부록 R. 수치 대조 표 (identity, $d=2$)
+
+| 항목 | 손계산 | 허용 오차 |
+|---|---|---|
+| $S_{00}$ | $1/\sqrt{2}\approx 0.7071$ | $10^{-4}$ |
+| $A_{00}$ | $\approx 0.6700$ | $10^{-3}$ |
+| $A_{01}$ | $\approx 0.3300$ | $10^{-3}$ |
+| 행 합 | $1$ | $10^{-6}$ |
+
+## 부록 S. LLM 연결 — 한 블록 안에서의 위치
+
+```text
+(B, T) token id
+ → Embedding          (B, T, d)
+ → + Position         (B, T, d)
+ → Self-Attention     (B, T, d)   ← 오늘 모듈
+ → + Residual
+ → Norm
+ → FFN
+ → + Residual
+ → Norm
+```
+
+오늘은 Self-Attention 상자만 완성합니다. 마스크·헤드·위치는 40~43강입니다.
+
+## 부록 T. 한 줄 요약
+
+> Self-Attention 구현 = QKV 투영 + scaled $QK^\top$ + (mask) + Softmax + $AV$ + (선택 $W_O$),  
+> 그리고 `(B,T,d)` Shape를 한 줄도 틀리지 않는 것입니다.
 
 <!-- LECTURE_NAV -->
 

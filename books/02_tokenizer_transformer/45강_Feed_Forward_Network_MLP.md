@@ -324,6 +324,16 @@ def ffn_relu(x, W1, b1, W2, b2):
     return h @ W2 + b2
 ```
 
+## 수식 보강 — FFN / MLP
+
+Transformer MLP(흔히 GeLU):
+
+$$
+\mathrm{FFN}(x)=W_2\,\sigma(W_1 x+b_1)+b_2
+$$
+
+Shape: $d\to d_{\mathrm{ff}}\to d$ (예: $d_{\mathrm{ff}}=4d$). 토큰별로 독립 적용됩니다.
+
 ## LLM에서는 어디에 사용될까?
 사실:
 
