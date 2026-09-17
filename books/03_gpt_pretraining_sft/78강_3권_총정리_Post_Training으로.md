@@ -7,6 +7,12 @@
 - 제79강. Post-Training 지도로 넘어가기 전 준비물
 - Preference / RLHF / DPO / GRPO가 왜 SFT 다음에 오는지
 
+
+## 읽기 안내（Apple Books）
+
+이 총정리는 시험이 아니라 **지도**입니다. 수식 카드 → 체크리스트 → 막힐 때 돌아갈 강 번호 순으로 읽으면 됩니다.  
+손으로 파이프라인 한 줄을 다시 써 보고, 빈칸이 보이는 강만 짧게 복습하세요.
+
 ## 왜 중요한가?
 3권은 속도가 빠르다. GPT 정의에서 시작해 학습 인프라, Mini Pretrain, Instruction Tuning, LoRA/QLoRA, 평가, Mini SFT까지 왔다. 각 강의를 통과해도 머리속에서는 조각으로 남을 수 있다.
 

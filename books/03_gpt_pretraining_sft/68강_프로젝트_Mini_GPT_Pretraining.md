@@ -728,6 +728,49 @@ print("tokens/s", tps)
 
 체크: loss↓, PPL↓, 샘플 문장 가독성.
 
+
+<!-- enrich-batch3-68 -->
+## Pretraining 로그에 남길 식
+
+$$
+\mathrm{tokens/s}=\frac{B\cdot T\cdot N_{\mathrm{gpu}}}{\Delta t}
+$$
+
+$$
+\mathrm{MFU}\approx\frac{\mathrm{achieved\ FLOPs/s}}{\mathrm{peak\ FLOPs/s}}
+$$
+
+```python
+def tokens_per_sec(B, T, n_gpu, dt):
+    return B*T*n_gpu/max(dt,1e-9)
+print(tokens_per_sec(64,1024,8,0.5))
+```
+
+
+### 샘플링 스팟 체크
+
+온도 $\tau$:
+
+$$
+p_i=\frac{e^{z_i/\tau}}{\sum_j e^{z_j/\tau}}
+$$
+
+
+## 수식 보강 — Mini Pretrain 한 장
+
+$$
+
+\begin{aligned}
+L &= -\frac{1}{\sum_t 1}\sum_t \log p_\theta(x_t\mid x_{<t})\\
+\mathrm{PPL} &= \exp(L)\\
+\#\text{tokens\_seen} &\leftarrow \#\text{tokens\_seen}+B\cdot T
+\end{aligned}
+
+$$
+
+체크포인트에는 적어도 $\theta$, $t$, config를 남기고, 생성 샘플은 같은 프롬프트로 step마다 저장합니다.  
+성공 선언은 “loss가 조금 내려갔다”가 아니라 **로그·샘플·재개 가능 ckpt**가 남았는지로 합니다.
+
 ## LLM에서는 어디에 사용될까?
 
 이번 68강에서 배운 개념은 이후 Transformer · GPT · 서빙 강의에서 반복해서 등장합니다. 각 수식·코드 블록을 “실제 모델의 어느 단계인가”와 연결해 다시 읽어 보세요.
