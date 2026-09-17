@@ -717,7 +717,10 @@ w = w + eta * grad
 
 ### 문제 5 (연결)
 
+
+$$
 LLM에서 Embedding 행렬 $E$도 $E\leftarrow E-\eta\,\partial L/\partial E$로 업데이트됩니다. 이 사실이 “단어 벡터가 학습된다”는 말과 어떻게 연결되는지 두 문장으로 쓰시오.
+$$
 
 ---
 

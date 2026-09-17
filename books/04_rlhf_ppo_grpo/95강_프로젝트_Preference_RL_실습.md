@@ -346,13 +346,13 @@ $$
 
 L_{\mathrm{DPO}}
 =
--\mathbb{E}\log\sigma\Big(
+-\mathbb{E}\log\sigma(
 \beta\big[
 (\log\pi_\theta(y_w|x)-\log\pi_{\mathrm{ref}}(y_w|x))
 -
 (\log\pi_\theta(y_l|x)-\log\pi_{\mathrm{ref}}(y_l|x))
 \big]
-\Big)
+)
 
 $$
 
@@ -943,7 +943,10 @@ sum logprob와 mean logprob 중, 길이 bias에 더 민감한 쪽은?
 ## 정답 및 해설
 ### 문제 1
 
+
+$$
 DPO 항이 $\pi_\theta$와 $\pi_{\mathrm{ref}}$의 로그비에 의존하므로, 참조 분포를 학습 중 움직이지 않게 고정하기 위함이다.
+$$
 
 ### 문제 2
 

@@ -120,7 +120,10 @@ Corpus → Pretrain → SFT (π_SFT) → Eval
 
 ### 4.2 왜 SFT 다음인가
 
+
+$$
 SFT 정책 $\pi_{\mathrm{SFT}}$가 없으면:
+$$
 
 1. Preference 비교의 **후보 응답 품질**이 낮다
 2. Reward Model이 보는 $(x,y)$ 분포가 엉망이다

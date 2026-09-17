@@ -117,7 +117,7 @@ $$
 
 $$
 
-\mathrm{Attn}(Q,K,V)=\mathrm{softmax}\Big(\frac{QK^\top}{\sqrt{d}}+M\Big)V
+\mathrm{Attn}(Q,K,V)=\mathrm{softmax}(\frac{QK^\top}{\sqrt{d}}+M)V
 
 $$
 
@@ -139,7 +139,7 @@ $$
 
 $$
 
-\mathrm{Attn}=\mathrm{softmax}\Big(\frac{q_{t+1} K_{1:t+1}^\top}{\sqrt{d}}\Big)V_{1:t+1}
+\mathrm{Attn}=\mathrm{softmax}(\frac{q_{t+1} K_{1:t+1}^\top}{\sqrt{d}})V_{1:t+1}
 
 $$
 

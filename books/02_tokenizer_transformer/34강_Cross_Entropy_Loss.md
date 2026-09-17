@@ -453,7 +453,7 @@ $$
 $$
 L = \frac{1}{|\mathcal{T}|}
 \sum_{(b,t)\in\mathcal{T}}
-\bigl(-\log p_{b,t,y_{b,t}}\bigr)
+\left(-\log p_{b,t,y_{b,t}}\right)
 $$
 
 $\mathcal{T}$는 패딩·무시 인덱스를 제외한 토큰 위치 집합입니다.

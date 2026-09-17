@@ -102,6 +102,8 @@ $\sigma(z)=1/(1+e^{-z})$.
 데이터 $\mathcal{D}$에 대해 음의 로그우도:
 
 \[
+
+$$
 \mathcal{L}_{\mathrm{RM}}(\phi)
 =
 -\mathbb{E}_{(x,y_w,y_l)\sim\mathcal{D}}
@@ -109,6 +111,7 @@ $\sigma(z)=1/(1+e^{-z})$.
 \log \sigma\big(r_\phi(x,y_w)-r_\phi(x,y_l)\big)
 \big]
 \]
+$$
 
 이것은 라벨 1에 대한 **binary logistic loss**와 동일하다.  
 $\Delta = r_w - r_l$로 두면 $\mathcal{L}=-\log\sigma(\Delta)$.
@@ -210,21 +213,27 @@ $\ell=-\log\sigma(\Delta)$, $\Delta=r_w-r_l$.
 $\sigma'(\Delta)=\sigma(\Delta)(1-\sigma(\Delta))$이므로
 
 \[
+
+$$
 \frac{\partial\ell}{\partial\Delta}
 =
 \sigma(\Delta)-1
 =
 -\sigma(-\Delta)
 \]
+$$
 
 해석: 승 확률을 과소예측할수록 $\Delta$를 키우는 방향의 기울기가 나온다.
 
 연쇄법칙:
 
 \[
+
+$$
 \frac{\partial\ell}{\partial r_w}=\frac{\partial\ell}{\partial\Delta},\quad
 \frac{\partial\ell}{\partial r_l}=-\frac{\partial\ell}{\partial\Delta}
 \]
+$$
 
 즉 chosen 점수는 올리고 rejected 점수는 내린다(현재 $\Delta$가 작을 때).
 
@@ -233,18 +242,24 @@ $\sigma'(\Delta)=\sigma(\Delta)(1-\sigma(\Delta))$이므로
 미니배치 $B$개 쌍:
 
 \[
+
+$$
 \mathcal{L}
 =
 \frac{1}{|B|}\sum_{i\in B}\log\big(1+e^{-(r_w^{(i)}-r_l^{(i)})}\big)
 \]
+$$
 
 안정 구현에서는 `softplus(-Delta)` 또는 `logsigmoid`를 사용한다.
 
 ### 5.3 정확도와 손실의 관계
 
 \[
+
+$$
 \mathrm{Acc}=\frac{1}{|B|}\sum_i \mathbf{1}[r_w^{(i)}>r_l^{(i)}]
 \]
+$$
 
 Acc는 불연속이라 직접 미분이 안 된다. 손실은 Acc의 **부드러운 대리 목표**다.
 
@@ -260,8 +275,11 @@ Acc는 불연속이라 직접 미분이 안 된다. 손실은 Acc의 **부드러
 배치 평균 손실:
 
 \[
+
+$$
 \mathcal{L}\approx\frac{0.1269+0.6444+2.1269}{3}\approx 0.9661
 \]
+$$
 
 배치 정확도: 쌍1·2만 맞춤 → $2/3\approx0.667$.
 
@@ -443,6 +461,84 @@ def best_of_n(model, encode_fn, prompt, candidates):
     best = int(max(range(len(scores)), key=lambda i: scores[i]))
     return candidates[best], scores
 ```
+
+## 정량 스케치 — Bradley-Terry와 마진
+
+### 11b.1 승 확률과 NLL
+
+$$
+
+P(y_w\succ y_l\mid x)=\sigma\big(r_w-r_l\big),\quad
+\mathcal{L}=-\log\sigma(\Delta),\quad\Delta=r_w-r_l
+$$
+
+$\Delta=0$ → $\mathcal{L}=\log 2\approx0.693$.  
+$\Delta\to\infty$ → $\mathcal{L}\to 0$.
+
+### 11b.2 그래디언트 스케일
+
+$$
+
+\frac{\partial\mathcal{L}}{\partial\Delta}= \sigma(\Delta)-1 = -\sigma(-\Delta)
+$$
+
+$\Delta$가 이미 크면 그래디언트가 작아져 **쉬운 쌍**은 거의 학습에 기여하지 않는다.  
+어려운 쌍($\Delta\approx 0$ 또는 음수)이 배치를 지배한다.
+
+### 11b.3 마진 $m$
+
+$$
+
+\mathcal{L}=-\log\sigma(\Delta-m)
+$$
+
+$m>0$이면 같은 확신에 도달하려면 점수 간격이 더 필요하다.  
+과도하면 학습이 빡세지고 과적합·해킹 유인이 커질 수 있다.
+
+### 11b.4 배치 손실
+
+$$
+
+\mathcal{L}_B=\frac{1}{B}\sum_{i=1}^{B}-\log\sigma(\Delta_i)
+$$
+
+정확도 모니터:
+
+$$
+
+\mathrm{acc}=\frac{1}{B}\sum_i \mathbf{1}[\Delta_i>0]
+$$
+
+loss↓·acc↑가 같이 가는지 본다. 한쪽만 보면 스케일 붕괴를 놓친다.
+
+### 11b.5 점수 스케일 폭발
+
+$r$가 평균 0, 분산 $\tau^2$으로 커지면 $\Delta$도 커져 loss는 작아 보이지만 **캘리브레이션**이 망가질 수 있다.  
+로짓 클리핑·정규화·weight decay를 검토한다(팀 규약).
+
+### 11b.6 RLHF로 넘길 때
+
+RM 점수 $r_\phi(x,y)$가 PPO 보상이 된다.
+
+$$
+
+R=r_\phi(x,y)-\beta\,\mathrm{KL}
+$$
+
+RM의 절대 스케일이 PPO lr·KL과 결합한다. RM을 재학습하면 RL 쪽 하이퍼를 다시 본다.
+
+### 11b.7 손계산 표 확장
+
+| $\Delta$ | $\sigma(\Delta)$ | $-\log\sigma$ |
+|---:|---:|---:|
+| -2 | 0.119 | 2.127 |
+| -1 | 0.269 | 1.313 |
+| 0 | 0.500 | 0.693 |
+| 1 | 0.731 | 0.313 |
+| 2 | 0.881 | 0.127 |
+
+rejected가 이기고 있으면($\Delta<0$) 손실이 크고, 그래디언트가 chosen↑ rejected↓로 세게 민다.
+
 
 ## LLM에서는 어디에 사용될까?
 표준 RLHF 스택에서의 RM:

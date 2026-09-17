@@ -261,8 +261,11 @@ P(y_w \succ y_l \mid x)
 =
 \sigma\big(r(x,y_w) - r(x,y_l)\big)
 =
+
+$$
 \frac{1}{1+e^{-(r_w - r_l)}}
 \]
+$$
 
 여기서 $\sigma$는 sigmoid다.
 
@@ -506,8 +509,11 @@ SFT 정책 π_SFT
 작성한 10쌍에서
 
 \[
+
+$$
 \Delta_{\text{len}} = \mathrm{len}(chosen) - \mathrm{len}(rejected)
 \]
+$$
 
 의 부호가 +인 비율을 세라. 80% 이상이면 의도적으로 짧은 chosen 쌍을 추가해 재균형하라.
 

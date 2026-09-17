@@ -312,16 +312,74 @@ Weight tying, dropout 위치, bias 유무 같은 세부 선택은 제56강에서
 GPT는 decoder-only Transformer로 next-token 분포를 냅니다.
 
 $$
-p_\theta(x_t\mid x_{<t}) = \mathrm{softmax}\bigl(W_U\, h_t\bigr)_{x_t}
+p_\theta(x_t\mid x_{<t}) = \mathrm{softmax}\left(W_U\, h_t\right)_{x_t}
 $$
 
 $h_t\in\mathbb{R}^{d}$는 $t$번째 위치의 은닉상태, $W_U\in\mathbb{R}^{V\times d}$는 LM Head입니다. 학습 목표는
 
 $$
-\min_\theta\;\mathbb{E}_{\mathbf{x}\sim\mathcal{D}}\Bigl[-\sum_t \log p_\theta(x_t\mid x_{<t})\Bigr]
+\min_\theta\;\mathbb{E}_{\mathbf{x}\sim\mathcal{D}}\left[-\sum_t \log p_\theta(x_t\mid x_{<t})\right]
 $$
 
 입니다.
+
+### 은닉 상태까지의 체인 (복습 조립)
+
+$$
+
+\begin{aligned}
+e_t &= W_e[x_t] + p_t \\
+h_t^{(0)} &= e_t \\
+h_t^{(\ell)} &= \mathrm{Block}^{(\ell)}\big(h_{1:T}^{(\ell-1)}\big)_t
+\quad(\ell=1,\ldots,N) \\
+h_t &= \mathrm{LN}\big(h_t^{(N)}\big) \\
+z_t &= W_U h_t
+\end{aligned}
+
+$$
+
+($p_t$는 절대 PE; RoPE면 Attention 내부에서 Q/K 회전.)
+
+Causal Block은 위치 $t$의 Self-Attention이 $j\le t$만 보게 하므로, $h_t$는 정말로 $x_{\le t}$의 함수다(이상적 구현).
+
+### 작은 숫자 — Softmax 한 방
+
+$V=3$, $z_t = (2.0,\ 1.0,\ 0.0)$이면
+
+$$
+
+p = \mathrm{softmax}(z)
+\approx (0.665,\ 0.245,\ 0.090)
+
+$$
+
+정답이 토큰 0이면 그 스텝의 NLL은 $-\log 0.665 \approx 0.408$.  
+학습은 이 값을 시퀀스·배치로 평균해 줄인다.
+
+### Pretraining vs SFT 목표의 같은 껍질
+
+둘 다 형식상 next-token CE다. 차이는 **데이터 분포**와 **loss mask**다.
+
+| | Pretraining | SFT |
+|---|---|---|
+| $x$의 출처 | 일반 문서·혼합 코퍼스 | (지시, 응답) 쌍·대화 |
+| 합산 구간 | 보통 거의 모든 토큰 | 응답 토큰 위주 |
+| 결과물 | Base LM | Instruct/Chat 경향 |
+
+수식으로는 제69강의 $\mathcal{T}_{\mathrm{resp}}$ 마스크가 SFT의 핵심 차이로 이어진다.
+
+### “규모”를 수식으로만 감각하기 (벤치 금지)
+
+파라미터 감각(제48·52강):
+
+$$
+
+\#\mathrm{params} \sim N\cdot 12 C^2 + V C
+
+$$
+
+토큰 처리량(학습) 감각: 배치의 토큰 수 $B\cdot T$에 비례해 스텝당 비용이 늘어난다.  
+**특정 상용 모델의 파라미터·토큰 수를 사실처럼 적지 않는다.** 위 비례식만으로 “무엇이 커지는가”를 말한다.
 
 ## LLM에서는 어디에 사용될까?
 

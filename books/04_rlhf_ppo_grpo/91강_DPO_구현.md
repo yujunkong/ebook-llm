@@ -32,9 +32,9 @@ DPO는 수식은 짧지만 구현에서 실수 포인트가 많다.
 ## 손실을 코드 변수로 번역
 $$
 
-\mathcal{L}=-\log\sigma\Big(
+\mathcal{L}=-\log\sigma(
 \beta\big(\Delta_w-\Delta_l\big)
-\Big),\quad
+),\quad
 \Delta=\log\pi_\theta(y\mid x)-\log\pi_{\mathrm{ref}}(y\mid x)
 
 $$
@@ -369,7 +369,7 @@ backward 후:
 선호 쌍 $(y_w,y_l)$ (win/lose)와 참조정책 $\pi_{\mathrm{ref}}$에 대해
 
 $$
-L_{\mathrm{DPO}}(\theta)= -\log\sigma\Big(\beta\log\frac{\pi_\theta(y_w\mid x)}{\pi_{\mathrm{ref}}(y_w\mid x)}-\beta\log\frac{\pi_\theta(y_l\mid x)}{\pi_{\mathrm{ref}}(y_l\mid x)}\Big)
+L_{\mathrm{DPO}}(\theta)= -\log\sigma(\beta\log\frac{\pi_\theta(y_w\mid x)}{\pi_{\mathrm{ref}}(y_w\mid x)}-\beta\log\frac{\pi_\theta(y_l\mid x)}{\pi_{\mathrm{ref}}(y_l\mid x)})
 $$
 
 보상 모델을 따로 두지 않고, 선호 데이터로 정책을 직접 업데이트합니다.

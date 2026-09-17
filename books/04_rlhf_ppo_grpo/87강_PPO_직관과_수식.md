@@ -58,8 +58,11 @@ LLM RLHF에서 PPO가 자주 거론되는 이유는 “만능”이라서가 아
 \[
 \rho_t(\theta)
 =
+
+$$
 \frac{\pi_\theta(a_t\mid s_t)}{\pi_{\theta_{\mathrm{old}}}(a_t\mid s_t)}
 \]
+$$
 
 문헌에서 $r_t(\theta)$로도 쓴다. 이 책은 보상 $r$와 헷갈리지 않게 **$\rho_t$** 를 기본으로 쓰고, 필요 시 “ratio”라고 부른다.
 
@@ -78,10 +81,13 @@ LLM에서는 $a_t=y_t$, $s_t=(x,y_{<t})$.
 Advantage가 있을 때, (비클립) surrogate:
 
 \[
+
+$$
 L^{\mathrm{CPI}}(\theta)
 =
 \mathbb{E}_t\big[\rho_t(\theta)\,A_t\big]
 \]
+$$
 
 직관:
 
@@ -97,15 +103,21 @@ L^{\mathrm{CPI}}(\theta)
 PPO clip:
 
 \[
+
+$$
 L^{\mathrm{CLIP}}(\theta)
 =
 \mathbb{E}_t
-\Big[
+$$
+[
 \min\big(
 \rho_t(\theta)\,A_t,\;
+
+$$
 \mathrm{clip}(\rho_t(\theta), 1-\epsilon, 1+\epsilon)\,A_t
 \big)
-\Big]
+$$
+]
 \]
 
 $\epsilon$은 보통 작은 양수(예: 0.1~0.2 개념). **구체 최적값은 과제 의존**이며 여기서 절대 추천치를 진리처럼 고정하지 않는다.
@@ -139,38 +151,50 @@ $\mathrm{clip}(\rho,1-\epsilon,1+\epsilon)$는 $\rho$를 $[1-\epsilon,1+\epsilon
 최대화 $L^{\mathrm{CLIP}}$ 대신 최소화로 구현할 때가 많다.
 
 \[
+
+$$
 \mathcal{L}_{\mathrm{policy}}
 =
 -\mathbb{E}_t\big[
 \min(\rho_t A_t,\;\mathrm{clip}(\rho_t,1-\epsilon,1+\epsilon)A_t)
 \big]
 \]
+$$
 
 가치 함수:
 
 \[
+
+$$
 \mathcal{L}_{V}
 =
 \mathbb{E}_t\big[(V_\psi(s_t)-\hat{R}_t)^2\big]
 \]
+$$
 
 엔트로피 보너스(탐험):
 
 \[
+
+$$
 \mathcal{L}_H
 =
 -\mathbb{E}_t\big[\mathcal{H}(\pi_\theta(\cdot\mid s_t))\big]
 \]
+$$
 
 총합(기호는 구현마다 계수 이름만 다름):
 
 \[
+
+$$
 \mathcal{L}
 =
 \mathcal{L}_{\mathrm{policy}}
 +c_v\mathcal{L}_V
 +c_H\mathcal{L}_H
 \]
+$$
 
 LLM RLHF에서는 여기에 **KL reward/penalty**가 보상 쪽에 들어가거나 손실에 추가된다(제86·89강).
 
@@ -190,10 +214,13 @@ A_t = Q(s_t,a_t) - V(s_t)
 \]
 
 \[
+
+$$
 \hat{A}_t^{\mathrm{GAE}(\gamma,\lambda)}
 =
 \sum_{l=0}^{\infty}(\gamma\lambda)^l\delta_{t+l}
 \]
+$$
 
 LLM 응답 단위 보상에서는 단순화 버전이 흔하다.
 
@@ -276,6 +303,8 @@ $A<0$이면 부등식 방향이 뒤집혀, $\rho$가 $1-\epsilon$보다 너무 �
 응답 $y=(y_1,\ldots,y_T)$에 대해 토큰 평균:
 
 \[
+
+$$
 L^{\mathrm{CLIP}}
 =
 \mathbb{E}_{x,y}
@@ -283,6 +312,7 @@ L^{\mathrm{CLIP}}
 \sum_{t=1}^{T}
 \min\big(\rho_t A_t,\;\mathrm{clip}(\rho_t)A_t\big)
 \]
+$$
 
 Outcome reward만 있으면 $A_t=\hat{A}(x,y)$로 토큰에 방송(broadcast)하는 단순화가 흔하다.
 
@@ -298,12 +328,15 @@ $A=+2.0$, $\rho=1.5$ (이미 50% 증가)
 \]
 
 \[
+
+$$
 \mathrm{clip}(\rho)A=1.2\times 2=2.4
 \]
 
 \[
 \min(3.0, 2.4)=2.4
 \]
+$$
 
 비클립이면 3.0을 목표에 반영하지만, PPO는 2.4까지만 인정.
 
@@ -312,8 +345,11 @@ $A=+2.0$, $\rho=1.5$ (이미 50% 증가)
 $A=+2.0$, $\rho=1.1$
 
 \[
+
+$$
 \rho A=2.2,\quad \mathrm{clip}A=2.2,\quad \min=2.2
 \]
+$$
 
 clip 미발동.
 
@@ -326,12 +362,15 @@ $A=-1.0$, $\rho=0.5$
 \]
 
 \[
+
+$$
 \mathrm{clip}(\rho)A=0.8\times(-1)=-0.8
 \]
 
 \[
 \min(-0.5,-0.8)=-0.8
 \]
+$$
 
 최대화 관점에서 $\min$이 더 비관적(낮은) 값을 선택 → 과도한 확률 감소로 얻는 이득을 제한하는 쪽으로 동작한다.
 

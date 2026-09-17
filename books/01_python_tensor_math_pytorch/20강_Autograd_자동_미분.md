@@ -176,20 +176,26 @@ NumPy 수동 구현은 카메라 없이 직접 쪽지를 쓰는 일이다. 결�
 스칼라 $L(w)$, Forward에서 중간 $u=f(w)$, $L=g(u)$이면 Autograd는
 
 \[
+
+$$
 \frac{\partial L}{\partial w}
 =
 \frac{\partial L}{\partial u}
 \cdot
 \frac{\partial u}{\partial w}
 \]
+$$
 
 를 연산 노드마다 적용한다.
 
 일반적 **Vector-Jacobian Product (VJP)**:
 
 \[
+
+$$
 \mathbf{v}^{\top} \frac{\partial \mathbf{f}}{\partial \mathbf{x}}
 \]
+$$
 
 `backward`가 위에서 내려보내는 upstream $\mathbf{v}$와, 로컬 Jacobian을 곱해 아래 입력을 갱신한다.  
 제17강의 “Upstream × Local”과 동일하다.
@@ -230,6 +236,8 @@ Autograd가 같은 값을 `.grad`에 넣는지 8절에서 확인한다.
 $x=2,\; w=3,\; b=1$, $y=wx+b=7$, $L=(y-10)^2=9$.
 
 \[
+
+$$
 \begin{aligned}
 \frac{\partial L}{\partial y} &= 2(y-10) = -6 \\
 \frac{\partial L}{\partial w} &= -6\cdot x = -12 \\
@@ -237,6 +245,7 @@ $x=2,\; w=3,\; b=1$, $y=wx+b=7$, $L=(y-10)^2=9$.
 \frac{\partial L}{\partial b} &= -6
 \end{aligned}
 \]
+$$
 
 8.1 코드 결과와 일치해야 한다.
 

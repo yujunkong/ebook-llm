@@ -147,13 +147,13 @@ Decode 국면 비유:
 $$
 
 s = \frac{x_{\max}-x_{\min}}{q_{\max}-q_{\min}},\quad
-z = \mathrm{round}\Big(q_{\min} - \frac{x_{\min}}{s}\Big)
+z = \mathrm{round}(q_{\min} - \frac{x_{\min}}{s})
 
 $$
 
 $$
 
-q = \mathrm{clamp}\Big(\mathrm{round}\big(\frac{x}{s}+z\big), q_{\min}, q_{\max}\Big)
+q = \mathrm{clamp}(\mathrm{round}\big(\frac{x}{s}+z\big), q_{\min}, q_{\max})
 
 $$
 
@@ -298,7 +298,7 @@ print((x - y).abs().mean().item())
 균등 양자화 스케치:
 
 $$
-q = \mathrm{clip}\Big(\mathrm{round}\big(\frac{x}{s}\big)+z\Big),\quad
+q = \mathrm{clip}(\mathrm{round}\big(\frac{x}{s}\big)+z),\quad
 \hat{x}=s(q-z)
 $$
 

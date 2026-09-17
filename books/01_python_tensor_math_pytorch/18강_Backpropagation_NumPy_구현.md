@@ -54,7 +54,10 @@ for epoch in range(E):
 \[
 \text{relative error}
 =
+
+$$
 \frac{\|\nabla_{\mathrm{ana}}-\nabla_{\mathrm{num}}\|}
+$$
 {\max(\|\nabla_{\mathrm{ana}}\|,\|\nabla_{\mathrm{num}}\|,\epsilon)}
 \]
 
@@ -86,17 +89,25 @@ PyTorch는 2번 서랍을 Autograd가, 3번을 Optimizer가 맡는다. 오늘은
 관례: $X\in\mathbb{R}^{B\times 2}$
 
 \[
+
+$$
 \begin{aligned}
+$$
 Z^{(1)} &= X W^{(1)\top} + \mathbf{b}^{(1)} && (B\times 2)\\
+
+$$
 A^{(1)} &= \mathrm{ReLU}(Z^{(1)}) \\
 \hat{Y} &= A^{(1)} W^{(2)\top} + b^{(2)} && (B\times 1)\\
 L &= \frac{1}{2B}\sum_{n=1}^{B}(\hat{y}_n - y_n)^2
 \end{aligned}
 \]
+$$
 
 Backward (평균 MSE 기준):
 
 \[
+
+$$
 \begin{aligned}
 \frac{\partial L}{\partial \hat{Y}} &= \frac{1}{B}(\hat{Y}-Y) \\
 \frac{\partial L}{\partial W^{(2)}} &= \left(\frac{\partial L}{\partial \hat{Y}}\right)^{\top} A^{(1)} \\
@@ -107,6 +118,7 @@ Backward (평균 MSE 기준):
 \frac{\partial L}{\partial b^{(1)}} &= \sum_{n}\frac{\partial L}{\partial z^{(1)}_n}
 \end{aligned}
 \]
+$$
 
 단샘플은 $B=1$인 특수 경우이며, 17강 식과 일치한다.
 

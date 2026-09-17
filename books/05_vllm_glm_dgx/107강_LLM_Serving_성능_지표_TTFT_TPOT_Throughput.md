@@ -455,7 +455,10 @@ Goodput이 Throughput과 다른 점은?
 
 ### 문제 10
 
+
+$$
 E2E latency를 TTFT·TPOT로 대략 분해하는 식을 쓰시오($N_{\mathrm{out}}\ge 2$, 정의가 일치할 때).
+$$
 
 ---
 

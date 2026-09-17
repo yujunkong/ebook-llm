@@ -162,10 +162,10 @@ BCE:
 
 $$
 
-L = -\frac{1}{N}\sum_{i=1}^{N}\Big[
+L = -\frac{1}{N}\sum_{i=1}^{N}[
   y_i\log(\hat{p}_i+\varepsilon)
   +(1-y_i)\log(1-\hat{p}_i+\varepsilon)
-\Big]
+]
 
 $$
 
@@ -628,7 +628,7 @@ NumPy에서 학습 시 마스크를 직접 만들고, 평가 시 끈다. PyTorch
 입력 $x$, 정답 $y$, 모델 $f_\theta$에 대해
 
 $$
-\min_\theta\ \frac{1}{N}\sum_{i=1}^N \ell\bigl(f_\theta(x_i), y_i\bigr)
+\min_\theta\ \frac{1}{N}\sum_{i=1}^N \ell\left(f_\theta(x_i), y_i\right)
 $$
 
 을 SGD/Adam으로 푸는 것이 미니 프로젝트의 수학적 뼈대입니다. 이후 LLM도 같은 뼈대에 데이터·모델 규모만 키운 것입니다.

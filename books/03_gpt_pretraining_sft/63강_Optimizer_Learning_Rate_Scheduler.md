@@ -65,7 +65,10 @@ L_{\text{total}} = L_{\text{data}} + \frac{\lambda}{2}\|\theta\|^2
 
 $$
 
+
+$$
 SGD에서는 “Loss에 L2를 더한다”와 “업데이트 때 $\theta \leftarrow (1-\eta\lambda)\theta$”가 거의 같은 길로 이어질 수 있다. 그러나 **적응형 Optimizer(Adam)** 에서는 이 둘이 더 이상 같지 않다.
+$$
 
 ### 5.1 Adam + L2 vs AdamW
 
@@ -278,7 +281,10 @@ v_t &\leftarrow \beta_2 v_{t-1} + (1-\beta_2) g_t^2 \\
 $$
 
 마지막 항 $\lambda\theta$가 **decoupled weight decay**의 자리에 해당한다(표기 세부는 구현마다 조금씩 다름).  
+
+$$
 SGD 시절 “Loss에 $\frac{\lambda}{2}\|\theta\|^2$를 더한다”와 식이 달라도, **의도(큰 가중치 억제)** 는 제24강 정규화 이야기와 같은 계열이다.
+$$
 
 ## Warmup을 빼면 생기는 일 (사고 실험)
 초기 step에서:

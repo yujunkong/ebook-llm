@@ -113,8 +113,11 @@ Bias가 없으면 항상 원점 근처를 지나야 해서, 표현력이 줄어�
 층을 하나 지나면 대략 다음이 일어난다.
 
 \[
+
+$$
 \mathbf{a}^{(l)} = \sigma\!\left(W^{(l)}\mathbf{a}^{(l-1)} + \mathbf{b}^{(l)}\right)
 \]
+$$
 
 위 첨자 $(l)$은 $l$번째 층을 뜻한다.
 
@@ -138,8 +141,11 @@ W_2(W_1 x + b_1) + b_2 = (W_2 W_1)x + (W_2 b_1 + b_2)
 **ReLU(Rectified Linear Unit)**는 다음으로 정의된다.
 
 \[
+
+$$
 \mathrm{ReLU}(z) = \max(0, z)
 \]
+$$
 
 - $z > 0$이면 그대로 통과
 - $z \le 0$이면 0
@@ -152,8 +158,11 @@ W_2(W_1 x + b_1) + b_2 = (W_2 W_1)x + (W_2 b_1 + b_2)
 **Sigmoid(시그모이드)**는 출력을 0과 1 사이로 압축한다.
 
 \[
+
+$$
 \sigma(z) = \frac{1}{1 + e^{-z}}
 \]
+$$
 
 - 큰 양수 → 1에 가까움
 - 큰 음수 → 0에 가까움
@@ -194,18 +203,24 @@ W_2(W_1 x + b_1) + b_2 = (W_2 W_1)x + (W_2 b_1 + b_2)
 ### 5.1 한 층의 Affine 변환
 
 입력 벡터 $\mathbf{x} \in \mathbb{R}^{n_{\mathrm{in}}}$,  
+
+$$
 Weight 행렬 $W \in \mathbb{R}^{n_{\mathrm{out}} \times n_{\mathrm{in}}}$,  
 Bias 벡터 $\mathbf{b} \in \mathbb{R}^{n_{\mathrm{out}}}$에 대해
 
 \[
 \mathbf{z} = W\mathbf{x} + \mathbf{b}
 \]
+$$
 
 이다. 성분으로 풀면
 
 \[
+
+$$
 z_i = \sum_{j=1}^{n_{\mathrm{in}}} W_{ij} x_j + b_i
 \]
+$$
 
 이다. $W_{ij}$는 “입력 $j$가 출력 뉴런 $i$에 미치는 가중치”이다.
 
@@ -224,6 +239,8 @@ ReLU라면 $a_i = \max(0, z_i)$이다.
 입력 $\mathbf{x}$, 은닉1, 은닉2, 출력이 있으면
 
 \[
+
+$$
 \begin{aligned}
 \mathbf{z}^{(1)} &= W^{(1)}\mathbf{x} + \mathbf{b}^{(1)} \\
 \mathbf{a}^{(1)} &= \sigma(\mathbf{z}^{(1)}) \\
@@ -233,16 +250,20 @@ ReLU라면 $a_i = \max(0, z_i)$이다.
 \hat{y} &= \mathbf{z}^{(3)} \quad \text{(회귀에서는 출력 Activation을 생략하기도 함)}
 \end{aligned}
 \]
+$$
 
 이 책의 2-2-1 예제는 은닉 한 층만 둔다.
 
 \[
+
+$$
 \begin{aligned}
 \mathbf{z}^{(1)} &= W^{(1)}\mathbf{x} + \mathbf{b}^{(1)} \\
 \mathbf{a}^{(1)} &= \mathrm{ReLU}(\mathbf{z}^{(1)}) \\
 \hat{y} &= W^{(2)}\mathbf{a}^{(1)} + b^{(2)}
 \end{aligned}
 \]
+$$
 
 ## 작은 숫자로 직접 계산하기
 ### 6.1 미니 네트워크 명세 (2-2-1)
@@ -296,7 +317,10 @@ ASCII 구조는 다음과 같다.
 ### 6.2 은닉층 계산
 
 \[
+
+$$
 \begin{aligned}
+$$
 z_1 &= 0.3\cdot 1.0 + (-0.2)\cdot 0.5 + 0.1 = 0.3 - 0.1 + 0.1 = 0.3 \\
 z_2 &= 0.4\cdot 1.0 + 0.1\cdot 0.5 + (-0.1) = 0.4 + 0.05 - 0.1 = 0.35
 \end{aligned}
@@ -305,7 +329,10 @@ z_2 &= 0.4\cdot 1.0 + 0.1\cdot 0.5 + (-0.1) = 0.4 + 0.05 - 0.1 = 0.35
 ReLU:
 
 \[
+
+$$
 \begin{aligned}
+$$
 a_1 &= \max(0, 0.3) = 0.3 \\
 a_2 &= \max(0, 0.35) = 0.35
 \end{aligned}
@@ -320,8 +347,11 @@ a_2 &= \max(0, 0.35) = 0.35
 정답 타깃이 $y = 1.0$이고 MSE Loss를 쓴다면
 
 \[
+
+$$
 L = \frac{1}{2}(\hat{y} - y)^2 = \frac{1}{2}(0.21 - 1.0)^2 = \frac{1}{2}(0.79)^2 = 0.31205
 \]
+$$
 
 이다. (계수 $1/2$는 미분을 예쁘게 만들기 위한 관례이다.)
 
@@ -545,7 +575,10 @@ $W1: 8\times5=40$, $b1:8$, $W2:3\times8=24$, $b2:3$ → 총 **75**.
 ### 문제 4
 
 \[
+
+$$
 \begin{aligned}
+$$
 z_1 &= 0.3\cdot0 + (-0.2)\cdot1 + 0.1 = -0.1 \\
 z_2 &= 0.4\cdot0 + 0.1\cdot1 - 0.1 = 0.0 \\
 a_1 &= 0,\quad a_2 = 0 \\
