@@ -401,6 +401,32 @@ $$
 
 입니다. 내부 단편화를 줄여 배치 내 여러 요청의 KV를 더 빽빽히 담는 것이 목표입니다.
 
+## 정량 스케치 — 블록·단편화
+
+$$
+
+n_{\mathrm{blocks}}(T)=\lceil T/B_s\rceil,\quad
+w(T)=n_{\mathrm{blocks}}B_s-T
+$$
+
+풀 용량 $T_{\mathrm{max}}=N_{\mathrm{phys}}B_s$.
+
+연속 예약 낭비 감각 $T_{\mathrm{max}}-T$ vs 페이지 낭비 $<B_s$.
+
+예: $T_{\mathrm{max}}=4096$, $T=200$, $B_s=16$ → 연속 낭비≈3896, 페이지 $<16$.
+
+논리 위치 $t\mapsto(t\div B_s,\;t\bmod B_s)$. Attention 수식은 불변.
+
+$$
+
+\mathrm{free\_blocks}=N_{\mathrm{phys}}-\sum_s n_{\mathrm{blocks}}(T_s)
+$$
+
+$=0$이면 admission/preemption 이슈(제106강).
+
+CoW: 비공유 $\propto B(S_0+U)$ vs 공유 $\propto S_0+BU$.
+
+
 ## LLM에서는 어디에 사용될까?
 
 이번 105강에서 배운 개념은 이후 Transformer · GPT · 서빙 강의에서 반복해서 등장합니다. 각 수식·코드 블록을 “실제 모델의 어느 단계인가”와 연결해 다시 읽어 보세요.

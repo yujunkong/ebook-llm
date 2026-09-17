@@ -444,6 +444,35 @@ def best_of_n(model, encode_fn, prompt, candidates):
     return candidates[best], scores
 ```
 
+## 정량 스케치 — Bradley-Terry 마진
+
+$$
+
+P(y_w\succ y_l)=\sigma(\Delta),\quad
+\Delta=r_w-r_l,\quad
+\mathcal{L}=-\log\sigma(\Delta)
+$$
+
+$$
+
+\partial\mathcal{L}/\partial\Delta=\sigma(\Delta)-1=-\sigma(-\Delta)
+$$
+
+$\Delta$가 크면 그래디언트↓(쉬운 쌍). 어려운 쌍이 학습을 지배한다.
+
+| $\Delta$ | $\sigma$ | $-\log\sigma$ |
+|---:|---:|---:|
+| -2 | 0.119 | 2.127 |
+| 0 | 0.500 | 0.693 |
+| 2 | 0.881 | 0.127 |
+
+마진 $m$: $\mathcal{L}=-\log\sigma(\Delta-m)$.
+
+배치 모니터: $\mathrm{acc}=\mathbb{E}[\mathbf{1}(\Delta>0)]$와 loss를 함께 본다.
+
+RLHF로 넘길 때 $R=r_\phi-\beta\,\mathrm{KL}$ — RM 스케일이 PPO 하이퍼와 결합한다.
+
+
 ## LLM에서는 어디에 사용될까?
 표준 RLHF 스택에서의 RM:
 

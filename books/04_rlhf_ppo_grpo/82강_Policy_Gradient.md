@@ -432,6 +432,78 @@ $$
 
 LLM에서는 $a_t$가 토큰, $s_t$가 지금까지의 문맥입니다.
 
+## 정량 스케치 — $\mathbb{E}[\nabla\log\pi\cdot A]$
+
+단스텝·Advantage 형태:
+
+$$
+
+\nabla_\theta J(\theta)
+=
+\mathbb{E}_{s,a}\big[
+\nabla_\theta\log\pi_\theta(a\mid s)\, A^\pi(s,a)
+\big]
+
+$$
+
+몬테카를로 $N$샘플:
+
+$$
+
+\widehat{\nabla J}
+=
+\frac{1}{N}\sum_{i=1}^{N}
+\nabla_\theta\log\pi_\theta(a_i\mid s_i)\, \hat A_i
+
+$$
+
+시퀀스 로그확률:
+
+$$
+
+\log\pi_\theta(y\mid x)=\sum_{t=1}^{|y|}\log\pi_\theta(y_t\mid x,y_{<t})
+
+$$
+
+같은 outcome $R$를 쓰면 $\sum_t R\cdot\nabla\log\pi(y_t)$ — 토큰 크레딧이 거친 이유다.
+
+### Softmax 밴딧 분산
+
+$p=\pi(L)$, $R(L)=1$, $R(R)=0$이면 $J=p$.  
+성공 샘플의 $\partial\log p/\partial p=1/p$이므로 $p=0.1$일 때 기울기 추정 진폭이 $10$까지 커진다 → **희소·고분산**.
+
+### SNR 감각
+
+$$
+
+\mathrm{SNR} \propto \frac{|\mathbb{E}[A\nabla\log\pi]|}{\sqrt{\mathrm{Var}/N}}
+$$
+
+$N$↑ 또는 $\mathrm{Var}(A)$↓가 학습 안정화 레버다. Advantage·정규화·PPO clip이 여기로 연결된다.
+
+### KL이 붙을 때
+
+$$
+
+J=\mathbb{E}[R]-\beta\,\mathbb{E}[\mathrm{KL}(\pi_\theta\Vert\pi_{\mathrm{ref}})]
+$$
+
+### SFT와의 정렬
+
+$$
+
+\mathcal{L}_{\mathrm{SFT}}=-\sum_t\log\pi(y_t^\star),\quad
+\mathcal{L}_{\mathrm{RF}}=-\sum_t\log\pi(y_t)\cdot R
+$$
+
+$R\equiv1$, $y=y^\star$이면 형태가 같다.
+
+### 손계산
+
+$\log\pi=(-0.2,-0.5,-1.0)$, $R=2$ → $\sum\log\pi\cdot R=-3.4$.  
+손실로 $-\sum\log\pi\cdot R$를 쓰면 $+3.4$.
+
+
 ## LLM에서는 어디에 사용될까?
 ### 10.1 RLHF
 

@@ -300,6 +300,30 @@ $$
 
 $T_{\mathrm{ctx}}$는 해당 스텝의 문맥 길이입니다.
 
+## 정량 스케치 — 국면별 비용
+
+Prefill Attention: $\mathrm{FLOPs}\propto L H S^2 d$ ($S^2$ 감각).
+
+Decode 스텝(캐시 길이 $t$): $\propto L H t d$.
+
+KV: $\mathrm{Bytes}_{\mathrm{KV}}(t)\approx 2 L H_{kv} d t b$.
+
+$$
+
+\mathrm{TTFT}\approx T_{\mathrm{queue}}+T_{\mathrm{prefill}},\quad
+\mathrm{TPOT}\approx\mathrm{mean}(T_{\mathrm{decode}})
+$$
+
+총지연 감각 $\approx\mathrm{TTFT}+(N_{\mathrm{out}}-1)\mathrm{TPOT}$.
+
+| 국면 | 전형 감각 | 힌트 |
+|---|---|---|
+| Prefill | compute 여지 | 커널·양자화·병렬 |
+| Decode | memory/bandwidth | KV·배치 |
+
+가정 숫자로 용량 계획하지 말 것 — 비례 연습만.
+
+
 ## LLM에서는 어디에 사용될까?
 ### 8.1 TTFT와 Prefill
 

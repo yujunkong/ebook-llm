@@ -378,6 +378,32 @@ $$
 
 처럼 **그룹 평균 대비**로 정규화한 뒤 policy gradient/PPO류 업데이트를 적용합니다. 절대 보상 스케일보다 상대 순위가 중요해집니다.
 
+## 정량 스케치 — 그룹 상대 심화
+
+$$
+
+\hat A_i=\frac{r_i-\mu_x}{\sigma_x+\varepsilon},\quad
+\rho_i=\frac{\pi_\theta(y_i\mid x)}{\pi_{\mathrm{old}}(y_i\mid x)}
+$$
+
+$$
+
+L=-\frac1G\sum_i\min(\rho_i\hat A_i,\mathrm{clip}(\rho_i)\hat A_i)+\beta\,\widehat{\mathrm{KL}}
+$$
+
+이진 보상: $\mu=S/G$, $\sigma=\sqrt{\mu(1-\mu)}$.  
+$S\in\{0,G\}$면 신호 0; $S\approx G/2$에서 상대 신호 최대.
+
+LOO: $b_i=\frac1{G-1}\sum_{j\neq i}r_j$, $\hat A_i=r_i-b_i$.
+
+비용 $\propto G\cdot(T_{\mathrm{gen}}+T_{\mathrm{reward}}+T_{\mathrm{logprob}})$.
+
+손계산: $G=2$, $r=(1,0)$, mean-only $\hat A=(0.5,-0.5)$, $\rho=(1.5,0.7)$, $\varepsilon=0.2$  
+→ $\min$ 항 $(0.6,-0.4)$, 평균 surrogate 감각 $0.1$.
+
+다양성 프록시 $u=\#\{\mathrm{unique\ ex}(y_i)\}/G$.
+
+
 ## LLM에서는 어디에 사용될까?
 
 이번 92강에서 배운 개념은 이후 Transformer · GPT · 서빙 강의에서 반복해서 등장합니다. 각 수식·코드 블록을 “실제 모델의 어느 단계인가”와 연결해 다시 읽어 보세요.

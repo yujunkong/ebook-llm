@@ -374,6 +374,35 @@ $$
 
 보상 모델을 따로 두지 않고, 선호 데이터로 정책을 직접 업데이트합니다.
 
+## 정량 스케치 — DPO 손실 곡면
+
+$$
+
+\mathcal{L}_{\mathrm{DPO}}
+=
+-\mathbb{E}\Big[
+\log\sigma\Big(
+\beta\big(
+\log\frac{\pi_\theta(y_w\mid x)}{\pi_{\mathrm{ref}}(y_w\mid x)}
+-
+\log\frac{\pi_\theta(y_l\mid x)}{\pi_{\mathrm{ref}}(y_l\mid x)}
+\big)
+\Big)
+\Big]
+$$
+
+암묵 보상 $\hat r=\beta\log(\pi_\theta/\pi_{\mathrm{ref}})$이면 BT와 동형.
+
+$m=\Delta_w-\Delta_l$, $z=\beta m$, $\mathcal{L}=-\log\sigma(z)$.
+
+손계산: $\beta=0.1$, $m=2$ → $z=0.2$, $-\log\sigma\approx0.599$.  
+$m=-2$ → 손실 $\approx0.799$ (선호 역전).
+
+길이 편향: 합 로그확률은 $|y|$에 민감 → 정규화·매칭 검토.
+
+비용: 배치당 policy≈$2B$, ref≈$2B$(no grad) forward.
+
+
 ## LLM에서는 어디에 사용될까?
 
 이번 91강에서 배운 개념은 이후 Transformer · GPT · 서빙 강의에서 반복해서 등장합니다. 각 수식·코드 블록을 “실제 모델의 어느 단계인가”와 연결해 다시 읽어 보세요.
