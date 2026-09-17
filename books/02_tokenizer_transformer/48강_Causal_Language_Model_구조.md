@@ -365,6 +365,21 @@ $\mathcal{L}_t=-\log\mathrm{softmax}(z)_y$.
 생성 시에는 $T$를 1씩 늘리며 `logits[:, -1, :]`만 사용.  
 `block_size`를 넘으면 `idx[:, -block_size:]`로 잘라 PE 테이블·마스크 크기를 지킨다.
 
+
+## 추가 연습 — forward 체크리스트
+
+1. `idx.dtype`이 long/int64인가?
+2. $T\le block_size$인가?
+3. 각 block 입출력 `[B,T,C]`인가?
+4. causal mask가 attention 안에 있는가?
+5. loss에서 시프트가 맞는가?
+6. tying 시 `lm_head.weight is tok_emb.weight`인가?
+
+작은 버그: mask를 끄면 train loss↓·generate 붕괴.  
+이것이 CLM의 **정의적 제약**이다.
+
+로짓 온도는 생성 규칙(제58~59강)이지 구조 모듈이 아니다.
+
 ## LLM에서는 어디에 사용될까?
 
 이번 48강에서 배운 개념은 이후 Transformer · GPT · 서빙 강의에서 반복해서 등장합니다. 각 수식·코드 블록을 “실제 모델의 어느 단계인가”와 연결해 다시 읽어 보세요.

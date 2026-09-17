@@ -372,6 +372,23 @@ Greedy 다음 토큰 = id 1.
 
 규모 감각(단정 금지): $C=768,N=12$ → $12\cdot12\cdot768^2\approx8.5\times10^7$에 $VC$를 더하면 $10^8$ 자릿수.
 
+
+## 추가 연습 — 정의 고정
+
+빈칸:
+
+> GPT(이 책) = (Decoder-only) + (Causal LM 목표) + (Pretraining on text) + (선택적 SFT)
+
+아닌 것: 특정 제품명, Encoder-Decoder 번역기, “진실 DB”.
+
+수식 한 장:
+
+$$
+P(x)=\prod_t P_\theta(x_t\mid x_{<t}),\quad
+h_t=f_\theta(x_{\le t}),\quad
+P_\theta(\cdot\mid x_{<t})=\mathrm{softmax}(W_U h_t)
+$$
+
 ## LLM에서는 어디에 사용될까?
 
 이번 55강에서 배운 개념은 이후 Transformer · GPT · 서빙 강의에서 반복해서 등장합니다. 각 수식·코드 블록을 “실제 모델의 어느 단계인가”와 연결해 다시 읽어 보세요.

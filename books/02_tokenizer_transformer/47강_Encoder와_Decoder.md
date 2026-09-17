@@ -344,6 +344,21 @@ $$
 x=\mathrm{concat}(\mathrm{prompt},\mathrm{gen})\quad\text{하나의 스트림}
 $$
 
+
+## 추가 연습 — 가족 분류 체크리스트
+
+다음 문장을 가족으로 분류하고 근거 수식/마스크를 한 줄로 쓰라.
+
+1. “원문을 양방향으로 읽은 뒤 번역문을 왼쪽부터 쓴다.”
+2. “[MASK] 토큰을 양옆 맥락으로 복원한다.”
+3. “챗봇이 사용자 메시지 뒤에 토큰을 이어 붙인다.”
+
+정답 스케치: (1) Enc-Dec + cross (2) Enc-only MLM (3) Dec-only CLM.
+
+파라미터 비교 손계산: $C=512,N=6$.  
+Dec-only $pprox12\cdot6\cdot512^2=1.89	imes10^7$.  
+Enc-Dec 두 스택 $pprox3.77	imes10^7$(+cross 투영 $2\cdot512^2$ 수준 추가).
+
 ## LLM에서는 어디에 사용될까?
 사실:
 

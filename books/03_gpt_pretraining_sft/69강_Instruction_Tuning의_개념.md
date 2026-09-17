@@ -308,6 +308,26 @@ $\mathrm{Sat}$는 이런 지시자 평균이다. PPL과 독립.
 Base: $p(x_t\mid x_{<t})$ on documents.  
 SFT: $p(a_t\mid u,a_{<t})$ on instruction pairs.
 
+
+## 추가 연습 — 파이프라인·마스크
+
+```text
+Pretraining --(base)--> SFT/Instruct --(policy0)--> RLHF/DPO
+```
+
+데이터 한 건을 messages로 쓰고, 어느 역할 토큰이 $\mathcal{T}_{\mathrm{resp}}$인지 표시하라.
+
+잘못된 정답 1건이 있으면 SFT는 그 오답을 **자신 있게** 모방할 수 있다.  
+이것이 데이터 품질이 곧 정렬 품질인 이유다.
+
+비교:
+
+| | PT | SFT |
+|---|---|---|
+| 목표 | 문서 이어쓰기 | 지시→응답 |
+| 마스크 | 거의 전 토큰 | 응답 |
+| 평가 | PPL 등 | 지시 준수·과제 성공 |
+
 ## LLM에서는 어디에 사용될까?
 공개·산업 파이프라인에서 흔히 관찰되는 패턴:
 

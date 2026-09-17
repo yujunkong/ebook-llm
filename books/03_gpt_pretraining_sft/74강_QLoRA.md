@@ -402,6 +402,23 @@ Base $7$B 대비 $\sim0.18\%$.
 
 Fact: 저장 비트↓. Explanation: 같은 GPU에서 큰 베이스 SFT가 쉬워질 **수** 있음.
 
+
+## 추가 연습 — 메모리 시나리오
+
+시나리오 A: 가중치 지배 → 4-bit 효과가 큼.  
+시나리오 B: $B,T$ 커 activation 지배 → QLoRA해도 OOM 가능.
+
+식으로:
+
+$$
+M_{\mathrm{act}}\propto B\cdot T\cdot C\cdot N_{\mathrm{layers(stored)}}
+$$
+
+gradient checkpointing은 $M_{\mathrm{act}}$를 줄이는 **별 축**.
+
+QLoRA = Quantize($W_0$ freeze) + LoRA($A,B$ train).  
+속도(throughput) 이득은 커널 의존 — 저장 이득과 분리해 말할 것.
+
 ## LLM에서는 어디에 사용될까?
 
 이번 74강에서 배운 개념은 이후 Transformer · GPT · 서빙 강의에서 반복해서 등장합니다. 각 수식·코드 블록을 “실제 모델의 어느 단계인가”와 연결해 다시 읽어 보세요.
