@@ -496,6 +496,10 @@ if __name__ == "__main__":
 | CPU only | `.to(device)` |
 | 수동 Backward | 다음 강 Autograd |
 
+> ⚠️ **주의**
+>
+> Broadcasting이 에러 없이 성공해도 축 의미가 틀릴 수 있습니다. shape만 보지 말고 의미를 적으세요.
+
 > 💡 **팁**
 >
 > shape를 먼저 적고 코드를 쓰면, Attention 코드의 `reshape(B,S,H,D)`도 읽기 쉬워집니다.
