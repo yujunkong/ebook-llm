@@ -156,6 +156,211 @@ $$
 
 같은 CE 뼈대, 다른 데이터 분포입니다.
 
+
+## 수학적으로 이해하기 — 목적함수 좌표
+
+Pretraining과 SFT는 둘 다 Negative Log-Likelihood(NLL) 계열이지만, 기댓값의 **측도(measure)** 가 다릅니다.
+
+$$
+
+\begin{aligned}
+L_{\mathrm{PT}}(\theta)
+&= \mathbb{E}_{x\sim\mathcal{D}_{\mathrm{PT}}}
+\Big[-\sum_{t=1}^{|x|}\log p_\theta(x_t\mid x_{<t})\Big] \\[6pt]
+L_{\mathrm{SFT}}(\theta)
+&= \mathbb{E}_{(c,y)\sim\mathcal{D}_{\mathrm{SFT}}}
+\Big[-\sum_{t\in\mathcal{R}(c,y)}\log p_\theta(y_t\mid c,y_{<t})\Big]
+\end{aligned}
+
+$$
+
+여기서 $\mathcal{R}(c,y)$는 응답(assistant) 토큰 위치 집합입니다. 마스크를 $m_t\in\{0,1\}$로 쓰면
+
+$$
+
+L_{\mathrm{SFT}}
+= \mathbb{E}\Big[-\sum_t m_t\log p_\theta(x_t\mid x_{<t})\Big],
+\quad
+m_t=\mathbf{1}[t\in\mathcal{R}]
+
+$$
+
+이 됩니다. Pretrain은 대개 $m_t=1$（패딩 제외）이고, SFT는 $m_t$가 응답에만 1입니다.
+
+### 분포 관점 한 줄
+
+- Pretrain: $p_\theta$를 웹·도서 등 **광역 텍스트 분포**에 맞춥니다.
+- SFT: $p_\theta(\cdot\mid c)$를 **지시 조건 아래의 모범 응답 분포**에 맞춥니다.
+
+같은 Softmax·같은 CE라도, 맞추는 대상 분포가 다르면 **역할이 갈라집니다**.
+
+## 작은 숫자 스케치 — 마스크가 신호를 바꾸는 방식
+
+길이 8 토큰의 미니 시퀀스를 가정합니다.
+
+```text
+ids:   [SYS] [U1] [U2] [U3] [A1] [A2] [A3] [EOS]
+mask:    0     0    0    0    1    1    1    1
+```
+
+각 위치의 순간 NLL이 모두 $1.0$ nat라고 하면（설명용）:
+
+- Pretrain식（전 구간）: $L = 8\times 1.0 = 8.0$
+- SFT식（응답 4칸）: $L = 4\times 1.0 = 4.0$
+
+평균을 “마스크된 토큰 수”로 나누면 둘 다 $1.0$이지만, **기울기가 흐르는 위치**가 다릅니다. 사용자 구간을 맞추는 방향으로는 SFT 기울기가 거의 없습니다（의도）.
+
+토큰 평균 vs 샘플 평균을 섞으면 로그가 왜곡됩니다. 교육용으로는
+
+$$
+
+L_{\mathrm{tok}} = \frac{\sum_t m_t(-\log p_t)}{\sum_t m_t}
+
+$$
+
+처럼 **마스크 가중 토큰 평균**을 하나의 규약으로 고정하는 편이 안전합니다.
+
+## 직관 카드 — “세계모형”과 “대본 배우”
+
+```text
+Pretraining
+  = 많은 책을 읽어 “다음에 올 말”을 맞히는 연습
+  → 유창성·지식의 통계적 흔적
+
+SFT
+  = 특정 대본(지시→응답)을 반복 연습
+  → 형식·톤·준수 습관
+
+Preference / RL (4권)
+  = “어느 대사가 더 좋은가”를 비교·보상으로 다듬기
+```
+
+미니 실험（제68·76강）에서도 이 비유는 유효합니다. 규모만 작을 뿐 **목적함수 좌표**는 같습니다.
+
+## 능력 이양 — 정량 스케치（가짜 벤치 금지）
+
+숫자 벤치를 주장하지 않습니다. 대신 **신호의 종류**만 표로 고정합니다.
+
+| 관찰 신호 | Pretrain에서 의미 | SFT에서 의미 |
+|---|---|---|
+| Train CE ↓ | 코퍼스 암기·적합 진행 | 응답 패턴 적합 진행 |
+| Val CE ↓ | 일반 텍스트 일반화 | （약함）형식 일반화의 거친 대리 |
+| PPL | 불확실성 지표（67강） | 지시 품질 대리로 부적절하기 쉬움 |
+| Harness 준수율 | 거의 무관 | 주력 성공 지표（75강） |
+| Before/After 생성 | 유창성 샘플 | 지시 추종 변화의 증거 |
+
+**사실:** 같은 CE 숫자라도 단계마다 해석이 다릅니다.  
+**설명:** 지표를 단계에 맞게 고르는 것이 “역할을 섞지 않는” 실무의 첫걸음입니다.
+
+## 잘못된 처방 — 워크드 의사결정
+
+### 사례 A. “전문 용어를 모른다”
+
+```text
+증상: 의료/법률 용어를 엉터리로 이어 씀
+잘못된 처방: SFT epoch만 5→20
+이유: SFT는 없는 지식을 창조하지 못함
+좌표:
+  1) 도메인 코퍼스 추가 pretrain（또는 지속 pretrain）
+  2) RAG/툴로 근거 문서 연결
+  3) 그 다음 짧은 도메인 SFT로 형식 고정
+```
+
+### 사례 B. “JSON만 출력하라”를 무시
+
+```text
+증상: 설명문을 앞에 붙임
+잘못된 처방: 더 긴 pretrain
+좌표: 템플릿 일치（72）+ response mask（71）+ 형식 문항 harness（75）
+```
+
+### 사례 C. “두 답 중 어느 쪽이 더 친절한가”
+
+```text
+증상: 둘 다 형식은 맞지만 톤 선호가 갈림
+잘못된 처방: 정답 하나를 더 넣어 SFT
+좌표: Preference / DPO / RLHF（4권）— CE 단일 라벨의 한계
+```
+
+## 수식 보강 — KL로 보는 “너무 먼 SFT”
+
+참조 정책 $\pi_{\mathrm{ref}}$（보통 SFT 직전 또는 SFT 자체）에서 너무 멀어지면 유창성이 깨질 수 있습니다. 4권 RLHF는 흔히
+
+$$
+
+\max_\pi\ \mathbb{E}[r] - \beta\,\mathrm{KL}(\pi\|\pi_{\mathrm{ref}})
+
+$$
+
+형태의 제약을 둡니다. 오늘 강의에서 기억할 한 줄은 다음뿐입니다.
+
+> SFT는 $\pi_{\mathrm{ref}}$에 가까운 **지도 초기 정책**을 만들고, Post-Training은 그 근처에서 선호를 밀어 올립니다.
+
+## 연결 복습 — 2권·3권 소켓
+
+| 소켓 | 강의 | Pretrain/SFT에서 하는 일 |
+|---|---|---|
+| Causal LM 분해 | 32, 48, 57 | 공통 next-token 뼈대 |
+| Packing | 61 | Pretrain 효율 |
+| Checkpoint | 65 | 단계 이관（PT→SFT） |
+| PPL | 67 | Pretrain 모니터 |
+| Chat template | 72 | SFT 입출력 계약 |
+| LoRA | 73~74 | SFT 비용 축소 |
+| Harness | 75 | SFT 성공 정의 |
+
+## 자가 점검（합니다체 체크）
+
+- [ ] Pretrain/SFT 목적함수를 마스크 기호로 다시 쓸 수 있습니다.
+- [ ] “둘 다 CE”와 “역할이 같다”를 혼동하지 않습니다.
+- [ ] 지식 부족 vs 형식 불이행 vs 선호 모호를 처방으로 구분합니다.
+- [ ] 제76강 before/after를 역할 표에 매핑할 수 있습니다.
+- [ ] 4권으로 넘길 빈칸이 “비교 선호/보상”임을 한 문장으로 말합니다.
+
+## 부록 A. 한 페이지 공식 카드
+
+$$
+
+\begin{aligned}
+&\textbf{PT:}&&
+L=-\sum_t \log p_\theta(x_t\mid x_{<t}) \\
+&\textbf{SFT:}&&
+L=-\sum_{t\in\mathcal{R}}\log p_\theta(y_t\mid c,y_{<t}) \\
+&\textbf{LoRA:}&&
+W=W_0+\tfrac{\alpha}{r}BA \\
+&\textbf{빈칸(4권):}&&
+\text{preference / reward / policy opt.}
+\end{aligned}
+
+$$
+
+## 부록 B. “SFT만으로 충분?” 인터뷰 질문
+
+1. 성공을 어떤 **관측 가능 지표**로 정의하는가?
+2. 그 지표는 Pretrain PPL과 독립인가?
+3. 동등하게 좋은 답이 여러 개인가? → Yes면 Preference 후보
+4. 지식이 코퍼스에 있는가? → No면 검색/추가 pretrain 후보
+5. 학습·추론 템플릿이 동일한가?
+
+예/아니오로만 답해도, 단계 혼동을 상당수 줄일 수 있습니다.
+
+## 부록 C. 미니 수치 — 응답 비율과 유효 신호
+
+시퀀스 길이 $T=512$, 응답 길이 기대값 $\mathbb{E}[|\mathcal{R}|]=64$이면 응답 비율은
+
+$$
+
+\rho = \frac{64}{512} = 0.125
+
+$$
+
+입니다. 전 구간 CE를 쓰면 신호의 약 $87.5\%$가 프롬프트 쪽에 흐를 수 있습니다（대략）. 이것이 response-only mask를 쓰는 **구조적 이유**입니다. 실제 $\rho$는 데이터마다 다르므로, 로거에
+
+```text
+mean_response_tokens / mean_seq_tokens
+```
+
+를 남기는 습관을 권합니다.
+
 ## LLM에서는 어디에 사용될까?
 
 이번 77강에서 배운 개념은 이후 Transformer · GPT · 서빙 강의에서 반복해서 등장합니다. 각 수식·코드 블록을 “실제 모델의 어느 단계인가”와 연결해 다시 읽어 보세요.
