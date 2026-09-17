@@ -431,7 +431,7 @@ def ffn_relu(x, W1, b1, W2, b2):
 
 ### 강의 이동
 
-- **이전 강:** [제44강. LayerNorm과 Residual Connection](44강_LayerNorm과_Residual_Connection.md)
-- **다음 강:** [제46강. Transformer Block 조립](46강_Transformer_Block_조립.md)
+- **이전 강:** [44강. LayerNorm과 Residual Connection](44강_LayerNorm과_Residual_Connection.md)
+- **다음 강:** [46강. Transformer Block 조립](46강_Transformer_Block_조립.md)
 
 <!-- /LECTURE_NAV -->

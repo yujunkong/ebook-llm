@@ -657,7 +657,7 @@ rejected를 더 높게 밀어 선호와 반대 방향으로 학습한다.
 
 ### 강의 이동
 
-- **이전 강:** [제84강. Preference Dataset](84강_Preference_Dataset.md)
-- **다음 강:** [제86강. RLHF 전체 구조](86강_RLHF_전체_구조.md)
+- **이전 강:** [84강. Preference Dataset](84강_Preference_Dataset.md)
+- **다음 강:** [86강. RLHF 전체 구조](86강_RLHF_전체_구조.md)
 
 <!-- /LECTURE_NAV -->

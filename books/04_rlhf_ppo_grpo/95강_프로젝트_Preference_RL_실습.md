@@ -979,7 +979,7 @@ sum logprob.
 
 ### 강의 이동
 
-- **이전 강:** [제94강. Reasoning Training](94강_Reasoning_Training.md)
-- **다음 강:** [제96강. Alignment의 한계와 부작용](96강_Alignment의_한계와_부작용.md)
+- **이전 강:** [94강. Reasoning Training](94강_Reasoning_Training.md)
+- **다음 강:** [96강. Alignment의 한계와 부작용](96강_Alignment의_한계와_부작용.md)
 
 <!-- /LECTURE_NAV -->

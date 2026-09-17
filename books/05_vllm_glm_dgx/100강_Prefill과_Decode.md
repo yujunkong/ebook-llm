@@ -482,7 +482,7 @@ Decode: 새 토큰(+KV) → 다음 logits + KV 갱신.
 
 ### 강의 이동
 
-- **이전 강:** [제99강. Training과 Inference의 차이](99강_Training과_Inference의_차이.md)
-- **다음 강:** [제101강. KV Cache](101강_KV_Cache.md)
+- **이전 강:** [99강. Training과 Inference의 차이](99강_Training과_Inference의_차이.md)
+- **다음 강:** [101강. KV Cache](101강_KV_Cache.md)
 
 <!-- /LECTURE_NAV -->

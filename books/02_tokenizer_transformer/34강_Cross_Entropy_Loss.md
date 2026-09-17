@@ -608,7 +608,7 @@ $p$의 정답 성분이 $-\log p_c$의 입력이 된다.
 
 ### 강의 이동
 
-- **이전 강:** [제33강. Softmax와 Logit](33강_Softmax와_Logit.md)
-- **다음 강:** [제35강. Attention이 필요한 이유](35강_Attention이_필요한_이유.md)
+- **이전 강:** [33강. Softmax와 Logit](33강_Softmax와_Logit.md)
+- **다음 강:** [35강. Attention이 필요한 이유](35강_Attention이_필요한_이유.md)
 
 <!-- /LECTURE_NAV -->

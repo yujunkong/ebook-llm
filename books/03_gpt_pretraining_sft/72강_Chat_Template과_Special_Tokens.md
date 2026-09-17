@@ -434,7 +434,7 @@ True: 정답 assistant가 없는 추론 입력에서 assistant 헤더까지 열�
 
 ### 강의 이동
 
-- **이전 강:** [제71강. SFT 구현](71강_SFT_구현.md)
-- **다음 강:** [제73강. LoRA](73강_LoRA.md)
+- **이전 강:** [71강. SFT 구현](71강_SFT_구현.md)
+- **다음 강:** [73강. LoRA](73강_LoRA.md)
 
 <!-- /LECTURE_NAV -->

@@ -480,7 +480,7 @@ advantage 스케일이 바뀌어 같은 lr에서도 실효 스텝 크기가 달�
 
 ### 강의 이동
 
-- **이전 강:** [제91강. DPO 구현](91강_DPO_구현.md)
-- **다음 강:** [제93강. RLVR과 Verifiable Reward](93강_RLVR과_Verifiable_Reward.md)
+- **이전 강:** [91강. DPO 구현](91강_DPO_구현.md)
+- **다음 강:** [93강. RLVR과 Verifiable Reward](93강_RLVR과_Verifiable_Reward.md)
 
 <!-- /LECTURE_NAV -->

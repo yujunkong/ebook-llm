@@ -641,7 +641,7 @@ RoPE는 그 블록 안의 MHA 내부에 옵션으로 꽂힌다.
 
 ### 강의 이동
 
-- **이전 강:** [제42강. Positional Encoding](42강_Positional_Encoding.md)
-- **다음 강:** [제44강. LayerNorm과 Residual Connection](44강_LayerNorm과_Residual_Connection.md)
+- **이전 강:** [42강. Positional Encoding](42강_Positional_Encoding.md)
+- **다음 강:** [44강. LayerNorm과 Residual Connection](44강_LayerNorm과_Residual_Connection.md)
 
 <!-- /LECTURE_NAV -->

@@ -447,7 +447,7 @@ Pretraining과 SFT의 **공통점 하나**와 **차이점 하나**를 쓰시오.
 
 ### 강의 이동
 
-- **이전 강:** [제70강. Instruction Dataset 형식](70강_Instruction_Dataset_형식.md)
-- **다음 강:** [제72강. Chat Template과 Special Tokens](72강_Chat_Template과_Special_Tokens.md)
+- **이전 강:** [70강. Instruction Dataset 형식](70강_Instruction_Dataset_형식.md)
+- **다음 강:** [72강. Chat Template과 Special Tokens](72강_Chat_Template과_Special_Tokens.md)
 
 <!-- /LECTURE_NAV -->

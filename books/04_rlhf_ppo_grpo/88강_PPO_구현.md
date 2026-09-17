@@ -623,7 +623,7 @@ reference 대비 KL 페널티($\beta\mathrm{KL}$).
 
 ### 강의 이동
 
-- **이전 강:** [제87강. PPO 직관과 수식](87강_PPO_직관과_수식.md)
-- **다음 강:** [제89강. KL Divergence의 역할](89강_KL_Divergence의_역할.md)
+- **이전 강:** [87강. PPO 직관과 수식](87강_PPO_직관과_수식.md)
+- **다음 강:** [89강. KL Divergence의 역할](89강_KL_Divergence의_역할.md)
 
 <!-- /LECTURE_NAV -->

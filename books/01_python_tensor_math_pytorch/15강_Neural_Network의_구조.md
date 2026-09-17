@@ -588,7 +588,7 @@ a_1 &= 0,\quad a_2 = 0 \\
 
 ### 강의 이동
 
-- **이전 강:** [제14강. Chain Rule](14강_Chain_Rule.md)
-- **다음 강:** [제16강. Forward Propagation](16강_Forward_Propagation.md)
+- **이전 강:** [14강. Chain Rule](14강_Chain_Rule.md)
+- **다음 강:** [16강. Forward Propagation](16강_Forward_Propagation.md)
 
 <!-- /LECTURE_NAV -->

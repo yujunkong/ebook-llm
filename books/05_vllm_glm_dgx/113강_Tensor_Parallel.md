@@ -401,7 +401,7 @@ TP의 “비용” 칸을 채울 차례다.
 
 ### 강의 이동
 
-- **이전 강:** [제112강. Inference Engine 비교 — vLLM · TensorRT-LLM · SGLang](112강_Inference_Engine_비교_vLLM_TensorRT_LLM_SGLang.md)
-- **다음 강:** [제114강. NCCL과 RoCE](114강_NCCL과_RoCE.md)
+- **이전 강:** [112강. Inference Engine 비교 — vLLM · TensorRT-LLM · SGLang](112강_Inference_Engine_비교_vLLM_TensorRT_LLM_SGLang.md)
+- **다음 강:** [114강. NCCL과 RoCE](114강_NCCL과_RoCE.md)
 
 <!-- /LECTURE_NAV -->

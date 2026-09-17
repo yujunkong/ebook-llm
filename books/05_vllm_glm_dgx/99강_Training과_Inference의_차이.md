@@ -510,7 +510,7 @@ Inference: 생성 계산 자체. Serving: 그 계산을 다수 요청·운영 �
 
 ### 강의 이동
 
-- **이전 강:** [제98강. 4권 총정리 — Inference와 Serving으로](../04_rlhf_ppo_grpo/98강_4권_총정리_Inference와_Serving으로.md)
-- **다음 강:** [제100강. Prefill과 Decode](100강_Prefill과_Decode.md)
+- **이전 강:** [98강. 4권 총정리 — Inference와 Serving으로](../04_rlhf_ppo_grpo/98강_4권_총정리_Inference와_Serving으로.md)
+- **다음 강:** [100강. Prefill과 Decode](100강_Prefill과_Decode.md)
 
 <!-- /LECTURE_NAV -->

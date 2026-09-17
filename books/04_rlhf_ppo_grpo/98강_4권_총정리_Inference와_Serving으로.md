@@ -240,7 +240,7 @@ Goodhart / 평가 과적합 / proxy 숭배（택1 이상）.
 
 ### 강의 이동
 
-- **이전 강:** [제97강. 논문·실무 흐름 정리](97강_논문_실무_흐름_정리.md)
-- **다음 강:** [제99강. Training과 Inference의 차이](../05_vllm_glm_dgx/99강_Training과_Inference의_차이.md)
+- **이전 강:** [97강. 논문·실무 흐름 정리](97강_논문_실무_흐름_정리.md)
+- **다음 강:** [99강. Training과 Inference의 차이](../05_vllm_glm_dgx/99강_Training과_Inference의_차이.md)
 
 <!-- /LECTURE_NAV -->

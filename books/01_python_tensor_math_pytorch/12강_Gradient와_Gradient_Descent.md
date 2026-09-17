@@ -604,7 +604,7 @@ MSE와 Cross Entropy의 직관을 숫자로 보고, 왜 LLM이 Cross Entropy를 
 
 ### 강의 이동
 
-- **이전 강:** [제11강. 미분과 편미분](11강_미분과_편미분.md)
-- **다음 강:** [제13강. Loss Function](13강_Loss_Function.md)
+- **이전 강:** [11강. 미분과 편미분](11강_미분과_편미분.md)
+- **다음 강:** [13강. Loss Function](13강_Loss_Function.md)
 
 <!-- /LECTURE_NAV -->

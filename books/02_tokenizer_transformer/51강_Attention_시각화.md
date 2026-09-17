@@ -289,7 +289,7 @@ Causal mask 누락·잘못된 broadcast·mask crop 실수.
 
 ### 강의 이동
 
-- **이전 강:** [제50강. 프로젝트 — Mini Transformer 구현 (2)](50강_프로젝트_Mini_Transformer_구현_2.md)
-- **다음 강:** [제52강. 계산 복잡도와 메모리](52강_계산_복잡도와_메모리.md)
+- **이전 강:** [50강. 프로젝트 — Mini Transformer 구현 (2)](50강_프로젝트_Mini_Transformer_구현_2.md)
+- **다음 강:** [52강. 계산 복잡도와 메모리](52강_계산_복잡도와_메모리.md)
 
 <!-- /LECTURE_NAV -->

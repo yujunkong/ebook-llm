@@ -455,7 +455,7 @@ $0.2[1,0]+0.8[0,1]=[0.2,\ 0.8]$.
 
 ### 강의 이동
 
-- **이전 강:** [제34강. Cross Entropy Loss](34강_Cross_Entropy_Loss.md)
-- **다음 강:** [제36강. Query, Key, Value](36강_Query_Key_Value.md)
+- **이전 강:** [34강. Cross Entropy Loss](34강_Cross_Entropy_Loss.md)
+- **다음 강:** [36강. Query, Key, Value](36강_Query_Key_Value.md)
 
 <!-- /LECTURE_NAV -->

@@ -591,7 +591,7 @@ $\mathrm{KL}_{\mathrm{sum}}$이 길이에 비례해 커지므로 더 민감하�
 
 ### 강의 이동
 
-- **이전 강:** [제88강. PPO 구현](88강_PPO_구현.md)
-- **다음 강:** [제90강. DPO — Preference를 직접 학습하기](90강_DPO_Preference를_직접_학습하기.md)
+- **이전 강:** [88강. PPO 구현](88강_PPO_구현.md)
+- **다음 강:** [90강. DPO — Preference를 직접 학습하기](90강_DPO_Preference를_직접_학습하기.md)
 
 <!-- /LECTURE_NAV -->

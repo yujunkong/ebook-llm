@@ -497,7 +497,7 @@ $s\approx0.01181$, $q=\mathrm{round}(-1/s)\approx-85$, $\hat{x}\approx -85s\appr
 
 ### 강의 이동
 
-- **이전 강:** [제102강. Continuous Batching](102강_Continuous_Batching.md)
-- **다음 강:** [제104강. vLLM 개요와 구조](104강_vLLM_개요와_구조.md)
+- **이전 강:** [102강. Continuous Batching](102강_Continuous_Batching.md)
+- **다음 강:** [104강. vLLM 개요와 구조](104강_vLLM_개요와_구조.md)
 
 <!-- /LECTURE_NAV -->

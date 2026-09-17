@@ -498,7 +498,7 @@ EOS(2) 뒤가 경계 후보. 문서1 끝=인덱스2, 문서2 끝=인덱스6, 문
 
 ### 강의 이동
 
-- **이전 강:** [제60강. Pretraining Dataset 구성](60강_Pretraining_Dataset_구성.md)
-- **다음 강:** [제62강. Training Loop 설계](62강_Training_Loop_설계.md)
+- **이전 강:** [60강. Pretraining Dataset 구성](60강_Pretraining_Dataset_구성.md)
+- **다음 강:** [62강. Training Loop 설계](62강_Training_Loop_설계.md)
 
 <!-- /LECTURE_NAV -->

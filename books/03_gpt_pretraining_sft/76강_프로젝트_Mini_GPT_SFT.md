@@ -491,7 +491,7 @@ Instruction overfitting을 見逃하고 일반화를 과대평가할 위험（�
 
 ### 강의 이동
 
-- **이전 강:** [제75강. SFT 평가와 실패 사례](75강_SFT_평가와_실패_사례.md)
-- **다음 강:** [제77강. Pretraining과 SFT의 역할 정리](77강_Pretraining과_SFT의_역할_정리.md)
+- **이전 강:** [75강. SFT 평가와 실패 사례](75강_SFT_평가와_실패_사례.md)
+- **다음 강:** [77강. Pretraining과 SFT의 역할 정리](77강_Pretraining과_SFT의_역할_정리.md)
 
 <!-- /LECTURE_NAV -->

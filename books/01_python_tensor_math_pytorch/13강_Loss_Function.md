@@ -578,7 +578,7 @@ $$
 
 ### 강의 이동
 
-- **이전 강:** [제12강. Gradient와 Gradient Descent](12강_Gradient와_Gradient_Descent.md)
-- **다음 강:** [제14강. Chain Rule](14강_Chain_Rule.md)
+- **이전 강:** [12강. Gradient와 Gradient Descent](12강_Gradient와_Gradient_Descent.md)
+- **다음 강:** [14강. Chain Rule](14강_Chain_Rule.md)
 
 <!-- /LECTURE_NAV -->

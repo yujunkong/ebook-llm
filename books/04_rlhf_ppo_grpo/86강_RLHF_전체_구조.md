@@ -625,7 +625,7 @@ Advantage (또는 value baseline / GAE).
 
 ### 강의 이동
 
-- **이전 강:** [제85강. Reward Model 구현](85강_Reward_Model_구현.md)
-- **다음 강:** [제87강. PPO 직관과 수식](87강_PPO_직관과_수식.md)
+- **이전 강:** [85강. Reward Model 구현](85강_Reward_Model_구현.md)
+- **다음 강:** [87강. PPO 직관과 수식](87강_PPO_직관과_수식.md)
 
 <!-- /LECTURE_NAV -->

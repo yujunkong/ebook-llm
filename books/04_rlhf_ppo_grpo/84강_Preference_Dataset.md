@@ -649,7 +649,7 @@ Pointwise 5점 척도. 사람마다 점수 기준이 달라지기 쉽다.
 
 ### 강의 이동
 
-- **이전 강:** [제83강. Advantage](83강_Advantage.md)
-- **다음 강:** [제85강. Reward Model 구현](85강_Reward_Model_구현.md)
+- **이전 강:** [83강. Advantage](83강_Advantage.md)
+- **다음 강:** [85강. Reward Model 구현](85강_Reward_Model_구현.md)
 
 <!-- /LECTURE_NAV -->

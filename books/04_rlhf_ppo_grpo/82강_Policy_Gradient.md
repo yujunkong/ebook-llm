@@ -573,7 +573,7 @@ $$
 
 ### 강의 이동
 
-- **이전 강:** [제81강. Policy와 Value Function](81강_Policy와_Value_Function.md)
-- **다음 강:** [제83강. Advantage](83강_Advantage.md)
+- **이전 강:** [81강. Policy와 Value Function](81강_Policy와_Value_Function.md)
+- **다음 강:** [83강. Advantage](83강_Advantage.md)
 
 <!-- /LECTURE_NAV -->

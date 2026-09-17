@@ -278,7 +278,7 @@ Admission 가능 여부와 preemption 필요 여부(메모리 예산).
 
 ### 강의 이동
 
-- **이전 강:** [제105강. PagedAttention](105강_PagedAttention.md)
-- **다음 강:** [제107강. LLM Serving 성능 지표 — TTFT, TPOT, Throughput](107강_LLM_Serving_성능_지표_TTFT_TPOT_Throughput.md)
+- **이전 강:** [105강. PagedAttention](105강_PagedAttention.md)
+- **다음 강:** [107강. LLM Serving 성능 지표 — TTFT, TPOT, Throughput](107강_LLM_Serving_성능_지표_TTFT_TPOT_Throughput.md)
 
 <!-- /LECTURE_NAV -->

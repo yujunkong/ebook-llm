@@ -629,7 +629,7 @@ Embedding → (Causal Block × N) → LM Head
 
 ### 강의 이동
 
-- **이전 강:** [제45강. Feed-Forward Network (MLP)](45강_Feed_Forward_Network_MLP.md)
-- **다음 강:** [제47강. Encoder와 Decoder](47강_Encoder와_Decoder.md)
+- **이전 강:** [45강. Feed-Forward Network (MLP)](45강_Feed_Forward_Network_MLP.md)
+- **다음 강:** [47강. Encoder와 Decoder](47강_Encoder와_Decoder.md)
 
 <!-- /LECTURE_NAV -->

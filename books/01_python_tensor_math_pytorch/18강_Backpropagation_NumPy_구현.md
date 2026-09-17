@@ -595,7 +595,7 @@ dtype, device, shape, broadcasting, NumPy와의 차이를 익히면, 제20강 Au
 
 ### 강의 이동
 
-- **이전 강:** [제17강. Backpropagation 직접 계산하기](17강_Backpropagation_직접_계산하기.md)
-- **다음 강:** [제19강. PyTorch Tensor](19강_PyTorch_Tensor.md)
+- **이전 강:** [17강. Backpropagation 직접 계산하기](17강_Backpropagation_직접_계산하기.md)
+- **다음 강:** [19강. PyTorch Tensor](19강_PyTorch_Tensor.md)
 
 <!-- /LECTURE_NAV -->

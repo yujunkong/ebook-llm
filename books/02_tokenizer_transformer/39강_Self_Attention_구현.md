@@ -599,7 +599,7 @@ O = A V
 
 ### 강의 이동
 
-- **이전 강:** [제38강. Softmax Attention과 작은 숫자 예제](38강_Softmax_Attention과_작은_숫자_예제.md)
-- **다음 강:** [제40강. Causal Mask](40강_Causal_Mask.md)
+- **이전 강:** [38강. Softmax Attention과 작은 숫자 예제](38강_Softmax_Attention과_작은_숫자_예제.md)
+- **다음 강:** [40강. Causal Mask](40강_Causal_Mask.md)
 
 <!-- /LECTURE_NAV -->

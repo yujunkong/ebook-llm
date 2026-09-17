@@ -532,7 +532,7 @@ $\log 2\approx 0.693$.
 
 ### 강의 이동
 
-- **이전 강:** [제89강. KL Divergence의 역할](89강_KL_Divergence의_역할.md)
-- **다음 강:** [제91강. DPO 구현](91강_DPO_구현.md)
+- **이전 강:** [89강. KL Divergence의 역할](89강_KL_Divergence의_역할.md)
+- **다음 강:** [91강. DPO 구현](91강_DPO_구현.md)
 
 <!-- /LECTURE_NAV -->

@@ -504,7 +504,7 @@ Attention의 Q/K/V 가중치, 출력 투영 등이 모두 학습 파라미터다
 
 ### 강의 이동
 
-- **이전 강:** [제20강. Autograd — 자동 미분](20강_Autograd_자동_미분.md)
-- **다음 강:** [제22강. Dataset과 DataLoader](22강_Dataset과_DataLoader.md)
+- **이전 강:** [20강. Autograd — 자동 미분](20강_Autograd_자동_미분.md)
+- **다음 강:** [22강. Dataset과 DataLoader](22강_Dataset과_DataLoader.md)
 
 <!-- /LECTURE_NAV -->

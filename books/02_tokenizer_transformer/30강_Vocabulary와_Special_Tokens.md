@@ -542,7 +542,7 @@ $32000 \times 4096 = 131{,}072{,}000$ (약 1.31억)
 
 ### 강의 이동
 
-- **이전 강:** [제29강. BPE Tokenizer 직접 구현](29강_BPE_Tokenizer_직접_구현.md)
-- **다음 강:** [제31강. Embedding — 토큰을 벡터로](31강_Embedding_토큰을_벡터로.md)
+- **이전 강:** [29강. BPE Tokenizer 직접 구현](29강_BPE_Tokenizer_직접_구현.md)
+- **다음 강:** [31강. Embedding — 토큰을 벡터로](31강_Embedding_토큰을_벡터로.md)
 
 <!-- /LECTURE_NAV -->

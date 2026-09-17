@@ -502,7 +502,7 @@ Iteration-level scheduling을 한 줄로.
 
 ### 강의 이동
 
-- **이전 강:** [제101강. KV Cache](101강_KV_Cache.md)
-- **다음 강:** [제103강. Quantization — INT8, INT4, FP8](103강_Quantization_INT8_INT4_FP8.md)
+- **이전 강:** [101강. KV Cache](101강_KV_Cache.md)
+- **다음 강:** [103강. Quantization — INT8, INT4, FP8](103강_Quantization_INT8_INT4_FP8.md)
 
 <!-- /LECTURE_NAV -->

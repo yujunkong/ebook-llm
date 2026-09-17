@@ -533,7 +533,7 @@ $\lceil 50/16\rceil=4$개. 51은 새 블록이 필요하므로 5개.
 
 ### 강의 이동
 
-- **이전 강:** [제104강. vLLM 개요와 구조](104강_vLLM_개요와_구조.md)
-- **다음 강:** [제106강. vLLM Scheduler](106강_vLLM_Scheduler.md)
+- **이전 강:** [104강. vLLM 개요와 구조](104강_vLLM_개요와_구조.md)
+- **다음 강:** [106강. vLLM Scheduler](106강_vLLM_Scheduler.md)
 
 <!-- /LECTURE_NAV -->

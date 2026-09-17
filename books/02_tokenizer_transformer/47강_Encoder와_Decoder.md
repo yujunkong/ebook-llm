@@ -357,7 +357,7 @@ Cross-Attention만 새로 추가하면 Encoder-Decoder가 된다.
 
 ### 강의 이동
 
-- **이전 강:** [제46강. Transformer Block 조립](46강_Transformer_Block_조립.md)
-- **다음 강:** [제48강. Causal Language Model 구조](48강_Causal_Language_Model_구조.md)
+- **이전 강:** [46강. Transformer Block 조립](46강_Transformer_Block_조립.md)
+- **다음 강:** [48강. Causal Language Model 구조](48강_Causal_Language_Model_구조.md)
 
 <!-- /LECTURE_NAV -->

@@ -521,7 +521,7 @@ $\mathrm{E2E}\approx\mathrm{TTFT}+\mathrm{TPOT}\times(N_{\mathrm{out}}-1)$.
 
 ### 강의 이동
 
-- **이전 강:** [제106강. vLLM Scheduler](106강_vLLM_Scheduler.md)
-- **다음 강:** [제108강. 모델 알고리즘 계열별 모델 구조](108강_모델_알고리즘_계열별_모델_구조.md)
+- **이전 강:** [106강. vLLM Scheduler](106강_vLLM_Scheduler.md)
+- **다음 강:** [108강. 모델 알고리즘 계열별 모델 구조](108강_모델_알고리즘_계열별_모델_구조.md)
 
 <!-- /LECTURE_NAV -->

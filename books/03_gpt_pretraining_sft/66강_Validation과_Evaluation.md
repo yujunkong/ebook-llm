@@ -449,7 +449,7 @@ Validation loss라는 나침반을 달았다.
 
 ### 강의 이동
 
-- **이전 강:** [제65강. Checkpoint 관리](65강_Checkpoint_관리.md)
-- **다음 강:** [제67강. Perplexity와 생성 품질](67강_Perplexity와_생성_품질.md)
+- **이전 강:** [65강. Checkpoint 관리](65강_Checkpoint_관리.md)
+- **다음 강:** [67강. Perplexity와 생성 품질](67강_Perplexity와_생성_품질.md)
 
 <!-- /LECTURE_NAV -->

@@ -450,7 +450,7 @@ Verifiable — 규칙·정답 등으로 **자동 검증 가능한** 보상. Pref
 
 ### 강의 이동
 
-- **이전 강:** [제78강. 3권 총정리 — Post-Training으로](../03_gpt_pretraining_sft/78강_3권_총정리_Post_Training으로.md)
-- **다음 강:** [제80강. 강화학습 기초 — State, Action, Reward](80강_강화학습_기초_State_Action_Reward.md)
+- **이전 강:** [78강. 3권 총정리 — Post-Training으로](../03_gpt_pretraining_sft/78강_3권_총정리_Post_Training으로.md)
+- **다음 강:** [80강. 강화학습 기초 — State, Action, Reward](80강_강화학습_기초_State_Action_Reward.md)
 
 <!-- /LECTURE_NAV -->

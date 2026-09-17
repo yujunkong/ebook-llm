@@ -695,7 +695,7 @@ $\partial L/\partial W^{(2)}=[-0.237,\ -0.2765]$ (shape만 프레임워크 관�
 
 ### 강의 이동
 
-- **이전 강:** [제16강. Forward Propagation](16강_Forward_Propagation.md)
-- **다음 강:** [제18강. Backpropagation NumPy 구현](18강_Backpropagation_NumPy_구현.md)
+- **이전 강:** [16강. Forward Propagation](16강_Forward_Propagation.md)
+- **다음 강:** [18강. Backpropagation NumPy 구현](18강_Backpropagation_NumPy_구현.md)
 
 <!-- /LECTURE_NAV -->

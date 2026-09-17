@@ -672,7 +672,7 @@ $$
 
 ### 강의 이동
 
-- **이전 강:** [제39강. Self-Attention 구현](39강_Self_Attention_구현.md)
-- **다음 강:** [제41강. Multi-Head Attention](41강_Multi_Head_Attention.md)
+- **이전 강:** [39강. Self-Attention 구현](39강_Self_Attention_구현.md)
+- **다음 강:** [41강. Multi-Head Attention](41강_Multi_Head_Attention.md)
 
 <!-- /LECTURE_NAV -->

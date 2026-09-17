@@ -388,7 +388,7 @@ DPO는 고정 선호 쌍에 묶인 오프라인 갱신이고, RLVR은 검증기�
 
 ### 강의 이동
 
-- **이전 강:** [제92강. GRPO](92강_GRPO.md)
-- **다음 강:** [제94강. Reasoning Training](94강_Reasoning_Training.md)
+- **이전 강:** [92강. GRPO](92강_GRPO.md)
+- **다음 강:** [94강. Reasoning Training](94강_Reasoning_Training.md)
 
 <!-- /LECTURE_NAV -->

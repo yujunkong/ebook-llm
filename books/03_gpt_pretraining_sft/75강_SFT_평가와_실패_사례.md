@@ -320,7 +320,7 @@ Instruction overfitting（또는 형식 일반화 실패）. 마스크 버그도
 
 ### 강의 이동
 
-- **이전 강:** [제74강. QLoRA](74강_QLoRA.md)
-- **다음 강:** [제76강. 프로젝트 — Mini GPT + SFT](76강_프로젝트_Mini_GPT_SFT.md)
+- **이전 강:** [74강. QLoRA](74강_QLoRA.md)
+- **다음 강:** [76강. 프로젝트 — Mini GPT + SFT](76강_프로젝트_Mini_GPT_SFT.md)
 
 <!-- /LECTURE_NAV -->

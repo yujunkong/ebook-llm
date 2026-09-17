@@ -359,7 +359,7 @@ LoRA는 “작은 행렬만 움직인다”. 그런데 베이스 모델 자체�
 
 ### 강의 이동
 
-- **이전 강:** [제72강. Chat Template과 Special Tokens](72강_Chat_Template과_Special_Tokens.md)
-- **다음 강:** [제74강. QLoRA](74강_QLoRA.md)
+- **이전 강:** [72강. Chat Template과 Special Tokens](72강_Chat_Template과_Special_Tokens.md)
+- **다음 강:** [74강. QLoRA](74강_QLoRA.md)
 
 <!-- /LECTURE_NAV -->

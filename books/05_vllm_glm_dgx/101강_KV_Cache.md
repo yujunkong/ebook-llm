@@ -565,7 +565,7 @@ $t$가 4096→2048이면 이상적으로 약 1/2.
 
 ### 강의 이동
 
-- **이전 강:** [제100강. Prefill과 Decode](100강_Prefill과_Decode.md)
-- **다음 강:** [제102강. Continuous Batching](102강_Continuous_Batching.md)
+- **이전 강:** [100강. Prefill과 Decode](100강_Prefill과_Decode.md)
+- **다음 강:** [102강. Continuous Batching](102강_Continuous_Batching.md)
 
 <!-- /LECTURE_NAV -->

@@ -709,7 +709,7 @@ $-0.79$.
 
 ### 강의 이동
 
-- **이전 강:** [제19강. PyTorch Tensor](19강_PyTorch_Tensor.md)
-- **다음 강:** [제21강. nn.Module로 모델 만들기](21강_nn_Module로_모델_만들기.md)
+- **이전 강:** [19강. PyTorch Tensor](19강_PyTorch_Tensor.md)
+- **다음 강:** [21강. nn.Module로 모델 만들기](21강_nn_Module로_모델_만들기.md)
 
 <!-- /LECTURE_NAV -->

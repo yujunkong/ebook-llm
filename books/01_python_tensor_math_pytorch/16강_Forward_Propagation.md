@@ -505,7 +505,7 @@ ReLU의 미분은 $z>0$에서 1, $z\le0$에서 0이다. $z1$(또는 동등한 �
 
 ### 강의 이동
 
-- **이전 강:** [제15강. Neural Network의 구조](15강_Neural_Network의_구조.md)
-- **다음 강:** [제17강. Backpropagation 직접 계산하기](17강_Backpropagation_직접_계산하기.md)
+- **이전 강:** [15강. Neural Network의 구조](15강_Neural_Network의_구조.md)
+- **다음 강:** [17강. Backpropagation 직접 계산하기](17강_Backpropagation_직접_계산하기.md)
 
 <!-- /LECTURE_NAV -->

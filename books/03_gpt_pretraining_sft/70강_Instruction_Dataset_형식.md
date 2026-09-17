@@ -411,7 +411,7 @@ Alpaca → messages 변환 후에도 학습 문자열이 달라질 수 있는 �
 
 ### 강의 이동
 
-- **이전 강:** [제69강. Instruction Tuning의 개념](69강_Instruction_Tuning의_개념.md)
-- **다음 강:** [제71강. SFT 구현](71강_SFT_구현.md)
+- **이전 강:** [69강. Instruction Tuning의 개념](69강_Instruction_Tuning의_개념.md)
+- **다음 강:** [71강. SFT 구현](71강_SFT_구현.md)
 
 <!-- /LECTURE_NAV -->
