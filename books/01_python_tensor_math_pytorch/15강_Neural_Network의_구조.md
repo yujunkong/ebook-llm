@@ -1,15 +1,13 @@
-# 제15강. Neural Network의 구조
+# 15강. Neural Network의 구조
+## 이번 강에서 배우는 내용
 
-> **학습 목표**
-> - Neuron(뉴런), Layer(층), Weight(가중치), Bias(편향)가 무엇인지
-> - Activation Function(활성화 함수)이 왜 필요한지
-> - MLP(Multi-Layer Perceptron)가 어떻게 층을 쌓는지
-> - 작은 네트워크(2→2→1)의 구조를 그림과 수식으로 설명할 수 있는지
-> - LLM 안의 Feed-Forward Network가 같은 부품으로 보이기 시작하는지
+- Neuron(뉴런), Layer(층), Weight(가중치), Bias(편향)가 무엇인지
+- Activation Function(활성화 함수)이 왜 필요한지
+- MLP(Multi-Layer Perceptron)가 어떻게 층을 쌓는지
+- 작은 네트워크(2→2→1)의 구조를 그림과 수식으로 설명할 수 있는지
+- LLM 안의 Feed-Forward Network가 같은 부품으로 보이기 시작하는지
 
----
-## 1. 왜 이것을 배우는가
-
+## 왜 중요한가?
 LLM을 열면 거대한 파라미터가 나온다. 그 숫자들의 정체는 대부분 다음과 같다.
 
 ```text
@@ -24,8 +22,7 @@ LLM을 열면 거대한 파라미터가 나온다. 그 숫자들의 정체는 �
 
 이 강의의 목적은 이후 Forward/Backward가 꽂힐 **골격**을 만드는 것이다.
 
-## 2. 먼저 알아야 할 개념
-
+## 선수 개념
 다음을 이미 알고 있다고 가정한다.
 
 - **Vector / Matrix / Tensor** (제9강)
@@ -36,8 +33,7 @@ LLM을 열면 거대한 파라미터가 나온다. 그 숫자들의 정체는 �
 
 아직 코드로 학습 루프를 돌리지 않아도 된다. 오늘은 구조와 용어가 우선이다.
 
-## 3. 핵심 개념 설명
-
+## 핵심 개념
 ### 3.1 Neural Network
 
 **Neural Network(신경망)**는 입력에 Weight와 Bias를 적용하고, Activation을 거쳐 출력을 만드는 **계층적 계산 모델**이다.
@@ -182,8 +178,7 @@ W_2(W_1 x + b_1) + b_2 = (W_2 W_1)x + (W_2 b_1 + b_2)
 
 이 구조를 이 책의 미니 네트워크로 반복해서 쓴다. Forward(16강), Backprop 손계산(17강), NumPy 구현(18강)이 같은 골격을 공유한다.
 
-## 4. 직관적으로 이해하기
-
+## 직관적으로 이해하기
 공장 라인으로 비유하자.
 
 1. **입력층**: 원재료(숫자 특징)가 들어온다.
@@ -195,8 +190,7 @@ W_2(W_1 x + b_1) + b_2 = (W_2 W_1)x + (W_2 b_1 + b_2)
 학습이란, Loss가 작아지도록 각 작업대의 손잡이(Weight/Bias)를 조금씩 돌리는 일이다.  
 손잡이를 어느 방향으로 돌릴지는 Gradient가 알려 주고, 그 계산법이 Backpropagation이다.
 
-## 5. 수학적으로 이해하기
-
+## 수학적으로 이해하기
 ### 5.1 한 층의 Affine 변환
 
 입력 벡터 $\mathbf{x} \in \mathbb{R}^{n_{\mathrm{in}}}$,  
@@ -250,8 +244,7 @@ ReLU라면 $a_i = \max(0, z_i)$이다.
 \end{aligned}
 \]
 
-## 6. 작은 숫자로 직접 계산하기
-
+## 작은 숫자로 직접 계산하기
 ### 6.1 미니 네트워크 명세 (2-2-1)
 
 이 절의 숫자는 16~18강에서도 재사용한다.
@@ -334,8 +327,7 @@ L = \frac{1}{2}(\hat{y} - y)^2 = \frac{1}{2}(0.21 - 1.0)^2 = \frac{1}{2}(0.79)^2
 
 지금은 Loss 숫자만 확인한다. Gradient는 17강에서 전부 펼친다.
 
-## 7. 코드로 구현하기
-
+## 코드로 구현하기
 구조만 코드로 적으면 다음과 같다. 학습은 아직 하지 않는다.
 
 ```python
@@ -395,8 +387,7 @@ def sigmoid(z: np.ndarray) -> np.ndarray:
 
 은닉에 Sigmoid를 쓰면 같은 Weight라도 출력이 달라진다. 직접 바꿔 비교해 보라.
 
-## 8. 파라미터 개수를 세는 습관
-
+## 파라미터 개수를 세는 습관
 딥러닝에서는 “모델이 얼마나 큰가”를 파라미터 수로 말한다.
 
 2-2-1 네트워크:
@@ -413,8 +404,7 @@ def sigmoid(z: np.ndarray) -> np.ndarray:
 
 LLM은 같은 원리를 수천억 개로 확장한 것이다. 구조의 원자 단위는 여전히 Weight와 Bias(또는 Bias 없는 Linear)이다.
 
-## 9. 실제 LLM에서는 어떻게 사용하는가
-
+## LLM에서는 어디에 사용될까?
 Transformer 블록 안에는 **Feed-Forward Network(FFN, 피드포워드 네트워크)**가 있다.  
 이름은 거창하지만, 본질은 **토큰마다 적용되는 MLP**이다.
 
@@ -437,8 +427,7 @@ Transformer 블록 안에는 **Feed-Forward Network(FFN, 피드포워드 네트�
 또한 Embedding, Attention의 Projection(Q/K/V), 출력 LM Head도 전부 **Linear Layer**이다.  
 Neural Network의 문법을 알면 LLM 코드의 대부분이 “큰 행렬 곱 + 비선형”으로 읽히기 시작한다.
 
-## 10. 실습
-
+## 실습
 ### 실습 1 — ASCII 다이어그램 직접 그리기
 
 **목표:** 구조를 손으로 고정한다.
@@ -471,8 +460,7 @@ $a_1$이 0이 되는지, 출력 $\hat{y}$가 어떻게 바뀌는지 확인한다
 
 앞의 `forward_2_2_1`에 `activation="relu"|"sigmoid"` 인자를 추가해 선택 가능하게 만든다.
 
-## 11. 자주 하는 실수
-
+## 자주 하는 실수
 1. **Input Layer에 Weight가 있다고 착각한다**  
    입력층은 데이터를 담는 자리이다. 첫 Weight는 “입력 → 첫 은닉”을 잇는다.
 
@@ -491,8 +479,7 @@ $a_1$이 0이 되는지, 출력 $\hat{y}$가 어떻게 바뀌는지 확인한다
 6. **Sigmoid를 깊은 은닉층에 기본값처럼 쓴다**  
    역사적으로 중요하지만, 현대 깊은 모델의 은닉 기본값은 ReLU 계열이 더 흔하다.
 
-## 12. 핵심 정리
-
+## 핵심 요약
 - Neural Network는 Weight·Bias의 선형 변환과 Activation의 비선형 변환을 층으로 쌓은 합성 함수이다.
 - Neuron은 $z = w\cdot x + b$, $a = \sigma(z)$를 계산하는 최소 단위이다.
 - Layer는 뉴런의 묶음이며, MLP는 전결합 층을 쌓은 기본 구조이다.
@@ -500,8 +487,7 @@ $a_1$이 0이 되는지, 출력 $\hat{y}$가 어떻게 바뀌는지 확인한다
 - 2-2-1 미니 네트워크는 이후 Forward/Backprop 강의의 공통 무대이다.
 - LLM의 FFN·Linear Projection도 같은 부품의 확장이다.
 
-## 13. 핵심 용어
-
+## 용어 사전
 | 용어 | 의미 |
 |---|---|
 | Neural Network | Weight/Bias/Activation으로 입력을 변환하는 계층적 모델 |
@@ -518,7 +504,7 @@ $a_1$이 0이 되는지, 출력 $\hat{y}$가 어떻게 바뀌는지 확인한다
 | Pre-activation (z) | Activation 직전의 Affine 결과 |
 | Activation (a) | Activation 통과 후 다음 층으로 가는 값 |
 
-## 14. 연습 문제
+## 연습문제
 ### 문제 1 (개념)
 
 Activation Function이 없으면 층을 쌓아도 안 되는 이유를 수식 한 줄과 문장 한 줄로 설명하시오.
@@ -542,7 +528,6 @@ Transformer FFN이 “토큰마다 적용되는 MLP”라는 말이 뜻하는 �
 ---
 
 ## 정답 및 해설
-
 ### 문제 1
 
 선형 변환의 합성은 다시 선형 변환이다.  
@@ -573,8 +558,7 @@ a_1 &= 0,\quad a_2 = 0 \\
 - Attention: 토큰 사이에서 정보를 섞는다(어떤 위치를 참고할지).
 - FFN(MLP): 각 토큰 벡터를 위치마다 독립적으로 비선형 변환한다(내용을 가공한다).
 
-## 15. 다음 강의와 연결
-
+## 다음 강의와 연결
 이번 강의에서 Neural Network의 **부품과 배치도**를 그렸다.
 
 다음 **제16강. Forward Propagation**에서는, 오늘 만든 2-2-1 네트워크에 숫자를 넣어 **앞에서 뒤로 출력을 계산하는 과정**을 손과 NumPy로 완전히 고정한다.  
@@ -588,7 +572,7 @@ a_1 &= 0,\quad a_2 = 0 \\
 
 ### 강의 이동
 
-- **이전 강:** [제14강. Chain Rule](14강_Chain_Rule.md)
-- **다음 강:** [제16강. Forward Propagation](16강_Forward_Propagation.md)
+- **이전 강:** [14강. Chain Rule](14강_Chain_Rule.md)
+- **다음 강:** [16강. Forward Propagation](16강_Forward_Propagation.md)
 
 <!-- /LECTURE_NAV -->

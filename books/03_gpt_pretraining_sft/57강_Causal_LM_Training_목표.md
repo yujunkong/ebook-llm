@@ -1,16 +1,14 @@
-# 제57강. Causal LM Training 목표
+# 57강. Causal LM Training 목표
+## 이번 강에서 배우는 내용
 
-> **학습 목표**
-> - Causal LM 목표 $\max \sum_t \log p(x_t\mid x_{<t})$를 문장·수식으로 쓴다
-> - 입력 $x$와 라벨 $y$를 한 칸 시프트로 맞춘다
-> - Softmax + NLL이 Cross Entropy(CE)와 같음을 복습·연결한다 (제33~34강)
-> - 작은 logit 벡터로 CE를 손계산한다
-> - PyTorch `F.cross_entropy`를 `[B,T,V]`에 맞게 reshape하여 적용한다
-> - 패딩·ignore_index·마스크가 Loss에 어떻게 들어가는지 설명한다
+- Causal LM 목표 $\max \sum_t \log p(x_t\mid x_{<t})$를 문장·수식으로 쓴다
+- 입력 $x$와 라벨 $y$를 한 칸 시프트로 맞춘다
+- Softmax + NLL이 Cross Entropy(CE)와 같음을 복습·연결한다 (제33~34강)
+- 작은 logit 벡터로 CE를 손계산한다
+- PyTorch `F.cross_entropy`를 `[B,T,V]`에 맞게 reshape하여 적용한다
+- 패딩·ignore_index·마스크가 Loss에 어떻게 들어가는지 설명한다
 
----
-## 1. 왜 이것을 배우는가
-
+## 왜 중요한가?
 모델 클래스가 있어도 목표가 흐리면 학습이 가짜가 된다.
 
 ```text
@@ -22,8 +20,7 @@ padding을 Loss에 포함    → 가짜로 Loss↓
 
 Pretraining의 본질은 데이터가 아니라 **이 목표 함수**다. 데이터가 바뀌어도(제60강), SFT로 포맷이 바뀌어도(후반), 토큰 단위 CE의 뼈대는 자주 남는다.
 
-## 2. 먼저 알아야 할 개념
-
+## 선수 개념
 1. **Next Token Prediction** (제32강)
 2. **Logit · Softmax** (제33강)
 3. **Cross Entropy Loss** (제34강)
@@ -33,8 +30,7 @@ Pretraining의 본질은 데이터가 아니라 **이 목표 함수**다. 데이
 
 CE를 “분류 Loss”로만 기억했다면, 오늘은 **어휘 크기 $V$짜리 분류를 매 시점마다** 한다고 확장한다.
 
-## 3. 핵심 개념 설명
-
+## 핵심 개념
 ### 3.1 최대화하는 것
 
 토큰 서열 $x=(x_1,\ldots,x_T)$의 결합 확률을 인과 분해한다.
@@ -138,8 +134,7 @@ PyTorch 기본 `reduction='mean'`은 **유효 토큰 개수**로 나눈 평균�
 
 토큰 수가 다른 시퀀스를 섞을 때는 이 정의가 길이에 대한 편향을 만든다. Packing(제61강)과 맞물린다.
 
-## 4. 직관적으로 이해하기
-
+## 직관적으로 이해하기
 매 위치에서 모델은 **V지선다 시험**을 본다.
 
 - 문제지: 지금까지의 토큰
@@ -154,8 +149,7 @@ Pretraining은 이 시험을 **인터넷·책·코드 등 텍스트의 모든 �
 - Loss가 낮아도 생성 문장이 유용하지 않을 수 있다(평가 지표의 한계)
 - 그래도 이 압력만으로 문법·패턴·상당한 능력이  Emergent하게 나타난다(규모·데이터 의존)
 
-## 5. 수학적으로 이해하기 — CE와 NLL
-
+## 수학적으로 이해하기 — CE와 NLL
 정답 one-hot $\mathbf{y}$ (인덱스 $y^*$), 예측 분포 $\mathbf{p}=\mathrm{softmax}(\mathbf{z})$:
 
 $$
@@ -176,8 +170,7 @@ $$
 
 $L$이 토큰당 평균 NLL(nat)일 때다. 이 책은 초반에 Loss(NLL/CE)를 주 지표로 쓰고, PPL은 “해석용 변환”으로만 언급한다.
 
-## 6. 작은 숫자로 직접 계산하기
-
+## 작은 숫자로 직접 계산하기
 $V=3$ 어휘 `{0,1,2}`, 한 위치의 logit:
 
 $$
@@ -241,8 +234,7 @@ y = [3, 3, 9]
 
 (실제 구현은 teacher forcing으로 전체 접두를 한 텐서에 넣어 병렬 계산한다.)
 
-## 7. 코드로 구현하기 — CE 연결
-
+## 코드로 구현하기 — CE 연결
 ### 7.1 reshape 패턴
 
 `F.cross_entropy`는 보통 다음을 기대한다.
@@ -310,8 +302,7 @@ optimizer.step()
 
 제23강의 루프가 토큰 CE 위로 올라온 형태다.
 
-## 8. PyTorch로 구현하기 — 작은 엔드투엔드
-
+## PyTorch로 구현하기 — 작은 엔드투엔드
 장난감 vocab으로 “시프트 + CE”만 검증한다.
 
 ```python
@@ -389,8 +380,7 @@ print(torch.allclose(a, b))
 
 수치가 같아야 한다. 다르면 reduction/ignore 설정을 의심한다.
 
-## 9. Teacher Forcing
-
+## Teacher Forcing
 **Teacher forcing**은 학습 시 모델이 방금 샘플한 토큰이 아니라 **정답 과거 토큰**을 다음 입력으로 넣는 방식이다. Causal LM의 병렬 forward가 곧 teacher forcing이다.
 
 생성 시에는 자신의 출력을 다시 넣는다(exposure bias 이슈가 문헌에 있으나, 표준 LM Pretraining은 여전히 teacher forcing).
@@ -402,8 +392,7 @@ print(torch.allclose(a, b))
 
 제58강 생성 루프와 대비해 기억한다.
 
-## 10. 실제 LLM에서는 어떻게 사용하는가
-
+## LLM에서는 어디에 사용될까?
 대규모 Pretraining에서도 목표는 본질적으로 같다.
 
 - 토큰 CE / NLL
@@ -420,8 +409,7 @@ SFT 단계에서도 많은 경우 **응답 토큰에만 Loss**를 걸고 질문 
 
 Loss만으로 제품 품질을 단정하지 않는다.
 
-## 11. 실습
-
+## 실습
 ### 실습 1 — 손계산
 
 $\mathbf{z}=(0,0,0)$, $y^*=1$, $V=3$일 때 CE를 구하시오. Softmax가 균등분포임을 이용한다.
@@ -447,8 +435,7 @@ loss = F.cross_entropy(logits, x)
 
 제56강 모델에 랜덤 `x,y`(시프트 관계)를 넣어 Loss·backward가 오류 없이 도는지 확인한다. `grad`가 `None`이 아닌 파라미터 비율을 출력해 본다.
 
-## 12. 자주 하는 실수
-
+## 자주 하는 실수
 1. **시프트 누락/`y=x`**  
    가장 흔한 LM 버그. 생성은 되는데 “한 칸 지연된 메아리” 또는 붕괴가 나타난다.
 
@@ -470,8 +457,7 @@ loss = F.cross_entropy(logits, x)
 7. **fp16 Softmax 불안정**  
    큰 $V$·큰 logit에서 underflow/overflow. 프레임워크 CE fused kernel을 우선 사용.
 
-## 13. 작은 디버그 체크리스트
-
+## 작은 디버그 체크리스트
 학습 초기에 확인할 것:
 
 ```text
@@ -485,8 +471,7 @@ loss = F.cross_entropy(logits, x)
 랜덤 초기에서 균등 추측 NLL은 $\log V$ (nat) 정도다.  
 $V=1000$이면 $\log 1000\approx 6.9$. 초기 Loss가 $0.01$이거나 $10^6$이면 shape/시프트/마스크를 의심한다.
 
-## 14. LLM 연결 — Pretraining 목표의 위치
-
+## LLM 연결 — Pretraining 목표의 위치
 ```text
 제56강 모델 → (오늘) CE 목표 → 제58~59강 디코딩
                  ↓
@@ -496,8 +481,7 @@ $V=1000$이면 $\log 1000\approx 6.9$. 초기 Loss가 $0.01$이거나 $10^6$이�
 목표가 흔들리면 데이터·디코딩을 아무리 다듬어도 기둥이 없다.  
 반대로 목표가 고정되면 Mini Pretraining(제68강)은 **데이터·스케줄·엔지니어링** 문제가 된다.
 
-## 15. 핵심 정리
-
+## 핵심 요약
 - Causal LM은 $\sum_t\log p(x_t\mid x_{<t})$를 최대화한다
 - 구현은 시프트된 라벨에 대한 토큰 CE(NLL)다
 - Softmax는 Loss 함수 안에서 처리하는 것이 일반적이다
@@ -505,8 +489,7 @@ $V=1000$이면 $\log 1000\approx 6.9$. 초기 Loss가 $0.01$이거나 $10^6$이�
 - Teacher forcing으로 학습하고, 생성은 자기 출력을 피드백한다
 - 초기 Loss $\approx\log V$ 감각으로 배선 버그를 잡는다
 
-## 16. 핵심 용어
-
+## 용어 사전
 | 용어 | 의미 |
 |---|---|
 | Causal LM objective | 인과 조건부 로그우도 최대화 |
@@ -518,7 +501,7 @@ $V=1000$이면 $\log 1000\approx 6.9$. 초기 Loss가 $0.01$이거나 $10^6$이�
 | Perplexity | $\exp(\mathrm{NLL})$ 형태의 해석 지표 |
 | Exposure bias | 학습(정답 접두)과 생성(모델 접두) 분포 차이 |
 
-## 17. 연습 문제
+## 연습문제
 ### 문제 1 (수식)
 
 $P(x)$의 인과 분해와 최소화 Loss $L$을 쓰시오.
@@ -546,7 +529,6 @@ SFT에서 “질문 토큰 Loss 제외”가 오늘 배운 어떤 장치와 같�
 ---
 
 ## 정답 및 해설
-
 ### 문제 1
 
 $P(x)=\prod_t P(x_t\mid x_{<t})$, $L=\mathbb{E}[-\sum_t\log P(x_t\mid x_{<t})]$ (또는 토큰 평균 형태).
@@ -571,8 +553,7 @@ $p_0=e^3/(e^3+e^0)\approx20.09/21.09\approx0.953$, $\mathrm{CE}\approx-\log0.953
 
 `ignore_index` 또는 Loss mask로 특정 위치 CE를 제외하는 장치와 같은 계열이다.
 
-## 18. 다음 강의와 연결
-
+## 다음 강의와 연결
 학습 목표를 고정했다. 다음은 **학습된 분포에서 토큰을 고르는 규칙**이다.
 
 **제58강. Text Generation — Greedy와 Sampling**에서는 argmax와 다항 분포 샘플링, 생성 루프, 종료 조건을 구현한다. 오늘 만든 $\mathrm{softmax}(\mathbf{z})$가 곧 샘플링 분포다.
@@ -586,7 +567,7 @@ $p_0=e^3/(e^3+e^0)\approx20.09/21.09\approx0.953$, $\mathrm{CE}\approx-\log0.953
 
 ### 강의 이동
 
-- **이전 강:** [제56강. GPT 아키텍처 구현](56강_GPT_아키텍처_구현.md)
-- **다음 강:** [제58강. Text Generation — Greedy와 Sampling](58강_Text_Generation_Greedy와_Sampling.md)
+- **이전 강:** [56강. GPT 아키텍처 구현](56강_GPT_아키텍처_구현.md)
+- **다음 강:** [58강. Text Generation — Greedy와 Sampling](58강_Text_Generation_Greedy와_Sampling.md)
 
 <!-- /LECTURE_NAV -->

@@ -1,16 +1,14 @@
-# 제56강. GPT 아키텍처 구현
+# 56강. GPT 아키텍처 구현
+## 이번 강에서 배우는 내용
 
-> **학습 목표**
-> - Token Embedding · (학습된) Positional Embedding · Block 스택 · final LN · `lm_head`를 한 클래스로 조립한다
-> - 모든 중간 텐서를 `[B, T, C]` 관례로 추적하고, 최종 logits를 `[B, T, V]`로 낸다
-> - 2권의 Causal Self-Attention Block을 재사용(또는 동일 인터페이스로 이식)한다
-> - Weight tying 여부를 코드로 선택한다
-> - `forward`와 생성 루프가 같은 가중치를 쓰도록 경계를 나눈다
-> - 제57강 Loss 연결 전에 shape smoke test를 통과한다
+- Token Embedding · (학습된) Positional Embedding · Block 스택 · final LN · `lm_head`를 한 클래스로 조립한다
+- 모든 중간 텐서를 `[B, T, C]` 관례로 추적하고, 최종 logits를 `[B, T, V]`로 낸다
+- 2권의 Causal Self-Attention Block을 재사용(또는 동일 인터페이스로 이식)한다
+- Weight tying 여부를 코드로 선택한다
+- `forward`와 생성 루프가 같은 가중치를 쓰도록 경계를 나눈다
+- 제57강 Loss 연결 전에 shape smoke test를 통과한다
 
----
-## 1. 왜 이것을 배우는가
-
+## 왜 중요한가?
 부품을 알아도 **한 파일에 경계를 긋지 않으면** 학습 루프에서 매번 흔들린다.
 
 ```text
@@ -23,8 +21,7 @@ Loss는 내려가는데 generate가 다른 모듈을 호출
 
 제48강이 배선도였다면, 이번 강의는 **납땜**이다.
 
-## 2. 먼저 알아야 할 개념
-
+## 선수 개념
 체크리스트:
 
 - [ ] Embedding: id → 벡터 (제31강)
@@ -37,8 +34,7 @@ Loss는 내려가는데 generate가 다른 모듈을 호출
 
 특히 Block의 입출력이  alike `[B, T, C]`인지 확인한다. Residual이 성립하려면 차원이 보존되어야 한다.
 
-## 3. 핵심 개념 설명
-
+## 핵심 개념
 ### 3.1 이 책이 구현하는 GPT 스택
 
 표준 골격(교육용):
@@ -126,8 +122,7 @@ $$
 
 MHA 안에 Causal Mask가 들어 있어야 한다. 마스크가 빠지면 제48·54강에서 경고한 “커닝 학습”이 재발한다.
 
-## 4. 직관적으로 이해하기
-
+## 직관적으로 이해하기
 GPT forward를 공장 라인으로 보면:
 
 ```text
@@ -143,8 +138,7 @@ GPT forward를 공장 라인으로 보면:
 중요한 직관: **생성 전용 네트워크를 따로 두지 않는다.**  
 같은 `forward`의 마지막 위치 logit만 사용한다.
 
-## 5. 수학적으로 이해하기
-
+## 수학적으로 이해하기
 입력 토큰 $x_{1:T}$. 임베딩:
 
 $$
@@ -175,8 +169,7 @@ $\mathbf{z}_t\in\mathbb{R}^{V}$가 logits다. Softmax는 Loss/디코딩 단계�
 
 Weight tying 시 $W_{\mathrm{lm}}=W_{\mathrm{tok}}$ (전치 규약은 구현에 맞게).
 
-## 6. 작은 숫자로 shape 추적하기
-
+## 작은 숫자로 shape 추적하기
 설정:
 
 - $B=2$, $T=5$, $C=8$, $V=20$, $N=2$, $T_{\max}=8$, heads $=2$
@@ -201,8 +194,7 @@ lm_head        [2, 5, 20]   ← logits
 
 생성 시에는 보통 **마지막 위치** `logits[:, -1, :]`만 쓴다 → shape `[B, V]`.
 
-## 7. 코드로 구현하기 — Config
-
+## 코드로 구현하기 — Config
 하이퍼파라미터를 흩뿌리지 말고 dataclass/dict로 묶는다.
 
 ```python
@@ -228,8 +220,7 @@ def __post_init__(self):
     assert self.block_size >= 1
 ```
 
-## 8. PyTorch로 구현하기
-
+## PyTorch로 구현하기
 아래는 **교육용 스케치**다. 2권에서 만든 `CausalSelfAttention` / `MLP` / `Block`이 있다면 import 해서 채워 넣는다. 여기서는 인터페이스가 보이게 인라인으로 요약한다.
 
 ### 8.1 Attention · MLP · Block (요약 재사용)
@@ -410,8 +401,7 @@ def generate_greedy(model: GPT, idx, max_new_tokens: int):
     return idx
 ```
 
-## 9. NumPy로 골격만 보기
-
+## NumPy로 골격만 보기
 프레임워크 없이 차원만 확인하는 스케치:
 
 ```python
@@ -434,8 +424,7 @@ assert logits.shape == (B, T, V)
 
 Attention 내부를 NumPy로 다시 칠 필요는 없다. 이미 2권에서 했다.
 
-## 10. 실제 LLM에서는 어떻게 사용하는가
-
+## LLM에서는 어디에 사용될까?
 대규모 구현과의 대응:
 
 | 이 책 | 흔한 실무 변형 |
@@ -457,8 +446,7 @@ torch.save({"model": model.state_dict(), "config": cfg.__dict__}, "ckpt.pt")
 
 `config`를 같이 저장해야 나중에 구조를 복원할 수 있다.
 
-## 11. 실습
-
+## 실습
 ### 실습 1 — shape 표 채우기
 
 $B=4$, $T=32$, $C=256$, $V=8000$, $N=6$일 때 다음 shape를 쓰시오.
@@ -484,8 +472,7 @@ $B=4$, $T=32$, $C=256$, $V=8000$, $N=6$일 때 다음 shape를 쓰시오.
 
 제46·48·50강에서 만든 Block이 있으면 `from ... import Block`으로 교체하고 smoke test를 다시 돌린다.
 
-## 12. 자주 하는 실수
-
+## 자주 하는 실수
 1. **Causal mask 크기와 T 불일치**  
    버퍼는 `block_size`로 만들고 `[:T, :T]`로 잘라 쓴다. 현재 $T$로만 만들면 생성 중 길이가 변할 때 재생성 비용·버그가 생긴다.
 
@@ -507,8 +494,7 @@ $B=4$, $T=32$, $C=256$, $V=8000$, $N=6$일 때 다음 shape를 쓰시오.
 7. **Block 수·head 수를 config와 모듈이 다르게 읽음**  
    생성자에서 `config`만 신뢰하고 매직넘버를 쓰지 않는다.
 
-## 13. 설계 선택 메모
-
+## 설계 선택 메모
 교육용 기본값과 교체 지점:
 
 | 항목 | 기본 | 교체 |
@@ -522,8 +508,7 @@ $B=4$, $T=32$, $C=256$, $V=8000$, $N=6$일 때 다음 shape를 쓰시오.
 
 교체해도 `forward(idx)->logits` 계약을 유지하면 제57강 이후 코드가 깨지지 않는다.
 
-## 14. LLM 연결 — Pretraining으로 가는 소켓
-
+## LLM 연결 — Pretraining으로 가는 소켓
 이 `GPT`는 제68강 Mini Pretraining 프로젝트의 모델 슬롯이다.
 
 ```text
@@ -533,8 +518,7 @@ Dataset → (x, y) → GPT.forward(x) → CE(y) → backward
 
 지금은 forward가 단단하면 충분하다. 데이터 파이프라인은 제60~61강, 목표는 제57강.
 
-## 15. 핵심 정리
-
+## 핵심 요약
 - GPT 구현 = Embedding(+pos) + Block×N + final LN + lm_head
 - 주 shape: `[B,T] → [B,T,C] → [B,T,V]`
 - Block은 2권 Pre-LN Causal Block을 재사용한다
@@ -542,8 +526,7 @@ Dataset → (x, y) → GPT.forward(x) → CE(y) → backward
 - 생성은 별도 모델이 아니라 같은 logits의 마지막 위치를 사용한다
 - smoke test 없이 Loss/데이터로 넘어가지 않는다
 
-## 16. 핵심 용어
-
+## 용어 사전
 | 용어 | 의미 |
 |---|---|
 | `n_embd` / $C$ | 모델 채널 차원 |
@@ -555,7 +538,7 @@ Dataset → (x, y) → GPT.forward(x) → CE(y) → backward
 | Smoke test | 학습 전 shape·실행 검증 |
 | Pre-LN Block | Norm 후 Attn/FFN, Residual 본선 유지 |
 
-## 17. 연습 문제
+## 연습문제
 ### 문제 1 (파이프라인)
 
 GPT forward의 모듈 순서를 일곱 단계 이내로 쓰시오.
@@ -583,7 +566,6 @@ Causal mask를 Attention 점수의 어디에, 어떤 값으로 넣는가?
 ---
 
 ## 정답 및 해설
-
 ### 문제 1
 
 예: idx → wte → +wpe → dropout → Block×N → ln_f → lm_head → logits.
@@ -608,8 +590,7 @@ Embedding·Block·ln_f를 포함한 전체 표현이 필요하기 때문. `lm_he
 
 Softmax 전 점수 행렬의 미래 위치($j>i$)에 `-inf`를 넣어 확률 0에 가깝게 만든다.
 
-## 18. 다음 강의와 연결
-
+## 다음 강의와 연결
 골격이 생겼다. 다음은 **무엇을 최대화하는가**다.
 
 **제57강. Causal LM Training 목표**에서는 $\log p(x_t\mid x_{<t})$를 Cross Entropy로 올리는 법, 라벨 시프트, ignore_index, 작은 숫자 손계산까지 다룬다. 오늘 만든 `logits [B,T,V]`가 Loss의 입력이다.
@@ -623,7 +604,7 @@ Softmax 전 점수 행렬의 미래 위치($j>i$)에 `-inf`를 넣어 확률 0�
 
 ### 강의 이동
 
-- **이전 강:** [제55강. GPT란 무엇인가](55강_GPT란_무엇인가.md)
-- **다음 강:** [제57강. Causal LM Training 목표](57강_Causal_LM_Training_목표.md)
+- **이전 강:** [55강. GPT란 무엇인가](55강_GPT란_무엇인가.md)
+- **다음 강:** [57강. Causal LM Training 목표](57강_Causal_LM_Training_목표.md)
 
 <!-- /LECTURE_NAV -->

@@ -1,16 +1,14 @@
-# 제45강. Feed-Forward Network (MLP)
+# 45강. Feed-Forward Network (MLP)
+## 이번 강에서 배우는 내용
 
-> **학습 목표**
-> - FFN이 두 개의 선형층과 활성화로 이루어짐을 수식으로 쓰기
-> - Expansion ratio(확장 비율)와 $d_{\text{ff}}$의 의미
-> - ReLU / GeLU / SwiGLU의 위치(사실과 설명 구분)
-> - FFN이 시퀀스 길이가 아니라 특징 차원에서 동작한다는 점
-> - Attention과 FFN의 역할 분담 직관
-> - 제46강 Block 조립에 바로 넣을 수 있는 모듈 스케치
+- FFN이 두 개의 선형층과 활성화로 이루어짐을 수식으로 쓰기
+- Expansion ratio(확장 비율)와 $d_{\text{ff}}$의 의미
+- ReLU / GeLU / SwiGLU의 위치(사실과 설명 구분)
+- FFN이 시퀀스 길이가 아니라 특징 차원에서 동작한다는 점
+- Attention과 FFN의 역할 분담 직관
+- 제46강 Block 조립에 바로 넣을 수 있는 모듈 스케치
 
----
-## 1. 왜 이것을 배우는가
-
+## 왜 중요한가?
 Attention만 있으면 “누구와 대화할지”는 정해져도, “들은 내용을 얼마나 깊게 재표현할지”가 약하다.  
 FFN은 각 위치의 벡터를 더 넓은 은닉 공간으로 보냈다가 다시 접으며 **비선형 특징 변환**을 담당한다.
 
@@ -28,15 +26,13 @@ Block:
 
 제48강 Causal LM의 층 하나하나는 결국 이 두 경로의 반복이다.
 
-## 2. 먼저 알아야 할 개념
-
+## 선수 개념
 - 선형층 $y = xW + b$ (제15~16강)
 - 활성화 함수(ReLU 등)
 - Residual / Pre-LN 패턴 (제44강)
 - shape `(B, T, d_model)` 유지의 필요성
 
-## 3. 핵심 개념 설명
-
+## 핵심 개념
 ### 3.1 기본 2층 FFN
 
 원 논문 Transformer의 FFN:
@@ -159,8 +155,7 @@ $$
 둘 다 빠지면 Transformer가 아니다.  
 제46강에서 한 블록 안에 나란히 놓는다.
 
-## 4. 직관적으로 이해하기
-
+## 직관적으로 이해하기
 회의로 비유하면:
 
 - Attention: 누가 누구에게 말할 차례인지, 무엇을 들을지
@@ -169,8 +164,7 @@ $$
 노트가 충분히 넓어야( $d_{\text{ff}}$ ) 복잡한 정리가 가능하다.  
 정리 후 다시 책상 크기( $d_{\text{model}}$ )로 접어 Residual 서랍에 넣는다.
 
-## 5. 수학적으로 이해하기
-
+## 수학적으로 이해하기
 ### 5.1 배치 행렬형
 
 $X \in \mathbb{R}^{B \times T \times d_{\text{model}}}$
@@ -216,8 +210,7 @@ $$
 
 Attention residual 이후의 $x$를 받아 한 번 더 가공한다.
 
-## 6. 작은 숫자로 직접 계산하기
-
+## 작은 숫자로 직접 계산하기
 설정:
 
 - $d_{\text{model}}=2$, $d_{\text{ff}}=4$, ReLU
@@ -273,8 +266,7 @@ Residual이면 $x + \mathrm{FFN}(x) = [3,\ 4]$.
 
 확장했다가(4차원) 다시 접어(2차원) 수정량을 만든 것이다.
 
-## 7. 코드로 구현하기
-
+## 코드로 구현하기
 ```python
 # ffn.py
 from __future__ import annotations
@@ -332,8 +324,7 @@ def ffn_relu(x, W1, b1, W2, b2):
     return h @ W2 + b2
 ```
 
-## 8. 실제 LLM에서는 어떻게 사용하는가
-
+## LLM에서는 어디에 사용될까?
 사실:
 
 - 원본 Transformer: ReLU FFN, 확장비 4
@@ -347,16 +338,14 @@ def ffn_relu(x, W1, b1, W2, b2):
 
 제48강에서 블록을 셀 때, 파라미터의 상당 부분이 이 MLP에 있음을 기억하면 메모리·연산 예상이 쉬워진다.
 
-## 9. 실습
-
+## 실습
 1. `FeedForward(16)`에 랜덤 입력을 넣어 shape 보존을 확인하라.
 2. $d_{\text{ff}}=4 d_{\text{model}}$일 때 대략 파라미터 수를 계산하고 `sum(p.numel())`과 비교하라.
 3. ReLU/GeLU를 바꿔 같은 입력의 출력 차이를 관찰하라.
 4. SwiGLU 스케치의 중간 활성화가 음수도 통과하는지(SiLU 특성) 한 원소로 확인하라.
 5. Pre-LN residual 래퍼에 FFN을 넣어 `x + ffn(ln(x))`를 실행하라.
 
-## 10. 자주 하는 실수
-
+## 자주 하는 실수
 1. **FFN을 시퀀스 축으로 섞으려 하기**  
    기본 FFN은 위치별 독립이다.
 
@@ -372,16 +361,14 @@ def ffn_relu(x, W1, b1, W2, b2):
 5. **dropout 위치 무시**  
    구현마다 다르니 하나로 고정한다.
 
-## 11. 핵심 정리
-
+## 핵심 요약
 - FFN은 position-wise 2층 MLP로, 토큰 내 비선형 변환을 담당한다.
 - 보통 $d_{\text{model}} \to d_{\text{ff}} \to d_{\text{model}}$이며 확장비 4가 고전 기본값이다.
 - 활성화는 ReLU → GeLU → SwiGLU로 세대가 진화해 왔다.
 - Attention(통신)과 FFN(계산)이 한 블록의 양 날개다.
 - 제46강에서 Norm/Residual과 함께 조립한다.
 
-## 12. 핵심 용어
-
+## 용어 사전
 | 용어 | 설명 |
 |---|---|
 | FFN / MLP | Transformer의 위치별 피드포워드 네트워크 |
@@ -391,7 +378,7 @@ def ffn_relu(x, W1, b1, W2, b2):
 | SwiGLU | 게이트형 FFN. 현대 LLM에 흔함 |
 | Position-wise | 모든 위치에 같은 가중치를 독립 적용 |
 
-## 13. 연습 문제
+## 연습문제
 **문제 1.** 기본 FFN의 입출력 차원을 쓰라.
 
 **문제 2.** $d_{\text{model}}=512$, ratio=4일 때 $d_{\text{ff}}$는?
@@ -414,8 +401,7 @@ def ffn_relu(x, W1, b1, W2, b2):
 
 5. Attention이 토큰 간 정보를 모으고, FFN이 각 토큰 표현을 비선형으로 가공한다.
 
-## 14. 다음 강의와 연결
-
+## 다음 강의와 연결
 부품이 모두 모였다.
 
 - MHA (제41강)
@@ -431,7 +417,7 @@ def ffn_relu(x, W1, b1, W2, b2):
 
 ### 강의 이동
 
-- **이전 강:** [제44강. LayerNorm과 Residual Connection](44강_LayerNorm과_Residual_Connection.md)
-- **다음 강:** [제46강. Transformer Block 조립](46강_Transformer_Block_조립.md)
+- **이전 강:** [44강. LayerNorm과 Residual Connection](44강_LayerNorm과_Residual_Connection.md)
+- **다음 강:** [46강. Transformer Block 조립](46강_Transformer_Block_조립.md)
 
 <!-- /LECTURE_NAV -->

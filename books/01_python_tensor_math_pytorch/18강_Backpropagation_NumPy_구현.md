@@ -1,15 +1,13 @@
-# 제18강. Backpropagation NumPy 구현
+# 18강. Backpropagation NumPy 구현
+## 이번 강에서 배우는 내용
 
-> **학습 목표**
-> - Forward / Backward / Update를 한 파일에서 연결하는 방법
-> - 단샘플·배치 학습 루프의 차이
-> - 회귀(MSE)와 이진 분류(BCE)에서 Loss·출력층만 어떻게 바뀌는지
-> - 수치 미분으로 구현을 검증하는 방법
-> - Loss가 실제로 감소하는 실험을 해석하는 방법
+- Forward / Backward / Update를 한 파일에서 연결하는 방법
+- 단샘플·배치 학습 루프의 차이
+- 회귀(MSE)와 이진 분류(BCE)에서 Loss·출력층만 어떻게 바뀌는지
+- 수치 미분으로 구현을 검증하는 방법
+- Loss가 실제로 감소하는 실험을 해석하는 방법
 
----
-## 1. 왜 이것을 배우는가
-
+## 왜 중요한가?
 프레임워크 없이 학습이 한 바퀴 도는 코드를 갖고 있으면,
 
 1. `loss.backward()`가 무엇을 대체하는지 명확해지고
@@ -18,14 +16,12 @@
 
 오늘의 목표는 화려한 모델이 아니라, **Loss가 줄어드는 최소 학습기**이다.
 
-## 2. 먼저 알아야 할 개념
-
+## 선수 개념
 - 제15~17강의 2-2-1 구조, Forward cache, δ 공식
 - NumPy 행렬곱, `np.outer`, 브로드캐스팅 (제8~10강)
 - Gradient Descent: $\theta \leftarrow \theta - \eta \nabla_\theta L$ (제12강)
 
-## 3. 핵심 개념 설명
-
+## 핵심 개념
 ### 3.1 Training Loop (학습 루프)
 
 **Training Loop(학습 루프)**는 데이터를 반복해 보며 파라미터를 갱신하는 바깥쪽 순환이다.
@@ -74,8 +70,7 @@ for epoch in range(E):
 
 은닉층의 Backprop 패턴은 동일하다. **머리(출력·Loss)만 갈아 끼운다.**
 
-## 4. 직관적으로 이해하기
-
+## 직관적으로 이해하기
 수동 Backprop 학습기는 다음 세 서랍으로 이루어진다.
 
 1. **예측 서랍 (Forward)** — 시험 보기  
@@ -85,8 +80,7 @@ for epoch in range(E):
 세 서랍을 `for`로 묶으면 “공부하는 기계”가 된다.  
 PyTorch는 2번 서랍을 Autograd가, 3번을 Optimizer가 맡는다. 오늘은 셋 다 우리가 쓴다.
 
-## 5. 수학적으로 이해하기 — 배치 식
-
+## 수학적으로 이해하기 — 배치 식
 배치 크기 $B$, 입력 차원 2, 은닉 2, 출력 1.
 
 관례: $X\in\mathbb{R}^{B\times 2}$
@@ -116,8 +110,7 @@ Backward (평균 MSE 기준):
 
 단샘플은 $B=1$인 특수 경우이며, 17강 식과 일치한다.
 
-## 6. 작은 숫자로 직접 계산하기 — 구현 직전 점검
-
+## 작은 숫자로 직접 계산하기 — 구현 직전 점검
 17강과 동일 단샘플에서 Backward 함수가 내야 할 값:
 
 ```text
@@ -131,8 +124,7 @@ db1 = [-0.395, 0.316]
 코드를 짜면 **먼저 이 숫자와 대조**한다.  
 학습 루프는 그다음이다. 순서가 바뀌면 버그를 학습으로 덮어 버린다.
 
-## 7. 코드로 구현하기
-
+## 코드로 구현하기
 ### 7.1 유틸과 모델 파라미터
 
 ```python
@@ -423,8 +415,7 @@ if __name__ == "__main__":
     train_classification()
 ```
 
-## 8. 학습이 “됐다”는 신호를 읽는 법
-
+## 학습이 “됐다”는 신호를 읽는 법
 1. **Loss 곡선**: 초반 빠르게 하락 → 완만. 진동이 크면 `lr` 감소 또는 `batch_size` 증가.
 2. **회귀**: 예측 $\hat{y}$와 $y$의 산점이 대각선에 가까워짐.
 3. **분류**: accuracy가 chance(0.5)를 넘어 안정.
@@ -438,8 +429,7 @@ Loss가 전혀 안 줄면 체크리스트:
 - `lr`이 터무니없이 크거나 작음
 - 입력 정규화 여부(오늘은 표준정규라 비교적 안전)
 
-## 9. 실제 LLM에서는 어떻게 사용하는가
-
+## LLM에서는 어디에 사용될까?
 NumPy 루프와 LLM Trainer의 대응:
 
 | 오늘 (NumPy) | LLM 학습 |
@@ -454,8 +444,7 @@ NumPy 루프와 LLM Trainer의 대응:
 또한 분산 학습에서는 Backward로 구한 Gradient를 GPU 간에 평균 낸다.  
 원천은 여전히 “Loss에서 온 δ를 Weight에 외적”이다.
 
-## 10. 실습
-
+## 실습
 ### 실습 1 — 17강 숫자 통과
 
 `check_against_lesson17()`가 표와 오차 `1e-10` 수준으로 일치하는지 assert를 걸어라.
@@ -484,8 +473,7 @@ NumPy 루프와 LLM Trainer의 대응:
 
 `train_classification` 최종 acc가 0.9 이상이 되는지 확인한다. 안 되면 epoch/`lr`을 조정한다.
 
-## 11. 자주 하는 실수
-
+## 자주 하는 실수
 1. **배치 평균을 Forward/Backward에서 서로 다르게 한다**  
    Loss는 `mean`인데 Backward에서 `/B`를 빼먹으면 Gradient 스케일이 커진다.
 
@@ -504,16 +492,14 @@ NumPy 루프와 LLM Trainer의 대응:
 6. **난수 시드를 안 고정해 디버깅이 안 된다**  
    검증 단계에서는 고정 파라미터/`seed`를 사용한다.
 
-## 12. 핵심 정리
-
+## 핵심 요약
 - NumPy Backprop 구현은 Forward cache → δ 계산 → $dW=\delta a^{\top}$ → SGD 업데이트의 반복이다.
 - 먼저 17강 숫자·수치 미분으로 검증하고, 그다음 학습 루프를 돈다.
 - 회귀와 분류는 출력/Loss 머리만 다르고 은닉 Backprop 패턴은 같다.
 - Loss 감소는 구현이 살아 있다는 최소 증거이다.
 - 이 코드가 곧 PyTorch 학습 루프의 뼈대이다.
 
-## 13. 핵심 용어
-
+## 용어 사전
 | 용어 | 의미 |
 |---|---|
 | Training Loop | Forward-Backward-Update를 반복하는 학습 순환 |
@@ -527,7 +513,7 @@ NumPy 루프와 LLM Trainer의 대응:
 | Relative Error | 두 Gradient 벡터의 상대 차이 |
 | Initialization | 학습 전 Weight를 작은 난수 등으로 세팅하는 일 |
 
-## 14. 연습 문제
+## 연습문제
 ### 문제 1 (개념)
 
 학습 루프 한 step의 세 단계를 순서대로 쓰시오.
@@ -555,7 +541,6 @@ Loss가 폭발적으로 커질 때 가장 먼저 의볼 하이퍼파라미터는
 ---
 
 ## 정답 및 해설
-
 ### 문제 1
 
 Forward(예측·Loss) → Backward(Gradient) → Update(파라미터 갱신).
@@ -580,8 +565,7 @@ $z\le0$인 뉴런에도 Gradient가 흘러, ReLU의 정의와 다른 잘못된 �
 
 $0.21-1.0=-0.79$.
 
-## 15. 다음 강의와 연결
-
+## 다음 강의와 연결
 이번 강의에서 “수동 딥러닝 엔진”을 NumPy로 완성했다.
 
 다음 **제19강. PyTorch Tensor**에서는, 같은 숫자를 `torch.tensor`로 다루기 시작한다.  
@@ -595,7 +579,7 @@ dtype, device, shape, broadcasting, NumPy와의 차이를 익히면, 제20강 Au
 
 ### 강의 이동
 
-- **이전 강:** [제17강. Backpropagation 직접 계산하기](17강_Backpropagation_직접_계산하기.md)
-- **다음 강:** [제19강. PyTorch Tensor](19강_PyTorch_Tensor.md)
+- **이전 강:** [17강. Backpropagation 직접 계산하기](17강_Backpropagation_직접_계산하기.md)
+- **다음 강:** [19강. PyTorch Tensor](19강_PyTorch_Tensor.md)
 
 <!-- /LECTURE_NAV -->

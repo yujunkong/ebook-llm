@@ -1,16 +1,14 @@
-# 제47강. Encoder와 Decoder
+# 47강. Encoder와 Decoder
+## 이번 강에서 배우는 내용
 
-> **학습 목표**
-> - Encoder Self-Attention과 Decoder Causal Self-Attention의 차이
-> - Cross-Attention이 필요한 이유
-> - 원 논문 Transformer(번역)가 Encoder-Decoder인 이유
-> - GPT는 Decoder-only Causal LM이라는 사실
-> - BERT류 Encoder-only와 GPT류 Decoder-only의 학습 목표 차이(개요)
-> - 제40강 Causal Mask → 제48강 Causal LM으로 이어지는 지도
+- Encoder Self-Attention과 Decoder Causal Self-Attention의 차이
+- Cross-Attention이 필요한 이유
+- 원 논문 Transformer(번역)가 Encoder-Decoder인 이유
+- GPT는 Decoder-only Causal LM이라는 사실
+- BERT류 Encoder-only와 GPT류 Decoder-only의 학습 목표 차이(개요)
+- 제40강 Causal Mask → 제48강 Causal LM으로 이어지는 지도
 
----
-## 1. 왜 이것을 배우는가
-
+## 왜 중요한가?
 “Transformer”라는 말만 들으면 구조가 하나인 것처럼 느껴진다.  
 실제로는 **마스크와 입출력 포트**가 다른 여러 제품군이 있다.
 
@@ -20,15 +18,13 @@ LLM(특히 챗 모델)을 이해하려면 최소한 다음 문장을 고정해�
 
 제48강에서 Causal LM 전체 구조를 그리기 직전의 지도 제작 강의다.
 
-## 2. 먼저 알아야 할 개념
-
+## 선수 개념
 - Self-Attention / MHA (제39~41강)
 - Causal Mask (제40강)
 - Transformer Block (제46강)
 - Next Token Prediction (제32강)
 
-## 3. 핵심 개념 설명
-
+## 핵심 개념
 ### 3.1 Encoder
 
 **Encoder**는 입력 시퀀스 전체를 양방향으로 보며 맥락화한 표현을 만든다.
@@ -122,8 +118,7 @@ Self-Attention과 수식은 같고, **Q의 출처와 K/V의 출처가 다르다*
 - Encoder-Decoder도 언어 생성에 쓸 수 있으나, 대규모 범용 LLM에서는 Decoder-only가 단순 스케일링·엔지니어링에서 유리하다는 선택이 지배적이었다.
 - “Decoder-only가 항상 우월”은 만능 법칙이 아니다. 번역 등에서는 Encoder-Decoder가 여전히 유력한 선택일 수 있다.
 
-## 4. 직관적으로 이해하기
-
+## 직관적으로 이해하기
 세 가족을 한 장면으로:
 
 | 가족 | 비유 |
@@ -135,8 +130,7 @@ Self-Attention과 수식은 같고, **Q의 출처와 K/V의 출처가 다르다*
 GPT형 LLM은 세 번째가 아니라 **두 번째**에 가깝다.  
 챗 인터페이스가 붙어도, 핵심 엔진은 Causal Decoder 스택이다.
 
-## 5. 수학적으로 이해하기 (마스크 관점)
-
+## 수학적으로 이해하기 (마스크 관점)
 시퀀스 길이 $T$의 Attention score에 더해지는 마스크 $M$:
 
 **Encoder Self-Attention**
@@ -167,8 +161,7 @@ $$
 
 이 차이가 아키텍처 이름의 실체다.
 
-## 6. 작은 비교 예제
-
+## 작은 비교 예제
 문장: `BOS A B C` (학습 시 다음 토큰 예측)
 
 Decoder-only:
@@ -184,8 +177,7 @@ Encoder-only (MLM 스케치):
 
 같은 “Transformer Block”이라도 **마스크와 손실**이 달라지면 제품이 달라진다.
 
-## 7. 코드로 구조 스케치
-
+## 코드로 구조 스케치
 ```python
 # architecture_families.py
 """세 가족의 차이만 드러내는 의사코드형 스케치."""
@@ -229,8 +221,7 @@ class EncoderDecoderLayer(nn.Module):
 
 완전한 구현은 제49~50강 프로젝트에서, Causal Decoder-only를 우선한다.
 
-## 8. 실제 LLM에서는 어떻게 사용하는가
-
+## LLM에서는 어디에 사용될까?
 사실:
 
 - 원 논문 Transformer: Encoder-Decoder (번역)
@@ -246,8 +237,7 @@ class EncoderDecoderLayer(nn.Module):
 
 제40강에서 배운 마스크가, 제48강 Causal LM의 기본 법칙이 되는 지점이 바로 이 Decoder-only 선택이다.
 
-## 9.5 한 장으로 보는 선택 가이드
-
+## 5 한 장으로 보는 선택 가이드
 과제별로 자주 고르는 가족(경향이지 법칙 아님):
 
 | 과제 | 흔한 선택 | 이유 스케치 |
@@ -260,8 +250,7 @@ class EncoderDecoderLayer(nn.Module):
 이 책이 3권에서 다루는 GPT Pretraining은 **Decoder-only** 경로다.  
 따라서 제40강 Causal Mask가 “옵션”이 아니라 **기본 규칙**이 된다.
 
-## 9.6 제46강 Block을 재사용하는 법
-
+## 6 제46강 Block을 재사용하는 법
 ```text
 TransformerBlock(causal=True)  × N  → GPT형 Decoder-only
 TransformerBlock(causal=False) × N  → BERT형 Encoder-only
@@ -271,16 +260,14 @@ DecoderBlock = Causal Self + Cross + FFN → 원 논문 Decoder
 Cross-Attention만 새로 추가하면 Encoder-Decoder가 된다.  
 제49~50강 프로젝트는 먼저 Decoder-only를 완성한다.
 
-## 9. 실습
-
+## 실습
 1. 길이 4 시퀀스에서 Encoder용 마스크(모두 0)와 Causal 마스크를 각각 출력하라.
 2. Cross-Attention의 score shape가 `(T_dec, T_enc)`가 되는 이유를 shape로 설명하라.
 3. GPT형 모델을 Encoder-Decoder라고 부르는 문장이 왜 부정확한지 한 줄로 쓰라.
 4. 제46강 Block에 `causal=True/False` 스위치가 있다면, Encoder-only/Decoder-only를 어떻게 재사용하는지 스케치하라.
 5. (선택) 번역 데이터에서 Encoder 입력과 Decoder 입력이 어떻게 갈라지는지 도식으로 그려 보라.
 
-## 10. 자주 하는 실수
-
+## 자주 하는 실수
 1. **Transformer = 무조건 Encoder-Decoder**  
    원 논문만의 설정이다.
 
@@ -296,16 +283,14 @@ Cross-Attention만 새로 추가하면 Encoder-Decoder가 된다.
 5. **제목의 Decoder와 GPT Decoder-only를 혼동**  
    원 논문 Decoder는 Encoder 메모리를 본다. GPT는 그 메모리가 없다.
 
-## 11. 핵심 정리
-
+## 핵심 요약
 - Encoder는 양방향 Self-Attention으로 입력 맥락을 만든다.
 - Decoder(원 논문)는 Causal Self-Attention + Cross-Attention으로 출력을 생성한다.
 - Decoder-only는 Causal Self-Attention 스택만으로 언어 모델을 만든다.
 - GPT형 LLM은 Decoder-only Causal LM이다.
 - 제40강 마스크가 제48강 전체 아키텍처의 핵심 규칙으로 확장된다.
 
-## 12. 핵심 용어
-
+## 용어 사전
 | 용어 | 설명 |
 |---|---|
 | Encoder | 양방향 맥락화 스택 |
@@ -315,7 +300,7 @@ Cross-Attention만 새로 추가하면 Encoder-Decoder가 된다.
 | Cross-Attention | Decoder Query × Encoder Key/Value |
 | Causal LM | 왼쪽 맥락으로 다음 토큰을 예측하는 언어 모델 |
 
-## 13. 연습 문제
+## 연습문제
 **문제 1.** Encoder Self-Attention에 Causal Mask가 기본으로 있는가?
 
 **문제 2.** Cross-Attention에서 Q와 K/V의 출처는?
@@ -338,8 +323,7 @@ Cross-Attention만 새로 추가하면 Encoder-Decoder가 된다.
 
 5. 제40강의 미래 차단 규칙이 Decoder-only 스택 전체에 적용되어 제48강 Causal LM이 된다.
 
-## 14. 다음 강의와 연결
-
+## 다음 강의와 연결
 지도가 완성되었다.  
 제48강 **Causal Language Model 구조**에서는 Embedding → (Block × N) → LM Head를 한 장의 설계도로 고정한다.
 
@@ -357,7 +341,7 @@ Cross-Attention만 새로 추가하면 Encoder-Decoder가 된다.
 
 ### 강의 이동
 
-- **이전 강:** [제46강. Transformer Block 조립](46강_Transformer_Block_조립.md)
-- **다음 강:** [제48강. Causal Language Model 구조](48강_Causal_Language_Model_구조.md)
+- **이전 강:** [46강. Transformer Block 조립](46강_Transformer_Block_조립.md)
+- **다음 강:** [48강. Causal Language Model 구조](48강_Causal_Language_Model_구조.md)
 
 <!-- /LECTURE_NAV -->

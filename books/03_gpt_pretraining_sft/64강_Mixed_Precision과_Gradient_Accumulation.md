@@ -1,15 +1,13 @@
-# 제64강. Mixed Precision과 Gradient Accumulation
+# 64강. Mixed Precision과 Gradient Accumulation
+## 이번 강에서 배우는 내용
 
-> **학습 목표**
-> - FP32 / FP16 / BF16이 무엇(비트·역할)인지 개념적으로 구분한다.
-> - Mixed Precision 학습의 아이디어와 loss scaling이 필요한 이유를 설명한다.
-> - Gradient Accumulation으로 실효 배치를 키우는 식을 쓴다.
-> - 메모리·속도·수치 안정성 사이의 트레이드오프를 표로 정리한다.
-> - 사실(하드웨어/형식 정의)과 설명(관행·직관)을 섞지 않고 서술한다.
+- FP32 / FP16 / BF16이 무엇(비트·역할)인지 개념적으로 구분한다.
+- Mixed Precision 학습의 아이디어와 loss scaling이 필요한 이유를 설명한다.
+- Gradient Accumulation으로 실효 배치를 키우는 식을 쓴다.
+- 메모리·속도·수치 안정성 사이의 트레이드오프를 표로 정리한다.
+- 사실(하드웨어/형식 정의)과 설명(관행·직관)을 섞지 않고 서술한다.
 
----
-## 1. 왜 이것을 배우는가
-
+## 왜 중요한가?
 LLM 학습의 병목은 종종 “계산이 느리다”보다 **메모리에 안 들어간다**에 가깝다. Activations, 파라미터, Adam 상태($m,v$), 기울기가 동시에 산다.
 
 ```text
@@ -20,8 +18,7 @@ LLM 학습의 병목은 종종 “계산이 느리다”보다 **메모리에 �
 
 이 두 기법은 “모델을 작게 만들기” 위한 것이 아니라, **같은 모델을 학습 가능하게 만들기** 위한에 가깝다.
 
-## 2. 먼저 알아야 할 개념
-
+## 선수 개념
 1. **Tensor dtype / GPU 메모리 감각** — 제9, 19, 52강
 2. **Autograd와 `.grad` 누적** — 제20, 23강
 3. **Train step** — 제62강
@@ -29,8 +26,7 @@ LLM 학습의 병목은 종종 “계산이 느리다”보다 **메모리에 �
 
 벤치마크 TFLOPS·속도up % 같은 **구체 성능 수치를 이 강의에서 단정하지 않는다**. 하드웨어·커널·모델에 따라 달라지기 때문이다.
 
-## 3. 숫자 형식 — FP32, FP16, BF16
-
+## 숫자 형식 — FP32, FP16, BF16
 ### 3.1 용어 정의
 
 | 형식 | 대략적 의미 | 비고 |
@@ -53,8 +49,7 @@ LLM 학습의 병목은 종종 “계산이 느리다”보다 **메모리에 �
 
 기울기나 loss 관련 값이 매우 작으면 FP16에서 **0으로 밑으로 꺼지거나(underflow)**, 크면 **Inf로 터질(overflow)** 수 있다. BF16은 지수 비트 설계상 범위 문제가 FP16보다 덜한 경우가 많다(설명: 과제·텐서 분포에 의존).
 
-## 4. Mixed Precision이란
-
+## Mixed Precision이란
 **Mixed Precision Training**은 연산·텐서의 일부는 낮은 정밀도(FP16/BF16)로, 일부는 FP32로 유지하는 학습 방식이다.
 
 전형적 아이디어:
@@ -78,8 +73,7 @@ with amp.autocast(device_type="cuda", dtype=torch.bfloat16):
 
 설명: autocast는 마법이 아니라 **연산 화이트리스트에 따라 dtype을 선택**하는 컨텍스트다. 모든 연산이 항상 16비트로 가는 것은 아니다.
 
-## 5. Loss Scaling 개념 (특히 FP16)
-
+## Loss Scaling 개념 (특히 FP16)
 ### 5.1 문제
 
 FP16 경로에서는 backward 중 **작은 gradient가 반정밀도에서 사라지는** 경우가 있다.
@@ -125,8 +119,7 @@ scaler.update()
 | BF16이 항상 FP16보다 빠르다 | **단정 금지** (하드웨어 의존) |
 | AMP를 쓰면 항상 N% 빠르다 | **단정 금지** |
 
-## 6. Gradient Accumulation이란
-
+## Gradient Accumulation이란
 **Gradient Accumulation**은 micro-batch를 여러 번 forward/backward하여 `.grad`를 쌓은 뒤, **한 번만** `optimizer.step()` 하는 기법이다.
 
 목적: GPU에 한 번에 올릴 수 있는 배치($B_{\text{micro}}$)는 작아도, 실효 배치
@@ -188,8 +181,7 @@ for micro_idx, batch in enumerate(micro_batches):
         optimizer.zero_grad(set_to_none=True)
 ```
 
-## 7. 실효 배치·토큰·LR의 연결
-
+## 실효 배치·토큰·LR의 연결
 실효 배치가 바뀌면 **노이즈 있는 기울기의 분산**이 바뀐다. 그래서 대형 레시피에서는 배치와 lr을 함께 스케일하는 논의가 있다.
 
 이 강의에서 고정 법칙(예: “배치 2배면 lr 2배”)을 선포하지 않는다. 다만 실험 시:
@@ -200,8 +192,7 @@ for micro_idx, batch in enumerate(micro_batches):
 
 제62강의 `global_step`은 보통 **optimizer.step 횟수**다. micro-batch 횟수와 이름을 분리하라.
 
-## 8. 메모리 트레이드오프
-
+## 메모리 트레이드오프
 | 선택 | 대체로 줄이는 것 | 대체로 대가 |
 |---|---|---|
 | micro-batch ↓ | activation 메모리 | 같은 $B_{\text{eff}}$를 위해 accum ↑, 동기·오버헤드 |
@@ -213,8 +204,7 @@ for micro_idx, batch in enumerate(micro_batches):
 
 Activation checkpointing(재계산) 등은 제52강 복잡도·메모리 맥락의 연장이나, 이번 강의 범위를 넘어가므로 이름만 언급한다.
 
-## 9. 수치 안정성 체크리스트
-
+## 수치 안정성 체크리스트
 학습 중 다음을 보면 AMP/accum 쪽을 의심한다.
 
 1. Loss가 갑자기 NaN/Inf
@@ -233,8 +223,7 @@ Activation checkpointing(재계산) 등은 제52강 복잡도·메모리 맥락�
 
 한 번에 모두 켜면 원인 분리가 안 된다.
 
-## 10. 제62강 루프에 통합한 예시
-
+## 제62강 루프에 통합한 예시
 ```python
 from torch import amp
 
@@ -281,8 +270,7 @@ def train_optimizer_step(
 
 주의: `compute_loss`가 이미 평균인지 합인지에 따라 `/ n` 위치가 달라질 수 있다. **평균 loss를 N번 더해 평균을 유지**하려는 의도인지 팀 규약을 고정하라.
 
-## 11. 메모리 그림으로 보기
-
+## 메모리 그림으로 보기
 한 번의 optimizer step에 대략 동시에 존재하는 것:
 
 ```text
@@ -300,8 +288,7 @@ Mixed Precision은 Activations·일부 연산의 **바이트/폭**을 줄이려 
 
 둘을 켜도 Adam 상태가 사라지지는 않는다. “AMP만 켜면 Optimizer 메모리도 반으로”는 사실이 아니다.
 
-## 12. FP32 기준선에서 올리는 순서 (복습 강화)
-
+## FP32 기준선에서 올리는 순서 (복습 강화)
 권장 실험 사다리:
 
 ```text
@@ -314,8 +301,7 @@ D. 선택 dtype + accum=N
 각 단계에서 고정할 것: 데이터 샘플, seed, lr, step 수(짧게).  
 바꾸는 축이 하나여야 “AMP 때문에 깨졌는지” 알 수 있다.
 
-## 13. Dynamic Loss Scale의 동작 스케치
-
+## Dynamic Loss Scale의 동작 스케치
 ```text
 초기 scale S가 큼
   → overflow 관측 시: step 스킵(또는 무효), S ← S / 2
@@ -327,8 +313,7 @@ D. 선택 dtype + accum=N
 사실: GradScaler API·기본값은 PyTorch 버전에 따라 다를 수 있다. 문서의 현재 시그니처를 따른다.  
 설명: scale이 계속 내려가기만 하면 원인(폭발 기울기·버그)이 따로 있을 수 있다. scale만 탓하지 말 것.
 
-## 14. Accumulation과 Dataloader
-
+## Accumulation과 Dataloader
 micro-batch를 어떻게 공급할까?
 
 패턴 A — 같은 loader에서 N번 next:
@@ -350,8 +335,7 @@ for batch in loader:
 
 패턴 B에서 loader 길이가 `accum`의 배수가 아니면 **마지막 잔여 micro**를 어떻게 처리할지(버림/패딩 step) 정책을 정해야 한다. 잔여를 무시하면 실효 토큰이 약간 줄고, 잔여만으로 step하면 `/accum` 스케일이 어긋날 수 있다.
 
-## 15. 처리량 관점 — 측정은 하되 숫자를 지어내지 말 것
-
+## 처리량 관점 — 측정은 하되 숫자를 지어내지 말 것
 기록할 메트릭:
 
 - optimizer steps / sec
@@ -361,8 +345,7 @@ for batch in loader:
 비교 시 조건(모델, $T$, $B_{\text{micro}}$, dtype, accum)을 표로 고정한다.  
 이 책 본문에 “AMP = +X%” 같은 **가상 벤치마크를 넣지 않는다**.
 
-## 16. 흔한 버그
-
+## 흔한 버그
 1. **accum 시 `zero_grad`를 micro마다 호출** — 누적이 리셋되어 실효 배치가 작아짐.
 2. **`loss / n` 누락** — 실효 lr이 의도보다 커짐.
 3. **clip을 scale된 grad에 적용(FP16)** — unscale 전에 clip하면 임계값 의미가 왜곡.
@@ -371,16 +354,18 @@ for batch in loader:
 6. **BF16 미지원 장치에서 묵시 실패** — 환경 확인은 사실 문제다. 추측으로 덮지 말 것.
 7. **로그 loss에 `/n`된 값을 그대로 기록** — train curve가 가짜로 낮아 보임. 로그 시 스케일 복원.
 
-## 17. 핵심 정리
+## LLM에서는 어디에 사용될까?
 
+이번 64강에서 배운 개념은 이후 Transformer · GPT · 서빙 강의에서 반복해서 등장합니다. 각 수식·코드 블록을 “실제 모델의 어느 단계인가”와 연결해 다시 읽어 보세요.
+
+## 핵심 요약
 - Mixed Precision은 연산·텐서 dtype을 섞어 메모리·효율을 노린다. FP16은 범위 문제로 loss scaling이 자주 동반된다.
 - BF16은 형식상 지수 범위가 넓어 스케일러 없이 쓰는 경우가 많지만, 만능 선언은 피한다.
 - Gradient Accumulation은 micro-batch 기울기를 쌓아 실효 배치를 키운다.
 - `/ N_accum`, `zero_grad` 위치, optimizer step vs micro step 정의가 구현의 핵심이다.
 - 성능 %를 지어내지 말고, 트레이드오프와 디버깅 순서를 손에 익힌다.
 
-## 18. 핵심 용어
-
+## 용어 사전
 | 용어 | 의미 |
 |---|---|
 | FP32 / FP16 / BF16 | 부동소수점 저장·연산 형식 |
@@ -394,7 +379,7 @@ for batch in loader:
 | Master weights | 갱신에 쓰는 FP32 파라미터 카피(개념) |
 | Overflow | Inf/NaN으로 숫자가 범위를 벗어남 |
 
-## 19. 연습 문제
+## 연습문제
 ### 문제 1 (구분)
 
 다음 문장이 사실(형식/정의)에 가까운지, 설명·관행에 가까운지 분류하시오.  
@@ -425,7 +410,6 @@ FP16 학습 로그에서 `scale`이 계속 반만 되고 `step`이 자주 스킵
 ---
 
 ## 정답 및 해설
-
 ### 문제 1
 
 (a) 사실(형식 정의).  
@@ -452,8 +436,7 @@ $2 \times 8 = 16$.
 
 예: (1) FP32로 동일 배치 재현 (2) lr·clip·데이터 NaN 확인 (3) autocast 범위/모델 수치 버그 확인. scale만 올리며 강행하지 말 것.
 
-## 20. 다음 강의와 연결
-
+## 다음 강의와 연결
 긴 학습은 중간에 끊긴다. 지금 만든 AMP·accum 루프의 **가중치·Optimizer·Scaler·step**을 디스크에 남겨야 한다.
 
 다음 **제65강. Checkpoint 관리**에서는 무엇을 저장하고 어떻게 재개하는지, best vs last, safetensors를 형식 옵션으로 언급한다.
@@ -467,7 +450,7 @@ $2 \times 8 = 16$.
 
 ### 강의 이동
 
-- **이전 강:** [제63강. Optimizer, Learning Rate, Scheduler](63강_Optimizer_Learning_Rate_Scheduler.md)
-- **다음 강:** [제65강. Checkpoint 관리](65강_Checkpoint_관리.md)
+- **이전 강:** [63강. Optimizer, Learning Rate, Scheduler](63강_Optimizer_Learning_Rate_Scheduler.md)
+- **다음 강:** [65강. Checkpoint 관리](65강_Checkpoint_관리.md)
 
 <!-- /LECTURE_NAV -->

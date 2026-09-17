@@ -1,16 +1,14 @@
-# 제44강. LayerNorm과 Residual Connection
+# 44강. LayerNorm과 Residual Connection
+## 이번 강에서 배우는 내용
 
-> **학습 목표**
-> - Residual Connection (잔차 연결)
-> - Layer Normalization (LayerNorm)
-> - Residual이 깊은 망에서 하는 역할
-> - Transformer에서의 `x + SubLayer(x)` 패턴
-> - LayerNorm의 수식과 작은 숫자 예제
-> - BatchNorm과 LayerNorm의 차이(개념 수준)
+- Residual Connection (잔차 연결)
+- Layer Normalization (LayerNorm)
+- Residual이 깊은 망에서 하는 역할
+- Transformer에서의 `x + SubLayer(x)` 패턴
+- LayerNorm의 수식과 작은 숫자 예제
+- BatchNorm과 LayerNorm의 차이(개념 수준)
 
----
-## 1. 왜 이것을 배우는가
-
+## 왜 중요한가?
 Attention과 FFN을 아무리 잘 만들어도, 수십·수백 층으로 쌓이면 다음이 생긴다.
 
 - 신호가 너무 커지거나 사라짐
@@ -33,15 +31,13 @@ x
 
 제46강에서 Block을 조립할 때 이 두 줄이 뼈대가 된다.
 
-## 2. 먼저 알아야 할 개념
-
+## 선수 개념
 - 평균, 분산, 표준편차
 - 요소별 곱·합, 브로드캐스팅
 - Gradient가 층을 타고 흐른다는 직관 (제14·17강)
 - MHA 출력 shape = 입력 shape (제41강)
 
-## 3. 핵심 개념 설명
-
+## 핵심 개념
 ### 3.1 Residual Connection
 
 **Residual Connection**은 층이 입력을 완전히 대체하지 않고, **변화량(잔차)**만 학습하도록 길을 여는 연결이다.
@@ -172,8 +168,7 @@ $$
 Pre-LN이 깊은 모델에서 학습이 더 안정적이라는 경험적 보고가 많다.  
 제46강은 **Pre-LN Transformer Block**을 기본으로 조립한다.
 
-## 4. 직관적으로 이해하기
-
+## 직관적으로 이해하기
 Residual:
 
 ```text
@@ -194,8 +189,7 @@ LayerNorm:
 - 본선으로 정보/Gradient가 흐르고
 - 각 서브층 입력이 적당한 스케일로 유지된다
 
-## 5. 수학적으로 이해하기
-
+## 수학적으로 이해하기
 ### 5.1 Residual의 역전파
 
 $$
@@ -227,8 +221,7 @@ $$
 $\epsilon$이 너무 작으면 저분산 벡터에서 폭발할 수 있고, 너무 크면 정규화가 둔해진다.  
 프레임워크 기본값(예: `1e-5`)을 따르는 것이 안전하다.
 
-## 6. 작은 숫자로 직접 계산하기
-
+## 작은 숫자로 직접 계산하기
 한 토큰:
 
 $$
@@ -312,8 +305,7 @@ $$
 평균을 빼지 않았으므로 LayerNorm 결과와 다르다.  
 이것이 “비슷하지만 같은 연산은 아님”을 보여주는 최소 예제다.
 
-## 7. 코드로 구현하기
-
+## 코드로 구현하기
 ```python
 # norm_residual.py
 from __future__ import annotations
@@ -362,8 +354,7 @@ class PreLNResidual(nn.Module):
 
 RMSNorm을 쓰려면 `nn.LayerNorm` 대신 커스텀 모듈을 넣으면 된다.
 
-## 8. 실제 LLM에서는 어떻게 사용하는가
-
+## LLM에서는 어디에 사용될까?
 사실:
 
 - 원 논문 Transformer: LayerNorm + Residual (Post-LN에 가깝게 서술)
@@ -383,16 +374,14 @@ Residual + Norm + Attn + Residual + Norm + FFN
 
 의 반복이다.
 
-## 9. 실습
-
+## 실습
 1. 제7절 벡터로 LN 손계산과 NumPy 결과가 같은지 확인하라 (`eps=0` 주의).
 2. 같은 벡터의 RMSNorm 결과를 계산하라.
 3. `x + F(x)`에서 $F=0$이면 출력이 $x$인지 확인하라.
 4. `(B,T,C)` 랜덤 텐서에 LayerNorm을 적용해 마지막 축 평균이 대략 0인지 확인하라.
 5. Pre-LN 래퍼 클래스에 가짜 `sublayer`를 넣어 shape 보존을 확인하라.
 
-## 10. 자주 하는 실수
-
+## 자주 하는 실수
 1. **정규화 축 착각**  
    LayerNorm은 보통 마지막 특징 차원이다. 배치 평균이 아니다.
 
@@ -408,16 +397,14 @@ Residual + Norm + Attn + Residual + Norm + FFN
 5. **$\gamma, \beta$ 초기화 무시**  
    보통 $\gamma=1, \beta=0$에서 시작해 정체성에 가깝게 출발한다.
 
-## 11. 핵심 정리
-
+## 핵심 요약
 - Residual `x + F(x)`는 깊은 망의 정보·Gradient 통로다.
 - LayerNorm은 토큰 벡터를 특징 축에서 정규화하고 $\gamma, \beta$로 재스케일한다.
 - RMSNorm은 평균 중심화 없는 단순 정규화로, 현대 LLM에 흔하다.
 - Pre-LN은 제46강 Block 조립의 기본 배치다.
 - Attention/FFN “내용”과 Norm/Residual “안정 장치”가 만나야 Transformer가 된다.
 
-## 12. 핵심 용어
-
+## 용어 사전
 | 용어 | 설명 |
 |---|---|
 | Residual Connection | $y=x+F(x)$ 형태의 잔차 연결 |
@@ -427,7 +414,7 @@ Residual + Norm + Attn + Residual + Norm + FFN
 | Post-LN | 서브층+잔차 뒤에 Norm |
 | $\gamma, \beta$ | Norm의 학습 가능 scale/bias |
 
-## 13. 연습 문제
+## 연습문제
 **문제 1.** Residual 연결의 수식을 쓰라.
 
 **문제 2.** $x=[2,4,4,6]$의 평균과(표본이 아닌 모집단) 분산은?
@@ -450,8 +437,7 @@ Residual + Norm + Attn + Residual + Norm + FFN
 
 5. $x \leftarrow x + \mathrm{SubLayer}(\mathrm{LN}(x))$.
 
-## 14. 다음 강의와 연결
-
+## 다음 강의와 연결
 오늘은 안정 장치다.  
 제45강은 블록의 다른 절반, **Feed-Forward Network(MLP)**다.
 
@@ -464,7 +450,7 @@ Attention이 토큰 사이를 섞으면, FFN은 **토큰마다** 비선형 변�
 
 ### 강의 이동
 
-- **이전 강:** [제43강. RoPE](43강_RoPE.md)
-- **다음 강:** [제45강. Feed-Forward Network (MLP)](45강_Feed_Forward_Network_MLP.md)
+- **이전 강:** [43강. RoPE](43강_RoPE.md)
+- **다음 강:** [45강. Feed-Forward Network (MLP)](45강_Feed_Forward_Network_MLP.md)
 
 <!-- /LECTURE_NAV -->

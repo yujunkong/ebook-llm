@@ -1,14 +1,12 @@
-# 제21강. nn.Module로 모델 만들기
+# 21강. nn.Module로 모델 만들기
+## 이번 강에서 배우는 내용
 
-> **학습 목표**
-> - `nn.Module`이 무엇인지, 왜 상속해서 모델을 만드는지 설명한다.
-> - `nn.Linear`로 한 층을 만들고, `forward`에서 순전파를 정의한다.
-> - `parameters()`와 `state_dict()`로 학습 가능한 가중치를 확인하고 저장·불러오기 감각을 잡는다.
-> - 작은 MLP를 `nn.Module` 클래스로 직접 작성한다.
+- `nn.Module`이 무엇인지, 왜 상속해서 모델을 만드는지 설명한다.
+- `nn.Linear`로 한 층을 만들고, `forward`에서 순전파를 정의한다.
+- `parameters()`와 `state_dict()`로 학습 가능한 가중치를 확인하고 저장·불러오기 감각을 잡는다.
+- 작은 MLP를 `nn.Module` 클래스로 직접 작성한다.
 
----
-## 1. 왜 이것을 배우는가
-
+## 왜 중요한가?
 제15~18강에서는 NumPy로 Neural Network를 직접 조립했다. 가중치 행렬을 직접 만들고, forward와 backward를 손으로 이었다.
 
 그 방식은 원리를 배우는 데 최고다. 그러나 모델이 조금만 커져도 다음이 고통스러워진다.
@@ -20,8 +18,7 @@
 
 **`torch.nn.Module`**은 이 반복 작업을 표준화한 **모델의 기본 블록**이다. LLM의 Transformer도, GPT도, 결국 `nn.Module`을 쌓아 만든 큰 클래스다.
 
-## 2. 먼저 알아야 할 개념
-
+## 선수 개념
 이번 강의 전에 다음이 준비되어 있어야 한다.
 
 1. **Tensor** — `requires_grad`가 있는 다차원 배열 (제19강)
@@ -31,8 +28,7 @@
 
 아직 Optimizer와 DataLoader는 몰라도 된다. 그것은 제22~23강에서 다룬다.
 
-## 3. 핵심 개념 설명
-
+## 핵심 개념
 ### 3.1 nn.Module이란 무엇인가
 
 **`nn.Module`(모듈)**은 PyTorch에서 신경망의 **구성 단위**를 나타내는 기본 클래스이다.
@@ -148,8 +144,7 @@ model2.load_state_dict(torch.load("model.pt", weights_only=True))
 
 학습을 이어가려면 Optimizer의 `state_dict`까지 함께 저장하는 것이 일반적이다. 그 패턴은 제23강·3권 Checkpoint 강의에서 더 깊게 다룬다. 지금은 “모델 = 구조(코드) + 가중치(state_dict)”라는 분리만 확실히 잡자.
 
-## 4. 직관적으로 이해하기
-
+## 직관적으로 이해하기
 `nn.Module`을 레고 블록으로 생각하면 쉽다.
 
 - `nn.Linear`는 작은 벽돌 하나
@@ -163,8 +158,7 @@ model2.load_state_dict(torch.load("model.pt", weights_only=True))
 
 손님이 집 안으로 들어오는 호출은 `model(x)`다. 집 안 동선을 직접 부르는 `model.forward(x)`보다, 현관(`__call__`)을 통하는 습관을 들인다.
 
-## 5. 수학적으로 이해하기
-
+## 수학적으로 이해하기
 2층 MLP를 예로 든다. 입력 $x \in \mathbb{R}^{d}$, 은닉 크기 $h$, 출력 크기 $c$라고 하자.
 
 $$
@@ -188,8 +182,7 @@ $$
 
 학습은 Loss $L$에 대해 $\partial L / \partial W_1$, $\partial L / \partial b_1$, … 를 Autograd가 계산하고, Optimizer가 값을 갱신한다. Module은 “어떤 텐서가 파라미터인지”를 표시해 주는 명찰 역할이다.
 
-## 6. 작은 숫자로 직접 계산하기
-
+## 작은 숫자로 직접 계산하기
 입력이 하나라고 가정한다.
 
 $$
@@ -226,8 +219,7 @@ $$
 
 코드에서 같은 숫자를 넣어 보면, `forward`가 수식과 같은지 바로 검증할 수 있다. “작은 숫자 검증”은 이후 Transformer 구현에서도 같은 습관으로 반복한다.
 
-## 7. 코드로 구현하기 — 최소 MLP
-
+## 코드로 구현하기 — 최소 MLP
 ```python
 # tiny_mlp.py
 import torch
@@ -292,8 +284,7 @@ $$
 
 LLM 논문을 읽을 때 나오는 “7B parameters”도 같은 방식으로, 모든 층의 `numel()` 합이다.
 
-## 8. PyTorch로 구현하기 — Sequential과 수동 forward
-
+## PyTorch로 구현하기 — Sequential과 수동 forward
 간단한 층 나열은 `nn.Sequential`로도 만들 수 있다.
 
 ```python
@@ -329,8 +320,7 @@ print(layer(x))  # tensor([[1., 1.]])
 
 `torch.no_grad()` 안에서 가중치를 직접 고치면, 불필요한 그래프 추적을 피할 수 있다.
 
-## 9. 실제 LLM에서는 어떻게 사용하는가
-
+## LLM에서는 어디에 사용될까?
 LLM 코드베이스를 열어 보면 반복되는 패턴이 보인다.
 
 ```text
@@ -360,8 +350,7 @@ optimizer.step()
 
 2권에서 Self-Attention을 구현할 때도, 이번 강의의 `nn.Module` 뼈대 위에 Q/K/V Linear를 올리게 된다.
 
-## 10. 실습
-
+## 실습
 ### 실습 1 — 파라미터 수 검산
 
 **목표:** `named_parameters()`와 손 계산이 일치하는지 확인한다.
@@ -395,8 +384,7 @@ $$
 
 **추가 도전:** `nn.Sequential` 버전과 클래스 버전의 파라미터 수가 같은지 비교한다.
 
-## 11. 자주 하는 실수
-
+## 자주 하는 실수
 1. **`forward` 안에서 `nn.Linear(...)`를 새로 만든다**  
    매 forward마다 새 가중치가 생긴다. 층은 `__init__`에서 한 번만 만든다.
 
@@ -412,16 +400,14 @@ $$
 5. **입출력 shape를 확인하지 않는다**  
    `(batch, features)` 관례를 깨면 Linear가 바로 실패한다. 항상 `print(x.shape)`로 확인한다.
 
-## 12. 핵심 정리
-
+## 핵심 요약
 - `nn.Module`은 PyTorch 모델의 기본 블록이다. `__init__`에서 등록하고 `forward`에서 계산한다.
 - `nn.Linear`는 $y = xW^\top + b$를 수행하는 가장 흔한 층이다.
 - `parameters()` / `named_parameters()`로 학습 가중치를 순회한다.
 - `state_dict`는 가중치 스냅샷이며, 저장·불러오기의 표준 형식이다.
 - LLM의 모든 블록도 같은 Module 규칙 위에 올라간다.
 
-## 13. 핵심 용어
-
+## 용어 사전
 | 용어 | 의미 |
 |---|---|
 | `nn.Module` | 신경망 구성 단위의 기본 클래스 |
@@ -433,7 +419,7 @@ $$
 | `nn.Sequential` | 층을 순서대로 쌓는 간단한 컨테이너 |
 | `nn.ReLU` | $\max(0, x)$ 활성화 Module |
 
-## 14. 연습 문제
+## 연습문제
 ### 문제 1 (개념)
 
 `nn.Module`을 상속할 때 `__init__`과 `forward`의 역할을 구분하여 설명하시오.
@@ -467,7 +453,6 @@ GPT의 Attention 블록도 `nn.Module`인 이유가 무엇인지, 파라미터 �
 ---
 
 ## 정답 및 해설
-
 ### 문제 1
 
 `__init__`은 Linear 같은 하위 Module·Parameter를 등록한다. `forward`는 등록된 층을 어떤 순서로 적용해 출력을 만들지 정의한다.
@@ -492,8 +477,7 @@ $$
 
 Attention의 Q/K/V 가중치, 출력 투영 등이 모두 학습 파라미터다. `nn.Module`로 묶어야 `parameters()`, `to(device)`, `state_dict`로 일괄 관리할 수 있다. GPT는 그런 Module을 쌓은 큰 Module이다.
 
-## 15. 다음 강의와 연결
-
+## 다음 강의와 연결
 모델의 **골격**은 만들었다. 이제 그 골격에 **데이터 묶음**을 넣어 줄 도구가 필요하다.
 
 다음 **제22강. Dataset과 DataLoader**에서는 샘플을 정의하고, 배치로 묶어, 학습 루프에 공급하는 방법을 배운다. LLM이 왜 문장을 토큰 배치로 학습하는지도 여기서 연결된다.
@@ -504,7 +488,7 @@ Attention의 Q/K/V 가중치, 출력 투영 등이 모두 학습 파라미터다
 
 ### 강의 이동
 
-- **이전 강:** [제20강. Autograd — 자동 미분](20강_Autograd_자동_미분.md)
-- **다음 강:** [제22강. Dataset과 DataLoader](22강_Dataset과_DataLoader.md)
+- **이전 강:** [20강. Autograd — 자동 미분](20강_Autograd_자동_미분.md)
+- **다음 강:** [22강. Dataset과 DataLoader](22강_Dataset과_DataLoader.md)
 
 <!-- /LECTURE_NAV -->

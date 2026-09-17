@@ -1,16 +1,14 @@
-# 제40강. Causal Mask
+# 40강. Causal Mask
+## 이번 강에서 배우는 내용
 
-> **학습 목표**
-> - Causal / Triangular Mask가 무엇인지
-> - 왜 Next-Token LM이 미래를 보면 안 되는지
-> - Softmax 전 점수에 `-inf`를 넣는 이유 (`masked_fill`)
-> - 작은 $T=3,4$ 예제로 마스크된 Softmax를 손계산하기
-> - NumPy/PyTorch로 causal mask를 구현하기
-> - 41강 Multi-Head로 넘어가며 마스크가 헤드에 공유됨을 예고하기
+- Causal / Triangular Mask가 무엇인지
+- 왜 Next-Token LM이 미래를 보면 안 되는지
+- Softmax 전 점수에 `-inf`를 넣는 이유 (`masked_fill`)
+- 작은 $T=3,4$ 예제로 마스크된 Softmax를 손계산하기
+- NumPy/PyTorch로 causal mask를 구현하기
+- 41강 Multi-Head로 넘어가며 마스크가 헤드에 공유됨을 예고하기
 
----
-## 1. 왜 이것을 배우는가
-
+## 왜 중요한가?
 학습 때 문장 전체를 병렬로 넣는다.  
 마스크가 없으면 위치 $t$의 Attention이 **미래 토큰 $t+1,t+2,\ldots$**의 정보를 볼 수 있다.
 
@@ -25,16 +23,14 @@
 위치 “밥을”을 예측할 때, 마스크 없이 “먹었다”를 보면 너무 쉽다.  
 Causal Mask는 **왼쪽(과거·현재)만** 보게 강제한다.
 
-## 2. 먼저 알아야 할 개념
-
+## 선수 개념
 - Self-Attention 점수 $S$ (37강)
 - Softmax Attention (38강)
 - Next-Token Prediction (32강) + CE (34강)
 - 상삼각/하삼각 행렬 직관
 - 39강의 `mask` 훅
 
-## 3. 핵심 개념 설명
-
+## 핵심 개념
 ### 3.1 Causal Mask란?
 
 **Causal Mask(인과 마스크, look-ahead mask)**는 위치 $i$가 위치 $j>i$ (미래)를 주목하지 못하도록 막는 마스크다.
@@ -98,8 +94,7 @@ A = F.softmax(S, dim=-1)
 `causal_mask`가 True인 칸이 미래(가릴 곳)가 되게 만드는 규약이 흔하다.  
 (반대로 True=허용인 API도 있으니 문서를 읽는다.)
 
-## 4. 직관적으로 이해하기
-
+## 직관적으로 이해하기
 ### 4.1 시험 부정행위 금지
 
 오픈북 시험인데, **뒷페이지는 못 보게** 가린 것과 같다.  
@@ -115,8 +110,7 @@ A = F.softmax(S, dim=-1)
 BERT류 Encoder는 양방향 Attention(미래도 봄) + Masked LM 목표가 다르다.  
 GPT류 Causal LM은 **단방향(자귀 회귀)** 이 본질이다.
 
-## 5. 수학적으로 이해하기
-
+## 수학적으로 이해하기
 ### 5.1 마스크 행렬 $M$
 
 $$
@@ -159,8 +153,7 @@ $$
 
 논리합으로 합친다. 오늘은 causal만 집중.
 
-## 6. 작은 숫자로 직접 계산하기
-
+## 작은 숫자로 직접 계산하기
 ### 6.1 예제 A — $T=3$, 단순한 점수
 
 마스크 전 점수 (이미 scaled라고 가정):
@@ -282,8 +275,7 @@ $$
 
 $$
 
-## 7. 코드로 구현하기 (NumPy)
-
+## 코드로 구현하기
 ```python
 # lecture40_causal_mask_numpy.py
 
@@ -338,8 +330,7 @@ if __name__ == "__main__":
 
 손계산과 `A`, `O`가 일치해야 한다.
 
-## 8. PyTorch로 구현하기
-
+## PyTorch로 구현하기
 ```python
 # lecture40_causal_mask_torch.py
 
@@ -382,8 +373,7 @@ if __name__ == "__main__":
 
 `upper sum`이 0(또는 수치상 극소)이면 causal이 작동한 것이다.
 
-## 9. 실제 LLM에서는 어떻게 사용하는가
-
+## LLM에서는 어디에 사용될까?
 ### 9.1 GPT / Causal LM의 기본 규칙
 
 모든 Self-Attention 층(모든 헤드)에 causal mask를 적용한다.  
@@ -403,8 +393,7 @@ RNN처럼 한 스텝씩 순차 학습할 필요가 없다(교사 강요 경로).
 일부 과제는 프롬프트 구간만 양방향, 생성 구간만 causal인 **부분 마스크**를 쓴다.  
 원리는 동일: Softmax 전 점수에 허용 그래프를 새긴다.
 
-## 10. 실습
-
+## 실습
 ### 실습 1 — 마스크 그리기
 
 $T=5$ causal 허용 행렬(0/1)을 손으로 그리시오.
@@ -435,8 +424,7 @@ $$
 
 34강의 shift target과 causal mask가 함께 만드는 “정직한 다음 토큰 학습”을 한 문장으로 설명하시오.
 
-## 11. 자주 하는 실수
-
+## 자주 하는 실수
 1. **하삼각/상삼각을 뒤바꾼다**  
    가려야 할 것은 $j>i$ (미래). `triu(..., diagonal=1)`이 전형적.
 
@@ -455,16 +443,14 @@ $$
 6. **padding mask와 곱/합 규약을 혼동**  
    bool OR로 “하나라도 가리면 가림”이 안전하다.
 
-## 12. 핵심 정리
-
+## 핵심 요약
 - Causal Mask는 위치 $i$가 $j>i$를 못 보게 한다.
 - Softmax 전 점수에 `-inf`를 넣어 미래 가중치를 0으로 만든다.
 - GPT형 Next-Token 학습·생성과 정보 제약을 일치시키는 장치다.
 - 삼각형(하삼각 허용) 패턴으로 구현한다.
 - Attention 모듈의 mask 훅에 이 규칙을 넣으면 Causal LM Self-Attention이 된다.
 
-## 13. 핵심 용어
-
+## 용어 사전
 | 용어 | 의미 |
 |---|---|
 | Causal Mask | 미래 위치를 차단하는 마스크 |
@@ -475,7 +461,7 @@ $$
 | Bidirectional Attention | 양방향(미래 포함) 주목 |
 | Padding Mask | 패딩 토큰 차단 |
 
-## 14. 연습 문제
+## 연습문제
 ### 문제 1 (패턴)
 
 $T=3$에서 가려지는 $(i,j)$ 쌍을 모두 쓰시오.
@@ -499,7 +485,6 @@ $T=3$에서 가려지는 $(i,j)$ 쌍을 모두 쓰시오.
 ---
 
 ## 정답 및 해설
-
 ### 문제 1
 
 $(0,1),(0,2),(1,2)$.
@@ -520,8 +505,7 @@ $0.5,\ 0.5,\ 0$.
 
 같다(공유). 미래 차단은 위치 규칙이다 head별 규칙이 아니다.
 
-## 15. 다음 강의와 연결
-
+## 다음 강의와 연결
 단일 헤드 + Causal Mask까지 끝났다.  
 다음 **제41강. Multi-Head Attention**에서는 표현을 $h$개 헤드로 나누어 병렬 Attention을 수행하고, concat 후 $W_O$로 합친다.  
 Causal Mask는 그 모든 헤드의 점수에 동일하게 적용된다.
@@ -672,7 +656,7 @@ $$
 
 ### 강의 이동
 
-- **이전 강:** [제39강. Self-Attention 구현](39강_Self_Attention_구현.md)
-- **다음 강:** [제41강. Multi-Head Attention](41강_Multi_Head_Attention.md)
+- **이전 강:** [39강. Self-Attention 구현](39강_Self_Attention_구현.md)
+- **다음 강:** [41강. Multi-Head Attention](41강_Multi_Head_Attention.md)
 
 <!-- /LECTURE_NAV -->

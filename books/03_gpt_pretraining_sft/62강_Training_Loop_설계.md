@@ -1,15 +1,13 @@
-# 제62강. Training Loop 설계
+# 62강. Training Loop 설계
+## 이번 강에서 배우는 내용
 
-> **학습 목표**
-> - 한 train step의 순서를 `batch → forward → loss → backward → clip → step`으로 설명한다.
-> - Epoch 기반 종료와 Token budget 기반 종료를 구분한다.
-> - Gradient clipping이 왜 들어가는지 직관적으로 말한다.
-> - 무엇을 로그할지(최소 세트) 설계한다.
-> - 제23강의 작은 루프가 LLM Pretraining에서 어떻게 확장되는지 연결한다.
+- 한 train step의 순서를 `batch → forward → loss → backward → clip → step`으로 설명한다.
+- Epoch 기반 종료와 Token budget 기반 종료를 구분한다.
+- Gradient clipping이 왜 들어가는지 직관적으로 말한다.
+- 무엇을 로그할지(최소 세트) 설계한다.
+- 제23강의 작은 루프가 LLM Pretraining에서 어떻게 확장되는지 연결한다.
 
----
-## 1. 왜 이것을 배우는가
-
+## 왜 중요한가?
 모델 코드가 있어도 루프가 흐리면 실험이 재현되지 않는다. Pretraining은 수천만~수조 토큰을 도는 긴 작업이다. 루프의 “한 바퀴”가 무엇을 의미하는지 합의해야 Optimizer(제63강), AMP(제64강), Checkpoint(제65강), Validation(제66강)을 꽂을 구멍이 생긴다.
 
 ```text
@@ -26,8 +24,7 @@ DataLoader 배치
 
 이번 강의는 **훅이 꽂히기 전 뼈대**에 집중한다.
 
-## 2. 먼저 알아야 할 개념
-
+## 선수 개념
 1. **학습 루프·Optimizer 기초** — 제23강
 2. **Autograd / `zero_grad`** — 제20강
 3. **Causal LM Loss** — 제34, 57강
@@ -36,8 +33,7 @@ DataLoader 배치
 
 AdamW·cosine·AMP 세부 수식은 다음 강의들이다. 여기서는 루프에 **자리가 있다**는 점만 확보한다.
 
-## 3. 핵심 개념 — Train Step
-
+## 핵심 개념 — Train Step
 **Train step(학습 스텝)**은 “파라미터를 한 번 갱신하기까지”의 최소 단위다.  
 (Gradient Accumulation을 쓰면 micro-batch 여러 번 뒤에야 한 step이 된다. 제64강.)
 
@@ -65,8 +61,7 @@ AdamW·cosine·AMP 세부 수식은 다음 강의들이다. 여기서는 루프�
 | 부가 장치 | 거의 없음 | clip, AMP, accum, ckpt, eval |
 | 로깅 | print | step/토큰/시간 정규화 지표 |
 
-## 4. Forward와 Loss를 루프에 끼우기
-
+## Forward와 Loss를 루프에 끼우기
 ### 4.1 모델이 로짓만 반환하는 경우
 
 ```python
@@ -96,8 +91,7 @@ loss = out.loss  # 스칼라
 
 `train()` 모드는 Dropout·일부 Norm 동작 등을 **학습용**으로 켠다. Validation(제66강)에서는 `eval()` + `torch.no_grad()`로 바꾼다. 루프 시작 시 한 번, eval 후 복귀 시 다시 `train()`을 호출하는 패턴이 안전하다.
 
-## 5. Backward, Clip, Step
-
+## Backward, Clip, Step
 ### 5.1 `zero_grad` 위치
 
 PyTorch는 기본적으로 gradient를 **누적**한다. 매 step 시작(또는 accumulation 사이클 시작)에 비운다.
@@ -132,8 +126,7 @@ clip은 **`backward` 이후, `optimizer.step` 이전**에 둔다.
 
 Optimizer가 `.grad`를 읽어 파라미터를 갱신한다. AdamW 세부·weight decay는 제63강.
 
-## 6. Epoch vs Token Budget
-
+## Epoch vs Token Budget
 ### 6.1 Epoch이란
 
 **Epoch**은 학습 데이터 전체를 한 번 순회한 단위다. 작은 표 데이터에서는 “10 epoch”이 자연스럽다.
@@ -186,8 +179,7 @@ while tokens_seen < token_budget:
 
 Learning rate scheduler(제63강)도 epoch 단위보다 **step 또는 토큰 단위**로 거는 경우가 많다.
 
-## 7. 최소 Training Loop 코드
-
+## 최소 Training Loop 코드
 교육용 단일 GPU 루프(AMP·accum 없음):
 
 ```python
@@ -278,8 +270,7 @@ training_loop 안에 들어갈 확장:
   - if step % ckpt_every: save_ckpt()    → 제65강
 ```
 
-## 8. 로깅 설계
-
+## 로깅 설계
 로깅은 “예쁜 대시보드”가 아니라 **재현·디버깅 계약**이다.
 
 ### 8.1 최소 세트
@@ -309,8 +300,7 @@ training_loop 안에 들어갈 확장:
 
 설명: 로그는 학습을 빠르게 만들지 않는다. 그러나 실패한 실험을 **실패한 이유와 함께** 남긴다.
 
-## 9. 배치·디바이스·시드
-
+## 배치·디바이스·시드
 ### 9.1 장치 이동
 
 ```python
@@ -333,8 +323,7 @@ batch = {k: v.to(device, non_blocking=True) for k, v in batch.items()}
 
 Checkpoint 재개(제65강)의 기준은 보통 `global_step`(그리고 토큰 수)이다. epoch 카운터만으로 재개하면 packing 이터레이터 위치와 어긋나기 쉽다.
 
-## 10. 루프에 훅 지점 배치하기
-
+## 루프에 훅 지점 배치하기
 권장 순서(단일 프로세스 기준):
 
 ```text
@@ -348,8 +337,7 @@ for each step:
 
 Eval/Checkpoint를 **너무 자주** 하면 처리량(tok/s)이 떨어진다. 너무 드물면 발산·최고 성능 지점을 놓친다. 간격은 예산·안정성에 맞게 고른다. 구체 숫자는 레시피마다 다르므로 여기서 고정값처럼 제시하지 않는다.
 
-## 11. 디버깅용 “한 배치 과적합” 테스트
-
+## 디버깅용 “한 배치 과적합” 테스트
 본학습 전에 루프가 맞는지 확인하는 고전적 방법:
 
 1. 배치 1~몇 개만 골라 반복 학습한다.
@@ -358,8 +346,7 @@ Eval/Checkpoint를 **너무 자주** 하면 처리량(tok/s)이 떨어진다. �
 
 이 테스트는 **일반화**를 보장하지 않는다. “파이프와 그래프가 연결되었는가”만 본다. 과적합·검증은 제24강·제66강 맥락이다.
 
-## 12. 분산 학습을 아직 안 다루더라도
-
+## 분산 학습을 아직 안 다루더라도
 이 책의 루프는 단일 장치 중심이다. 그래도 이름을 미리 분리해 두면 이후가 쉽다.
 
 - `micro_batch_size`: 이 GPU가 한 forward에 넣는 배치
@@ -368,8 +355,7 @@ Eval/Checkpoint를 **너무 자주** 하면 처리량(tok/s)이 떨어진다. �
 
 제64강의 accumulation은 “장치 하나에서 global에 가까워지는 법”이다. 로깅 키를 지금부터 통일하라.
 
-## 13. 흔한 버그
-
+## 흔한 버그
 1. **`zero_grad` 생략** — 기울기 누적으로 step이 폭주.
 2. **`step`과 `backward` 순서 반대** — 제23강 퀴즈와 동일.
 3. **eval 후 `train()` 복귀 누락** — Dropout 꺼진 채 학습.
@@ -378,16 +364,18 @@ Eval/Checkpoint를 **너무 자주** 하면 처리량(tok/s)이 떨어진다. �
 6. **clip을 `step` 뒤에 적용** — 이미 갱신된 뒤라 의미 없음.
 7. **손실을 Python float로 너무 일찍 변환** — 그래프 끊김은 `backward` 전 `loss`에 하면 안 됨. 로그용 `detach`는 가능.
 
-## 14. 핵심 정리
+## LLM에서는 어디에 사용될까?
 
+이번 62강에서 배운 개념은 이후 Transformer · GPT · 서빙 강의에서 반복해서 등장합니다. 각 수식·코드 블록을 “실제 모델의 어느 단계인가”와 연결해 다시 읽어 보세요.
+
+## 핵심 요약
 - Train step은 배치 → forward → loss → backward → (clip) → optimizer step이다.
 - LLM Pretraining은 epoch보다 **token budget / global_step** 축이 자주 쓰인다.
 - Gradient clipping은 step 직전에서 업데이트 폭주를 완화한다.
 - 로깅 최소 세트는 step, loss, lr, tokens, throughput이다.
 - Eval·Checkpoint·AMP·Scheduler는 이 루프의 훅으로 연결된다.
 
-## 15. 핵심 용어
-
+## 용어 사전
 | 용어 | 의미 |
 |---|---|
 | Train step | 파라미터 1회 갱신 단위 |
@@ -399,7 +387,7 @@ Eval/Checkpoint를 **너무 자주** 하면 처리량(tok/s)이 떨어진다. �
 | Throughput (`tok/s`) | 초당 처리 토큰 수 |
 | Hook | eval/ckpt/log가 삽입되는 지점 |
 
-## 16. 연습 문제
+## 연습문제
 ### 문제 1 (순서)
 
 다음 단계를 올바른 순서로 배열하시오: `optimizer.step`, `loss.backward`, `zero_grad`, `forward`, `clip_grad_norm_`, `loss 계산`.
@@ -423,7 +411,6 @@ Loss는 나오는데 파라미터가 변하지 않는다. 루프에서 의심할
 ---
 
 ## 정답 및 해설
-
 ### 문제 1
 
 `zero_grad` → `forward` → `loss 계산` → `loss.backward` → `clip_grad_norm_` → `optimizer.step`.
@@ -444,8 +431,7 @@ Scheduler 버그로 lr이 0 또는 극소에 붙어 Loss가 정체되는 상황�
 
 PAD·무시 위치 label을 `-100` 등으로 두었다면 `cross_entropy(..., ignore_index=-100)`로 그 위치가 Loss/기울기에 기여하지 않게 해야 한다. shift를 쓸 때도 무시 위치가 어긋나지 않게 유지한다.
 
-## 17. 다음 강의와 연결
-
+## 다음 강의와 연결
 루프의 `optimizer.step()` 자리가 비어 있다.
 
 다음 **제63강. Optimizer, Learning Rate, Scheduler**에서는 AdamW의 직관, weight decay, warmup+cosine schedule을 제1권 Optimizer 지식 위에 쌓는다. 그 다음 제64강에서 AMP와 Gradient Accumulation으로 메모리·실효 배치를 다룬다.
@@ -459,7 +445,7 @@ PAD·무시 위치 label을 `-100` 등으로 두었다면 `cross_entropy(..., ig
 
 ### 강의 이동
 
-- **이전 강:** [제61강. Tokenization Pipeline과 Dataset Packing](61강_Tokenization_Pipeline과_Dataset_Packing.md)
-- **다음 강:** [제63강. Optimizer, Learning Rate, Scheduler](63강_Optimizer_Learning_Rate_Scheduler.md)
+- **이전 강:** [61강. Tokenization Pipeline과 Dataset Packing](61강_Tokenization_Pipeline과_Dataset_Packing.md)
+- **다음 강:** [63강. Optimizer, Learning Rate, Scheduler](63강_Optimizer_Learning_Rate_Scheduler.md)
 
 <!-- /LECTURE_NAV -->

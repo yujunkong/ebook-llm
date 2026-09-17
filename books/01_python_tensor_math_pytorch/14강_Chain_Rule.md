@@ -1,15 +1,13 @@
-# 제14강. Chain Rule
+# 14강. Chain Rule
+## 이번 강에서 배우는 내용
 
-> **학습 목표**
-> - $f(g(x))$의 미분을 손으로 계산하기
-> - 다변수·다단계로 Chain Rule이 확장되는 감각
-> - Computational Graph(계산 그래프)로 Forward/Backward를 읽기
-> - Backpropagation이 Chain Rule의 체계적 적용임을 이해하기
-> - LLM처럼 깊은 모델에서 “Gradient가 뒤로 흐른다”는 말의 의미
+- $f(g(x))$의 미분을 손으로 계산하기
+- 다변수·다단계로 Chain Rule이 확장되는 감각
+- Computational Graph(계산 그래프)로 Forward/Backward를 읽기
+- Backpropagation이 Chain Rule의 체계적 적용임을 이해하기
+- LLM처럼 깊은 모델에서 “Gradient가 뒤로 흐른다”는 말의 의미
 
----
-## 1. 왜 이것을 배우는가
-
+## 왜 중요한가?
 한 층의 Linear만 있으면 $L(W)$를 직접 미분해도 된다.  
 그러나 Transformer는 Embedding → 수십~수백 Block → LM Head처럼 **깊이**가 있다.
 
@@ -24,15 +22,13 @@ Chain Rule은 “국소 미분을 곱해 연결”하면 전체 미분이 나온
 
 Autograd가 마법처럼 보여도, 내부에서 하는 일은 이 규칙의 반복이다.
 
-## 2. 먼저 알아야 할 개념
-
+## 선수 개념
 - 도함수 $f'(x)$ (11강)
 - 편미분 (11강)
 - Gradient / GD / Loss (12~13강)
 - 합성: 출력이 다음 입력으로 들어감
 
-## 3. 핵심 개념 설명
-
+## 핵심 개념
 ### 3.1 Chain Rule (연쇄법칙) — 1변수
 
 바깥 함수 $f$, 안쪽 함수 $g$,
@@ -119,8 +115,7 @@ $$
 
 신경망에서도 한 파라미터가 여러 경로로 Loss에 영향을 주면, Backward에서 그 경로 Gradient를 **합산**한다. (PyTorch의 Gradient 누적과 같은 정신)
 
-## 4. 작은 숫자로 직접 계산하기
-
+## 작은 숫자로 직접 계산하기
 ### 4.1 기본 예 $y=(2x-1)^2$
 
 안쪽 $u=2x-1$, 바깥 $y=u^2$.
@@ -324,8 +319,7 @@ $$
 서로 상대방 값을 곱해 보낸다.  
 계산 그래프의 “국소 규칙”이 이렇게 단순하다.
 
-## 5. Computational Graph (계산 그래프)
-
+## Computational Graph (계산 그래프)
 **Computational Graph(계산 그래프)**는 연산을 노드로, 값의 흐름을 엣지로 나타낸 그림이다.
 
 5.4절 예:
@@ -367,8 +361,7 @@ $$
 | $h$ | 2 | $\times w_2$ | -2 |
 | $w_1$ | 1 | $\times x$ | -4 |
 
-## 6. 코드로 구현하기 — 수동 역전파
-
+## 코드로 구현하기 — 수동 역전파
 ```python
 # lecture14_manual_backprop.py
 # 2층 미니 네트워크를 Chain Rule로 직접 미분한다.
@@ -425,8 +418,7 @@ print("numeric:", num_dw1, num_dw2)
 print("analytic:", -4.0, -4.0)
 ```
 
-## 7. PyTorch Autograd와 같은 예
-
+## PyTorch Autograd와 같은 예
 ```python
 # lecture14_torch_chain.py
 import torch
@@ -449,8 +441,7 @@ print(w1.grad, w2.grad)  # tensor(-4.), tensor(-4.)
 
 > Autograd = 계산 그래프를 만든 뒤 Chain Rule로 Backward.
 
-## 8. 여러 경로가 합쳐지는 예
-
+## 여러 경로가 합쳐지는 예
 $$
 
 a = w,\quad b=w,\quad u=a+b,\quad L=\frac12 u^2
@@ -477,8 +468,7 @@ $$
 
 Residual connection처럼 같은 텐서가 여러 곳으로 연결되면, Backward에서 Gradient가 **더해진다**.
 
-## 9. 실제 LLM에서는 어떻게 사용하는가
-
+## LLM에서는 어디에 사용될까?
 ### 9.1 깊고 긴 연쇄
 
 대략적 흐름:
@@ -517,8 +507,7 @@ Residual $x+F(x)$는 Backward 시 Gradient에 **+1 경로**를 남긴다.
 
 14강까지로 이 표의 세 줄이 모두 언어화되었다.
 
-## 10. 실습
-
+## 실습
 ### 실습 1 — 손계산
 
 $y=\sin(3x)$에서 $\dfrac{dy}{dx}$를 Chain Rule로 쓰시오. ($\sin$의 도함수는 $\cos$)  
@@ -540,8 +529,7 @@ $y=(3x+1)^3$, $x=1$에서 Forward 중간값과 $\dfrac{dy}{dx}$를 구하시오.
 
 $L=\frac12(w_2(w_1 x)-y)^2$의 계산 그래프를 종이에 그리고, Backward 화살표 방향을 표시하시오.
 
-## 11. 자주 하는 실수
-
+## 자주 하는 실수
 1. **바깥 미분만 하고 안쪽을 빼먹는다**  
    $(2x-1)^2$를 $2(2x-1)$로만 두면 안 된다. $\times 2$가 더 필요하다.
 
@@ -557,16 +545,14 @@ $L=\frac12(w_2(w_1 x)-y)^2$의 계산 그래프를 종이에 그리고, Backward
 5. **Autograd만 믿고 손계산을 안 한다**  
    버그는 작은 그래프를 손으로 풀어봐야 빨리 잡힌다.
 
-## 12. 핵심 정리
-
+## 핵심 요약
 - Chain Rule: $\dfrac{dy}{dx}=\dfrac{dy}{du}\dfrac{du}{dx}$.
 - 깊은 모델의 Gradient는 국소 미분의 곱과 합이다.
 - Computational Graph에서 Forward는 값, Backward는 민감도를 전달한다.
 - Backpropagation = Chain Rule의 체계적·효율적 적용.
 - Autograd 결과는 수동 Chain Rule·수치 미분으로 검증할 수 있다.
 
-## 13. 핵심 용어
-
+## 용어 사전
 | 용어 | 의미 |
 |---|---|
 | Chain Rule (연쇄법칙) | 합성함수 미분 규칙 |
@@ -578,7 +564,7 @@ $L=\frac12(w_2(w_1 x)-y)^2$의 계산 그래프를 종이에 그리고, Backward
 | Local Gradient | 한 연산 노드의 국소 미분 |
 | Autograd | 자동으로 그래프를 만들고 Backward하는 시스템 |
 
-## 14. 연습 문제
+## 연습문제
 ### 문제 1 (계산)
 
 $y=(5x+2)^2$에서 Chain Rule로 $\dfrac{dy}{dx}$를 구하고 $x=1$에서의 값을 구하시오.
@@ -611,7 +597,6 @@ LLM에서 Loss는 마지막에만 Scalar로 존재한다. Embedding 행렬까지
 ---
 
 ## 정답 및 해설
-
 ### 문제 1
 
 $u=5x+2$, $y=u^2$, $dy/dx=2u\cdot5=10(5x+2)$.  
@@ -639,8 +624,7 @@ $L=(wx)^2=w^2 x^2$, $\partial L/\partial w=2w x^2=2\cdot2\cdot9=36$.
 
 Loss에서 LM Head, 각 Transformer Block, Embedding에 이르는 모든 연산에 대해 Chain Rule(Backward Pass)이 연속 적용되어야 한다.
 
-## 15. 다음 강의와 연결
-
+## 다음 강의와 연결
 1권의 수학 핵심 레일 — Tensor, 행렬곱, 미분, Gradient Descent, Loss, Chain Rule — 이 한 줄로 이어졌다.
 
 다음 **제15강. Neural Network 구조**에서는 이 레일 위에 **층(Layer), 활성화 함수, 다층 퍼셉트론**을 올려 실제 “네트워크”를 조립한다.  
@@ -654,7 +638,7 @@ Forward는 행렬곱의 반복이고, Backward는 이번 강의의 Chain Rule이
 
 ### 강의 이동
 
-- **이전 강:** [제13강. Loss Function](13강_Loss_Function.md)
-- **다음 강:** [제15강. Neural Network의 구조](15강_Neural_Network의_구조.md)
+- **이전 강:** [13강. Loss Function](13강_Loss_Function.md)
+- **다음 강:** [15강. Neural Network의 구조](15강_Neural_Network의_구조.md)
 
 <!-- /LECTURE_NAV -->

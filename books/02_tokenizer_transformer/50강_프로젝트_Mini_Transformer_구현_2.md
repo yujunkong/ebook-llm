@@ -1,14 +1,12 @@
-# 제50강. 프로젝트 — Mini Transformer 구현 (2)
+# 50강. 프로젝트 — Mini Transformer 구현 (2)
+## 이번 강에서 배우는 내용
 
-> **학습 목표**
-> - `data.py`로 텍스트를 토큰 시퀀스·미니배치 `(x, y)`로 만든다.
-> - `train.py`에서 Cross Entropy로 학습하고 loss 감소를 확인한다.
-> - greedy `generate`로 프롬프트 뒤 문자를 이어 쓴다.
-> - 실패 시 shape / mask / 타깃 시프트 / eval 모드를 체계적으로 디버깅한다.
+- `data.py`로 텍스트를 토큰 시퀀스·미니배치 `(x, y)`로 만든다.
+- `train.py`에서 Cross Entropy로 학습하고 loss 감소를 확인한다.
+- greedy `generate`로 프롬프트 뒤 문자를 이어 쓴다.
+- 실패 시 shape / mask / 타깃 시프트 / eval 모드를 체계적으로 디버깅한다.
 
----
-## 1. 왜 이것을 배우는가
-
+## 왜 중요한가?
 Forward만 되는 모델은 아직 “언어 모델”이 아니다. 언어 모델은 **Loss가 정의되고, 파라미터가 갱신되며, 생성 API가 닫히는** 순간 완성된다.
 
 3권 GPT Pretraining은 이 루프의 확대판이다.
@@ -24,8 +22,7 @@ Forward만 되는 모델은 아직 “언어 모델”이 아니다. 언어 모�
 
 지금 CPU 미니 규모로 이 루프를 한 번 완주해야, 이후 데이터셋만 커져도 당황하지 않는다.
 
-## 2. 프로젝트 상태 확인 (1부에서 이어짐)
-
+## 프로젝트 상태 확인 (1부에서 이어짐)
 디렉터리는 동일하다.
 
 ```text
@@ -40,8 +37,7 @@ ch49_mini_transformer/
 
 1부 smoke test가 실패하면 2부를 시작하지 않는다. `logits.shape == (B, T, V)`를 다시 확인하라.
 
-## 3. 학습 데이터 — 아주 작은 텍스트
-
+## 학습 데이터 — 아주 작은 텍스트
 완벽한 위키피디아가 필요 없다. **반복 패턴이 있는 짧은 텍스트**가 미니 LM에 더 친절하다.
 
 예: `input.txt`에 다음을 넣는다(직접 만들어도 됨).
@@ -66,8 +62,7 @@ mini transformer mini transformer
 - 너무 짧으면(수 십 자) 금방 암기하지만, 파이프라인 검증에는 충분하다.
 - 너무 길면 CPU에서 느리다. 처음엔 **1~5KB**면 넉넉하다.
 
-## 4. `data.py` — 배치 만들기
-
+## `data.py` — 배치 만들기
 Next-token 학습의 핵심은 **한 칸 시프트**다.
 
 ```text
@@ -137,8 +132,7 @@ decode y0: 'o be or not to b'
 
 `y`가 `x`보다 한 글자씩 앞서 있음을 눈으로 확인한다. 이 확인을 건너뛰면 Loss 디버깅이 어려워진다.
 
-## 5. Loss — logits와 타깃 연결
-
+## Loss — logits와 타깃 연결
 `CrossEntropyLoss`는 보통 `(N, V)` logit과 `(N,)` 클래스 인덱스를 기대한다. `[B,T,V]`를 펼친다.
 
 ```python
@@ -151,8 +145,7 @@ loss = F.cross_entropy(
 
 제34강 내용 그대로다. Softmax는 Loss 안에서 처리되므로 `softmax`를 미리 씌우지 않는다.
 
-## 6. `train.py` — 학습 루프와 greedy 생성
-
+## `train.py` — 학습 루프와 greedy 생성
 ### 6.1 Greedy generate
 
 ```python
@@ -268,8 +261,7 @@ python train.py --steps 800
 python train.py --input input.txt --steps 1000
 ```
 
-## 7. 예상 출력
-
+## 예상 출력
 환경마다 숫자는 다르다. **경향**이 맞으면 성공이다.
 
 ```text
@@ -298,8 +290,7 @@ to be or not to be that is the question
 
 문자 vocab가 20이면 $\ln 20 \approx 3.0$ 근처가 초기 CE의 대략적 감각이다. 엄밀한 하한은 아니므로 “근처”로만 보라.
 
-## 8. 한 배치 overfit 테스트 (강력 추천)
-
+## 한 배치 overfit 테스트 (강력 추천)
 전체 루프 전에, **고정된 배치 하나**만 반복 학습해 보라.
 
 ```python
@@ -316,8 +307,7 @@ for step in range(200):
 
 충분히 작은 모델·배치에서 loss가 거의 0 근처로 안 내려가면, 데이터 문제가 아니라 **구현 버그** 확률이 높다.
 
-## 9. 체크포인트 저장 (선택)
-
+## 체크포인트 저장 (선택)
 ```python
 torch.save(
     {
@@ -331,8 +321,7 @@ torch.save(
 
 불러올 때는 같은 `MiniConfig`·tokenizer 맵으로 모델을 재구성한 뒤 `load_state_dict`한다. 1권 제21·25강 패턴과 같다.
 
-## 10. 디버깅 순서
-
+## 디버깅 순서
 ```text
 1) data.py에서 x/y decode가 한 글자 시프트인지
 2) model smoke test logits [B,T,V]
@@ -351,16 +340,14 @@ torch.save(
 | 생성 즉시 반복  Junk | 학습 부족 또는 데이터 너무 짧음 |
 | 생성 시 크래시 | `T > block_size` crop 누락 |
 
-## 11. 완성 체크리스트 (2부)
-
+## 완성 체크리스트 (2부)
 - [ ] `python data.py`가 x/y shape와 decode를 인쇄한다
 - [ ] `python train.py --steps 800`이 loss 감소 로그를 남긴다
 - [ ] greedy 출력이 프롬프트를 포함하고 뒤가 이어진다
 - [ ] (선택) `mini_ckpt.pt` 저장·로드
 - [ ] (선택) weight tying on/off loss 비교 메모
 
-## 12. 도전 과제 (2부)
-
+## 도전 과제 (2부)
 ### 도전 1 — Validation split
 
 데이터 뒤 10%를 val로 고정하고, `print_every`마다 val loss를 함께 출력하라. train만 내려가고 val이 올라가면 암기 신호다.
@@ -381,24 +368,25 @@ step별 loss를 `losses.txt`에 쓰고, (선택) matplotlib로 꺾은선을 그�
 
 `train.py`에서 generate를 `generate.py`로 분리하고, `python generate.py --ckpt mini_ckpt.pt --prompt "to be"` 형태로 실행되게 하라.
 
-## 13. 이 프로젝트가 증명하는 것
-
+## 이 프로젝트가 증명하는 것
 끝난 뒤 다음 문장을 말할 수 있어야 한다.
 
 > 나는 토큰 ID 배치를 Causal Transformer에 넣어 next-token CE로 학습시키고, greedy 디코딩으로 문자열을 생성할 수 있다.
 
 이것이 2권의 실전 관문이다. 규모만 키우면 3권 Mini GPT / Pretraining으로 이어진다.
 
-## 14. 핵심 정리
+## LLM에서는 어디에 사용될까?
 
+이번 50강에서 배운 개념은 이후 Transformer · GPT · 서빙 강의에서 반복해서 등장합니다. 각 수식·코드 블록을 “실제 모델의 어느 단계인가”와 연결해 다시 읽어 보세요.
+
+## 핵심 요약
 - 2부는 `data.py`(시프트 배치) + `train.py`(루프·greedy)다.
 - Loss는 `logits[B,T,V]`와 `y[B,T]`의 Cross Entropy다.
 - 생성은 마지막 위치 logit → argmax → append 반복이다.
 - 한 배치 overfit 테스트로 구현 버그를 먼저 걸러라.
 - 성공 기준은 완벽한 문장이 아니라 **loss 감소 + 패턴을 흉내 내는 생성**이다.
 
-## 15. 핵심 용어
-
+## 용어 사전
 | 용어 | 의미 |
 |---|---|
 | Next-token batch | 입력 $x$와 한 칸 앞 타깃 $y$ |
@@ -409,7 +397,7 @@ step별 loss를 `losses.txt`에 쓰고, (선택) matplotlib로 꺾은선을 그�
 | AdamW | 미니 LM에 흔히 쓰는 Optimizer |
 | Checkpoint | `state_dict` + 설정 + tokenizer 맵 |
 
-## 16. 연습 문제
+## 연습문제
 ### 문제 1 (개념)
 
 `y = data[i+1 : i+1+T]`인 이유를 Next Token Prediction으로 설명하시오.
@@ -433,7 +421,6 @@ overfit 테스트에서 loss가 0.01까지 내려갔는데, 전체 데이터 학
 ---
 
 ## 정답 및 해설
-
 ### 문제 1
 
 위치 $t$의 출력이 $x_{t+1}$을 맞추도록 감독 신호를 주기 위해, 타깃 시퀀스를 한 칸 앞으로 둔다.
@@ -454,8 +441,7 @@ overfit 테스트에서 loss가 0.01까지 내려갔는데, 전체 데이터 학
 
 예: (1) 프롬프트 문자가 train 분포 밖 (2) `model.train()` 상태로 dropout이 켜짐 (3) crop/디바이스 불일치 (4) tokenizer 맵 불일치.
 
-## 17. 다음 강의와 연결
-
+## 다음 강의와 연결
 동작하는 Mini Transformer를 손에 넣었다. **제51강. Attention 시각화**에서는 학습된(또는 작은 예제) Attention 가중치를 그림으로 읽어, 모델이 “어디에 주목하는지”를 관찰한다.
 
 <!-- LECTURE_NAV -->
@@ -464,7 +450,7 @@ overfit 테스트에서 loss가 0.01까지 내려갔는데, 전체 데이터 학
 
 ### 강의 이동
 
-- **이전 강:** [제49강. 프로젝트 — Mini Transformer 구현 (1)](49강_프로젝트_Mini_Transformer_구현_1.md)
-- **다음 강:** [제51강. Attention 시각화](51강_Attention_시각화.md)
+- **이전 강:** [49강. 프로젝트 — Mini Transformer 구현 (1)](49강_프로젝트_Mini_Transformer_구현_1.md)
+- **다음 강:** [51강. Attention 시각화](51강_Attention_시각화.md)
 
 <!-- /LECTURE_NAV -->

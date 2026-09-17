@@ -1,0 +1,27 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1200" height="720" viewBox="0 0 1200 720" role="img" aria-labelledby="t">
+  <title id="t">ø¼ 11-2. ¸ø„@ \ •ÌX 0¸0</title>
+  <rect width="1200" height="720" fill="#f7f4ef"/>
+  <text x="60" y="56" font-family="Georgia, serif" font-size="28" fill="#1a1a1a">ø¼ 11-2. ¸ø„  \ ÀÌ ÀÁ| LX 0¸0</text>
+  <!-- 3d-ish surface hint as contour -->
+  <ellipse cx="380" cy="380" rx="220" ry="140" fill="none" stroke="#0b6e4f" stroke-width="3"/>
+  <ellipse cx="380" cy="380" rx="140" ry="90" fill="none" stroke="#0b6e4f" stroke-width="2" opacity="0.6"/>
+  <ellipse cx="380" cy="380" rx="70" ry="45" fill="none" stroke="#0b6e4f" stroke-width="2" opacity="0.4"/>
+  <line x1="160" y1="520" x2="600" y2="240" stroke="#888" stroke-width="2"/>
+  <line x1="200" y1="200" x2="560" y2="560" stroke="#888" stroke-width="2"/>
+  <text x="610" y="240" font-size="22" fill="#555">x</text>
+  <text x="560" y="580" font-size="22" fill="#555">y</text>
+  <circle cx="380" cy="380" r="8" fill="#1a1a1a"/>
+  <!-- partial x arrow -->
+  <line x1="380" y1="380" x2="500" y2="300" stroke="#b35c00" stroke-width="4"/>
+  <text x="510" y="295" font-size="22" fill="#b35c00" font-family="Georgia, serif">f/x</text>
+  <!-- partial y arrow -->
+  <line x1="380" y1="380" x2="460" y2="480" stroke="#2c3e6b" stroke-width="4"/>
+  <text x="470" y="500" font-size="22" fill="#2c3e6b" font-family="Georgia, serif">f/y</text>
+  <rect x="720" y="200" width="420" height="340" rx="8" fill="#fff" stroke="#d0cbc3" stroke-width="2"/>
+  <text x="750" y="260" font-size="22" font-family="Georgia, serif" fill="#1a1a1a">f(x, y)</text>
+  <text x="750" y="320" font-size="18" font-family="Helvetica, Arial, sans-serif" fill="#333">f/x : y à, xÌ ÀT</text>
+  <text x="750" y="370" font-size="18" font-family="Helvetica, Arial, sans-serif" fill="#333">f/y : x à, yÌ ÀT</text>
+  <text x="750" y="440" font-size="18" font-family="Helvetica, Arial, sans-serif" fill="#555">LLM Loss L(¸)” 1Ì~œµ</text>
+  <text x="750" y="475" font-size="18" font-family="Helvetica, Arial, sans-serif" fill="#555">|ø0X h ’ ¸ø„ D”</text>
+  <text x="750" y="520" font-size="18" font-family="Helvetica, Arial, sans-serif" fill="#555">¨à ¸ø„D ¨<t Gradient</text>
+</svg>

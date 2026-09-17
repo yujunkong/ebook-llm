@@ -1,14 +1,12 @@
-# 제76강. 프로젝트 — Mini GPT + SFT
+# 76강. 프로젝트 — Mini GPT + SFT
+## 이번 강에서 배우는 내용
 
-> **학습 목표**
-> - `ch76_mini_gpt_sft/`에 데이터·마스크·학습·생성·비교 스크립트를 둔다.
-> - prompt 구간은 loss에서 제외하고 response만 CE로 학습한다.
-> - SFT 전·후 생성을 동일 프롬프트로 저장·비교한다.
-> - 제75강식의 초미니 harness（규칙 2~3개）로 회귀를 확인한다.
+- `ch76_mini_gpt_sft/`에 데이터·마스크·학습·생성·비교 스크립트를 둔다.
+- prompt 구간은 loss에서 제외하고 response만 CE로 학습한다.
+- SFT 전·후 생성을 동일 프롬프트로 저장·비교한다.
+- 제75강식의 초미니 harness（규칙 2~3개）로 회귀를 확인한다.
 
----
-## 1. 왜 이것을 배우는가
-
+## 왜 중요한가?
 문서만 읽으면 SFT는 “데이터 포맷을 바꾼 pretraining”처럼 보인다. 손으로 구현하면 차이가 드러난다.
 
 | Pretraining (68강) | SFT (이번) |
@@ -20,8 +18,7 @@
 
 LoRA/QLoRA（제73~74강）는 이 프로젝트에서 **선택**이다. 미니 모델은 full SFT가 가능하므로, 기본 경로는 full（또는 전 레이어 소형 LoRA）로 두고, 시간이 남으면 어댑터 ablation을 추가한다.
 
-## 2. 프로젝트 목표와 성공 기준
-
+## 프로젝트 목표와 성공 기준
 ### 2.1 목표
 
 1. 장난감 instruction JSONL（20~50쌍）작성
@@ -39,8 +36,7 @@ LoRA/QLoRA（제73~74강）는 이 프로젝트에서 **선택**이다. 미니 �
 
 “모든 답을 완벽히”는 기준이 아니다.
 
-## 3. 권장 디렉터리
-
+## 권장 디렉터리
 ```text
 ch76_mini_gpt_sft/
 ├── README.md
@@ -62,8 +58,7 @@ ch76_mini_gpt_sft/
 
 제68강 산출물이 있으면 `model.py`·tokenizer·pretrained ckpt를 재사용한다. 없으면 **더 작은** Causal LM을 이 폴더에 두고, 먼저 수 분 pretrain（장난감 코퍼스）후 SFT해도 된다.
 
-## 4. 초소형 Instruction 데이터
-
+## 초소형 Instruction 데이터
 ### 4.1 형식
 
 ```json
@@ -84,8 +79,7 @@ ch76_mini_gpt_sft/
 - 일부러 짧은 output（과적합·style 관찰이 쉬움）
 - 위험 문장은 넣지 않는다（교육용 미니셋）
 
-## 5. Chat template → 토큰 → 마스크
-
+## Chat template → 토큰 → 마스크
 ### 5.1 문자열 템플릿
 
 미니 프로젝트용 단순 템플릿:
@@ -208,8 +202,7 @@ def collate_sft(batch: list[SFTItem], pad_id: int) -> dict[str, torch.Tensor]:
 
 **단위 테스트 아이디어:** `labels`에서 `IGNORE_INDEX`가 아닌 위치가 모두 response 문자에 해당하는지, 디코드해 육안 확인한다.
 
-## 6. 모델과 손실
-
+## 모델과 손실
 Causal LM forward가 logits `[B,T,V]`를 낸다고 가정（제56~57·68강）.
 
 ```python
@@ -229,8 +222,7 @@ def sft_loss(logits, labels):
 
 마스크가 없다면 모델은 instruction 문장을 **그대로 복사·예측**하는 쪽에 용량을 쓴다. 미니셋에서는 특히 빨리 망가진다.
 
-## 7. `train_sft.py` 골격
-
+## `train_sft.py` 골격
 ```python
 # ch76_mini_gpt_sft/train_sft.py
 """Mini GPT SFT loop — response-only CE."""
@@ -305,8 +297,7 @@ if __name__ == "__main__":
 
 데이터가 30쌍인데 epoch 200이면 제75강의 overfitting을 **의도적으로** 재현할 수도 있다. 한 번은 과하게 돌려 보고, harness가 망가지는 모습을 기록해 보라.
 
-## 8. Before / After 생성 비교
-
+## Before / After 생성 비교
 ### 8.1 생성 시 입력
 
 학습과 동일하게 `format_example(..., for_training=False)`까지만 넣고, `### Response:\n` 뒤에서 토큰을 이어 생성한다.
@@ -352,8 +343,7 @@ Path("artifacts/before_after.md").write_text("".join(lines), encoding="utf-8")
 2. instruction 무시 여부
 3. 학습셋 문장 복사 징후
 
-## 9. 초미니 Eval harness
-
+## 초미니 Eval harness
 ```python
 # ch76_mini_gpt_sft/eval_mini.py
 import json
@@ -388,8 +378,7 @@ mean=0.67
 
 점수가 낮아도 **프로세스**가 맞으면 프로젝트 성공이다. 다만 mask 버그가 있으면 거의 항상 형식 학습이 안 된다.
 
-## 10. （선택）LoRA ablation
-
+## （선택）LoRA ablation
 미니 모델에 LoRA를 붙이는 연습:
 
 1. `q_proj`,`v_proj`만 $r=4$
@@ -398,8 +387,7 @@ mean=0.67
 
 파라미터가 원래 작으면 LoRA의 VRAM 이득은 미미하다. 목적은 **제73강 습관의 이식**이다.
 
-## 11. 디버깅 가이드
-
+## 디버깅 가이드
 | 증상 | 의심 | 확인 |
 |---|---|---|
 | loss가 거의 0으로 급락, 생성 쓰레기 | label이 input과 동일·시프트 오류 | `labels` 디코드 |
@@ -408,8 +396,7 @@ mean=0.67
 | 형식만 암기 | overfitting | held-out paraphrase |
 | JSON만 실패 | 이스케이프/길이 | max_new_tokens |
 
-## 12. 권장 실험 순서（체크리스트）
-
+## 권장 실험 순서（체크리스트）
 1. [ ] train 20~40 / eval 8~15 JSONL 작성
 2. [ ] mask 시각화（prompt=`#`, response=`R`）
 3. [ ] 1 epoch smoke train
@@ -418,15 +405,17 @@ mean=0.67
 6. [ ] （선택）epoch 과다로 overfitting 재현
 7. [ ] （선택）LoRA vs full
 
-## 13. 핵심 정리
+## LLM에서는 어디에 사용될까?
 
+이번 76강에서 배운 개념은 이후 Transformer · GPT · 서빙 강의에서 반복해서 등장합니다. 각 수식·코드 블록을 “실제 모델의 어느 단계인가”와 연결해 다시 읽어 보세요.
+
+## 핵심 요약
 - Mini GPT SFT의 핵은 **response-only mask**와 **동일 템플릿 생성**이다.
 - 작은 데이터로도 before/after·harness를 남기면 실험이 축적된다.
 - Loss 감소는 필요조건이고, 형식 준수·held-out가 성공에 가깝다.
 - 이 프로젝트가 3권 SFT 실습의 관문이며, 제77강에서 역할 이론으로 되돌아간다.
 
-## 14. 핵심 용어
-
+## 용어 사전
 | 용어 | 한 줄 의미 |
 |---|---|
 | Instruction set | (지시, 입력, 응답) 지도 데이터 |
@@ -435,7 +424,7 @@ mean=0.67
 | Before/after | SFT 전후 동일 프롬프트 생성 비교 |
 | Mini harness | 규칙 기반 초소형 평가기 |
 
-## 15. 연습 문제
+## 연습문제
 ### 문제 1（마스크）
 
 `labels` 앞부분을 `-100`으로 두는 이유를 학습 신호 관점에서 쓰시오.
@@ -459,7 +448,6 @@ train에만 있는 지시문 그대로 eval하면 제75강 기준 무엇이 위�
 ---
 
 ## 정답 및 해설
-
 ### 문제 1
 
 모델이 instruction/prompt 토큰을 맞추는 데 용량을 쓰지 않게 하고, 응답 생성에 학습 신호를 집중하기 위함이다.
@@ -480,8 +468,7 @@ Instruction overfitting을 見逃하고 일반화를 과대평가할 위험（�
 
 과적합·style collapse 증상을 harness로 관찰해, 조기 종료·데이터 다양성의 필요를 체감하기 위함이다.
 
-## 16. 다음 강의와 연결
-
+## 다음 강의와 연결
 미니 SFT를 한 바퀴 돌렸다.  
 **제77강. Pretraining과 SFT의 역할 정리**에서는 두 단계가 각각 **할 수 있는 일 / 할 수 없는 일**을 표로 고정하고, 4권 Post-Training이 왜 필요한지 위치를 잡는다.
 
@@ -491,7 +478,7 @@ Instruction overfitting을 見逃하고 일반화를 과대평가할 위험（�
 
 ### 강의 이동
 
-- **이전 강:** [제75강. SFT 평가와 실패 사례](75강_SFT_평가와_실패_사례.md)
-- **다음 강:** [제77강. Pretraining과 SFT의 역할 정리](77강_Pretraining과_SFT의_역할_정리.md)
+- **이전 강:** [75강. SFT 평가와 실패 사례](75강_SFT_평가와_실패_사례.md)
+- **다음 강:** [77강. Pretraining과 SFT의 역할 정리](77강_Pretraining과_SFT의_역할_정리.md)
 
 <!-- /LECTURE_NAV -->

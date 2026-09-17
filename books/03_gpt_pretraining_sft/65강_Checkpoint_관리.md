@@ -1,15 +1,13 @@
-# 제65강. Checkpoint 관리
+# 65강. Checkpoint 관리
+## 이번 강에서 배우는 내용
 
-> **학습 목표**
-> - 저장해야 할 구성 요소(model, optimizer, scheduler, step 등)를 목록화한다.
-> - Resume(재개) 시 순서를 설명한다.
-> - `best`와 `last` 체크포인트의 역할을 구분한다.
-> - `torch.save`와 safetensors를 형식 옵션으로 비교한다(설명 수준).
-> - 손상·부분 저장·버전 불일치 같은 실패 모드를 예방한다.
+- 저장해야 할 구성 요소(model, optimizer, scheduler, step 등)를 목록화한다.
+- Resume(재개) 시 순서를 설명한다.
+- `best`와 `last` 체크포인트의 역할을 구분한다.
+- `torch.save`와 safetensors를 형식 옵션으로 비교한다(설명 수준).
+- 손상·부분 저장·버전 불일치 같은 실패 모드를 예방한다.
 
----
-## 1. 왜 이것을 배우는가
-
+## 왜 중요한가?
 체크포인트가 없으면:
 
 - 인스턴스가 죽었을 때 **처음부터**다.
@@ -27,15 +25,13 @@
 
 제66강 Validation은 “언제 best를 갱신할지”의 신호를 준다. 이번 강의는 **저장 형식과 재개 절차**다.
 
-## 2. 먼저 알아야 할 개념
-
+## 선수 개념
 1. **`state_dict`** — 제21강 `nn.Module`
 2. **AdamW state / scheduler** — 제63강
 3. **GradScaler / AMP** — 제64강
 4. **global_step / token budget** — 제62강
 
-## 3. 핵심 개념 — Checkpoint란
-
+## 핵심 개념 — Checkpoint란
 **Checkpoint**는 특정 시점의 학습 상태를 디스크에 직렬화한 스냅샷이다.
 
 두 가지 목적이 섞여 있다.
@@ -47,8 +43,7 @@
 
 같은 폴더에 둘 다 둘 수 있지만, **파일 역할 이름**을 분리하는 편이 안전하다.
 
-## 4. 무엇을 저장할 것인가
-
+## 무엇을 저장할 것인가
 ### 4.1 최소 resume 세트
 
 ```python
@@ -82,8 +77,7 @@ checkpoint = {
 
 데이터 로더 위치(몇 번째 샤드)까지 저장하는 시스템은 더 복잡하다. 최소 교육 범위에서는 step/tokens와 가중치·optim 일관성을 우선한다.
 
-## 5. 저장 코드 패턴
-
+## 저장 코드 패턴
 ```python
 from pathlib import Path
 import torch
@@ -112,8 +106,7 @@ def save_checkpoint(path, model, optimizer, scheduler, meta: dict, scaler=None):
 
 설명: 학습 도중 프로세스가 죽으면 **쓰던 파일이 반쯤 써진 채** 남을 수 있다. tmp+rename은 그 위험을 줄이려는 관행이다. 완벽한 원자성을 모든 OS/파일시스템에서 보장한다고 단정하지는 않는다.
 
-## 6. 재개(Resume) 절차
-
+## 재개(Resume) 절차
 ```python
 def load_checkpoint(path, model, optimizer=None, scheduler=None, scaler=None, map_location="cpu"):
     ckpt = torch.load(path, map_location=map_location)
@@ -148,8 +141,7 @@ def load_checkpoint(path, model, optimizer=None, scheduler=None, scaler=None, ma
 - `strict=True`(기본)면 키 불일치 시 실패한다. 구조를 바꿨다면 의도적 `strict=False`와 누락 키 로그가 필요하다.
 - DataParallel/`module.` 접두어 불일치.
 
-## 7. Best vs Last
-
+## Best vs Last
 ### 7.1 Last checkpoint
 
 **Last**는 가장 최근 step의 스냅샷이다. 장애 복구의 기본이다.
@@ -197,8 +189,7 @@ if val_loss < best_val_loss:
 
 설명: Pretraining에서 val loss best가 곧 “생성 품질 best”는 아니다. 제66~67강에서 평가 축을 분리한다. 그래도 val loss는 **조기 발산·과적합의 운영 신호**로 유용하다.
 
-## 8. 저장 주기와 디스크
-
+## 저장 주기와 디스크
 너무 잦으면:
 
 - tok/s 하락
@@ -217,8 +208,7 @@ if val_loss < best_val_loss:
 
 숫자 간격은 예산·체크포인트 크기·SLA에 따라 정한다. 이 강의는 특정 “매 N step”을 표준처럼 제시하지 않는다.
 
-## 9. 형식 옵션 — `torch.save`와 safetensors
-
+## 형식 옵션 — `torch.save`와 safetensors
 ### 9.1 `torch.save` / `torch.load`
 
 PyTorch 기본 직렬화. 임의 Python 객체(딕셔너리)를 넣기 쉽다. resume용으로 optim state 등을 한 파일에 묶기 편하다.
@@ -252,8 +242,7 @@ resume 번들:  last.pt / step_XXXX.pt   (model+optim+sched+meta)
 
 제68강 Mini GPT Pretraining, 제76강 SFT 프로젝트에서 “재개용”과 “내보내기용”을 폴더 규약으로 나누면 혼란이 줄어든다.
 
-## 10. Export만 할 때
-
+## Export만 할 때
 추론·다음 단계(SFT) 초기화에는 종종 가중치만 필요하다.
 
 ```python
@@ -264,8 +253,7 @@ def export_weights(path, model):
 또는 safetensors로 가중치만 저장.  
 Optimizer를 빼면 파일이 작아지고, 실수로 “resume 가능한 줄 앎” 사고도 줄어든다. 파일명에 `weights_only` / `export`를 명시하라.
 
-## 11. 분산·래퍼 관련 메모
-
+## 분산·래퍼 관련 메모
 단일 GPU 교육 코드와 달리, 래퍼가 있으면 `state_dict` 키가 달라진다.
 
 ```python
@@ -275,8 +263,7 @@ state = model.module.state_dict()
 
 이 책 3권 본문 루프는 단일 장치 중심이지만, 체크포인트 규약을 짤 때 **래퍼 유무를 한 줄로 기록**해 둔다. 나중에 분산으로 확할 때 가장 먼저 터지는 지점이다.
 
-## 12. 검증 — 저장이 진짜인지 확인
-
+## 검증 — 저장이 진짜인지 확인
 저장 직후 권장 스모크 테스트:
 
 1. 새 프로세스에서 모델 생성 → `load_state_dict`
@@ -286,8 +273,7 @@ state = model.module.state_dict()
 
 “파일이 생겼다” ≠ “로드 가능한 완전한 체크포인트”.
 
-## 13. 디렉터리 규약 예시
-
+## 디렉터리 규약 예시
 ```text
 runs/mini_gpt_exp01/
   config.yaml          # 또는 config.json
@@ -304,8 +290,7 @@ runs/mini_gpt_exp01/
 
 규약을 미리 정하면 제68강 프로젝트에서 “파일이 어디 있지?”로 시간을 잃지 않는다.
 
-## 14. 회전(Rotation) — 디스크 지키기
-
+## 회전(Rotation) — 디스크 지키기
 모든 step 체크포인트를 영구 보관하면 디스크가 먼저 죽는다.
 
 ```python
@@ -323,8 +308,7 @@ def save_rotating(step, path_fn, save_fn):
 
 `last.pt`와 `best.pt`는 회전에서 **제외**하는 것이 일반적이다.
 
-## 15. 메타데이터에 넣을 것
-
+## 메타데이터에 넣을 것
 재현에 도움이 되는 메타:
 
 ```python
@@ -341,8 +325,7 @@ meta = {
 
 설명: git SHA까지 넣으면 “어느 코드로 뽑힌 가중치인지” 추적이 쉬워진다. 필수는 아니지만 실험 노트의 품질이 올라간다.
 
-## 16. 부분 로드와 전이학습 예고
-
+## 부분 로드와 전이학습 예고
 SFT(제71강)나 LoRA(제73강)로 넘어갈 때는 종종 **가중치만** 로드한다.
 
 ```python
@@ -354,8 +337,7 @@ print("unexpected", unexpected)
 
 `strict=False`는 강력하지만 위험하다. 누락 키를 **반드시 출력**한다. 침묵 속 부분 로드는 버그의 온상이다.
 
-## 17. 흔한 버그
-
+## 흔한 버그
 1. **가중치만 저장하고 lr·step을 잊음** — 재개 시 cosine이 처음부터.
 2. **best를 last 경로에 덮어씀** — 복구 포인트 소실.
 3. **저장 중 예외 후 빈 파일** — tmp+rename 미사용.
@@ -364,16 +346,18 @@ print("unexpected", unexpected)
 6. **신뢰 불가 경로의 `torch.load`** — 보안 이슈.
 7. **장치 불일치** — CUDA 텐서가 박힌 ckpt를 CPU에서 map_location 없이 로드.
 
-## 18. 핵심 정리
+## LLM에서는 어디에 사용될까?
 
+이번 65강에서 배운 개념은 이후 Transformer · GPT · 서빙 강의에서 반복해서 등장합니다. 각 수식·코드 블록을 “실제 모델의 어느 단계인가”와 연결해 다시 읽어 보세요.
+
+## 핵심 요약
 - Resume 체크포인트는 model + optimizer + scheduler + step(+ scaler)을 묶는다.
 - Last는 복구, Best는 지표 기준 선택이다. 역할을 파일명으로 분리한다.
 - 원자적 저장(tmp+rename)과 로드 스모크 테스트가 운영 품질을 가른다.
 - safetensors는 가중치 배포·로드의 **형식 옵션**으로 이해한다. resume 번들과 용도를 섞지 말 것.
 - 제66강 val 지표가 best 갱신 트리거가 된다.
 
-## 19. 핵심 용어
-
+## 용어 사전
 | 용어 | 의미 |
 |---|---|
 | Checkpoint | 학습 상태 스냅샷 |
@@ -387,7 +371,7 @@ print("unexpected", unexpected)
 | Rotation | 오래된 ckpt 삭제·유지 정책 |
 | `strict=False` | 부분 키 로드 허용(위험 동반) |
 
-## 20. 연습 문제
+## 연습문제
 ### 문제 1 (목록)
 
 학습을 동일 lr 스케줄에서 이어가려면 최소 어떤 상태들이 필요한가?
@@ -422,7 +406,6 @@ Resume 번들과 safetensors export를 한 파일로 섞지 말라고 한 이유
 ---
 
 ## 정답 및 해설
-
 ### 문제 1
 
 모델 가중치, Optimizer state, Scheduler state, global_step(또는 동등한 스케줄 축). 토큰 예산·scaler 등 사용 중이면 함께.
@@ -447,8 +430,7 @@ loss scale이 초기값으로 돌아가 재개 직후 overflow·step skip·불�
 
 best는 예전의 좋은 지점일 수 있어, 장애 직전 최신 상태(모멘트·step 포함)로 이어가기 어렵다. last가 복구의 기본이다.
 
-## 21. 다음 강의와 연결
-
+## 다음 강의와 연결
 Best를 고르려면 **기준 지표**가 필요하다.
 
 다음 **제66강. Validation과 Evaluation**에서는 held-out validation loss, 평가 시점, `train`/`eval` 모드, 발산의 조기 신호를 다룬다. 그 지표가 이 강의의 `best.pt` 갱신 조건이 된다.
@@ -462,7 +444,7 @@ Best를 고르려면 **기준 지표**가 필요하다.
 
 ### 강의 이동
 
-- **이전 강:** [제64강. Mixed Precision과 Gradient Accumulation](64강_Mixed_Precision과_Gradient_Accumulation.md)
-- **다음 강:** [제66강. Validation과 Evaluation](66강_Validation과_Evaluation.md)
+- **이전 강:** [64강. Mixed Precision과 Gradient Accumulation](64강_Mixed_Precision과_Gradient_Accumulation.md)
+- **다음 강:** [66강. Validation과 Evaluation](66강_Validation과_Evaluation.md)
 
 <!-- /LECTURE_NAV -->

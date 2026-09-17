@@ -1,15 +1,13 @@
-# 제30강. Vocabulary와 Special Tokens
+# 30강. Vocabulary와 Special Tokens
+## 이번 강에서 배우는 내용
 
-> **학습 목표**
-> - Vocabulary size가 Embedding·LM Head 파라미터에 미치는 영향
-> - `<unk>`, `<pad>`, `<bos>`, `<eos>` 등 Special Tokens의 역할
-> - 패딩과 Attention Mask가 왜 한 세트인지
-> - 챗/지시 모델에서 대화 템플릿 special token이 하는 일
-> - 토큰 id 공간을 설계할 때 흔히 하는 실수
+- Vocabulary size가 Embedding·LM Head 파라미터에 미치는 영향
+- `<unk>`, `<pad>`, `<bos>`, `<eos>` 등 Special Tokens의 역할
+- 패딩과 Attention Mask가 왜 한 세트인지
+- 챗/지시 모델에서 대화 템플릿 special token이 하는 일
+- 토큰 id 공간을 설계할 때 흔히 하는 실수
 
----
-## 1. 왜 이것을 배우는가
-
+## 왜 중요한가?
 같은 “토크나이저”라도 special token 처리가 다르면 학습이 달라진다.
 
 ```text
@@ -23,16 +21,14 @@
 
 Special Token은 “장식”이 아니라 **제어 신호**이다.
 
-## 2. 먼저 알아야 할 개념
-
+## 선수 개념
 - Token ID / Vocabulary (27강)
 - Subword / BPE (28·29강)
 - 배치 학습과 Tensor shape `[B, T]` (1권 22강)
 - Softmax가 vocab 전체에 걸린다는 감각 (33강에서 엄밀화)
 - Embedding 행렬 shape `[V, d]` (31강에서 상세)
 
-## 3. 핵심 개념 설명
-
+## 핵심 개념
 ### 3.1 Vocabulary (어휘 사전) 다시 보기
 
 **Vocabulary**는 모델이 입·출력으로 사용할 수 있는 토큰의 유한 집합이다.
@@ -209,8 +205,7 @@ You are helpful.<|im_end|>
 
 Special Token을 일반 텍스트처럼 이스케이프하지 않으면, 사용자가 같은 문자열을 입력해 **템플릿을 위조**할 위험이 있다. 프로덕션에서는 토크나이저/템플릿 레이어에서 막는다.
 
-## 4. 직관적으로 이해하기
-
+## 직관적으로 이해하기
 Vocabulary를 도시 전화번호부에 비유한다.
 
 - 일반 토큰: 실제 가입자 번호
@@ -221,8 +216,7 @@ Vocabulary를 도시 전화번호부에 비유한다.
 
 모델은 이 번호들의 서열만 본다. 예약 번호의 의미를 Embedding이 학습한다.
 
-## 5. 작은 숫자로 직접 보기
-
+## 작은 숫자로 직접 보기
 작은 vocab:
 
 ```text
@@ -266,8 +260,7 @@ mask_B:   [1, 1, 1, 1, 1, 0]
 
 PAD 위치의 정답은 `ignore_index`로 두어 Loss에 안 넣는다.
 
-## 6. 코드로 구현하기
-
+## 코드로 구현하기
 ```python
 # special_tokens_batch.py
 from typing import Dict, List, Tuple
@@ -351,8 +344,7 @@ if __name__ == "__main__":
 
 실행하면 배치 shape과 ignore된 label(`-100`)을 눈으로 확인할 수 있다.
 
-## 7. PyTorch Embedding과의 연결 (미리보기)
-
+## PyTorch Embedding과의 연결 (미리보기)
 ```python
 import torch.nn as nn
 
@@ -366,8 +358,7 @@ PAD를 “의미 있는 토큰”으로 배우고 싶지 않을 때 유용하다
 
 상세한 Embedding 자체는 31강에서 다룬다.
 
-## 8. 실제 LLM에서는 어떻게 사용하는가
-
+## LLM에서는 어디에 사용될까?
 Hugging Face식 속성 예:
 
 ```text
@@ -404,8 +395,7 @@ stop sequences = [eos_token, <|eot_id|>, ...]
 
 EOS를 무시하고 계속 샘플링하면 무한 생성·환각적 연장이 길어진다.
 
-## 9. Vocab 설계 체크리스트
-
+## Vocab 설계 체크리스트
 실무에서 Vocabulary를 만지거나 고를 때:
 
 1. **크기**: 모델 예산(`V × d`)과 토큰 효율을 같이 본다.
@@ -415,8 +405,7 @@ EOS를 무시하고 계속 샘플링하면 무한 생성·환각적 연장이 �
 5. **다국어**: 특정 언어 스크립트가 과소표현되면 토큰 낭비가 커진다.
 6. **보안**: 사용자 입력이 special token 문자열을 그대로 주입하지 못하게 한다.
 
-## 10. 실습
-
+## 실습
 ### 실습 1. 패딩과 마스크
 
 서로 다른 길이의 문장 3개를 encode하고 `pad_batch`로 묶어, mask 합이 원래 토큰 수와 같은지 검증하시오.
@@ -440,8 +429,7 @@ vocab 끝에 `<|tool|>`를 추가했다고 가정하고:
 
 공개 모델 하나의 chat template 문자열을 찾아, special token이 어디에 삽입되는지 위치를 표시하시오.
 
-## 11. 자주 하는 실수
-
+## 자주 하는 실수
 1. **PAD를 Loss에 포함**  
    모델이 패딩 id를 “정답”처럼 배운다.
 
@@ -460,16 +448,14 @@ vocab 끝에 `<|tool|>`를 추가했다고 가정하고:
 6. **BOS/EOS 정책을 학습·추론에서 불일치**  
    학습 때 붙이던 EOS를 추론 stop에서 빼먹으면 길이가 폭주한다.
 
-## 12. 핵심 정리
-
+## 핵심 요약
 - Vocabulary 크기 $|V|$는 Embedding·LM Head 파라미터와 Softmax 차원에 직결된다.
 - Special Tokens는 제어 신호이다: UNK/PAD/BOS/EOS 및 챗 마커.
 - PAD는 Mask·Loss ignore와 함께 써야 한다.
 - 챗 LLM은 역할 경계를 special token으로 명시하는 경우가 많다.
 - Tokenizer와 모델의 vocab 공간은 항상 동기화되어야 한다.
 
-## 13. 핵심 용어
-
+## 용어 사전
 | 용어 | 의미 |
 |---|---|
 | Vocabulary size \|V\| | 토큰 종류 수 |
@@ -481,7 +467,7 @@ vocab 끝에 `<|tool|>`를 추가했다고 가정하고:
 | `ignore_index` | Loss에서 무시할 label id |
 | Chat Template | 대화 역할을 토큰열로 직렬화하는 형식 |
 
-## 14. 연습 문제
+## 연습문제
 ### 문제 1 (계산)
 
 $|V|=32000$, $d=4096$일 때 Embedding 파라미터 수는?
@@ -505,7 +491,6 @@ $|V|=32000$, $d=4096$일 때 Embedding 파라미터 수는?
 ---
 
 ## 정답 및 해설
-
 ### 문제 1
 
 $32000 \times 4096 = 131{,}072{,}000$ (약 1.31억)
@@ -527,8 +512,7 @@ $32000 \times 4096 = 131{,}072{,}000$ (약 1.31억)
 
 모델이 현재 생성 주체(assistant)와 구간 경계를 토큰 수준에서 인식하게 하여, 역할 혼동을 줄이고 종료·형식 학습을 돕는다.
 
-## 15. 다음 강의와 연결
-
+## 다음 강의와 연결
 이번 강의에서 Vocabulary와 Special Tokens라는 “번호부의 예약석”을 정리했다.
 
 다음 **제31강. Embedding — 토큰을 벡터로**에서는, id가 실제로 신경망이 계산할 수 있는 **밀집 벡터**로 바뀌는 과정, one-hot과의 차이, Embedding 행렬 lookup, 학습되는 파라미터를 다룬다.
@@ -542,7 +526,7 @@ $32000 \times 4096 = 131{,}072{,}000$ (약 1.31억)
 
 ### 강의 이동
 
-- **이전 강:** [제29강. BPE Tokenizer 직접 구현](29강_BPE_Tokenizer_직접_구현.md)
-- **다음 강:** [제31강. Embedding — 토큰을 벡터로](31강_Embedding_토큰을_벡터로.md)
+- **이전 강:** [29강. BPE Tokenizer 직접 구현](29강_BPE_Tokenizer_직접_구현.md)
+- **다음 강:** [31강. Embedding — 토큰을 벡터로](31강_Embedding_토큰을_벡터로.md)
 
 <!-- /LECTURE_NAV -->

@@ -1,15 +1,13 @@
-# 제87강. PPO 직관과 수식
+# 87강. PPO 직관과 수식
+## 이번 강에서 배우는 내용
 
-> **학습 목표**
-> - Surrogate objective와 확률비 $r_t(\theta)=\pi_\theta/\pi_{\mathrm{old}}$의 의미
-> - Clipping이 过大 업데이트를 어떻게 자르는지
-> - Advantage $A_t$가 PPO 손실에서 하는 일
-> - GAE(Generalized Advantage Estimation)의 고수준 위치
-> - 작은 숫자로 clip 전후 손실을 직접 계산하기
+- Surrogate objective와 확률비 $r_t(\theta)=\pi_\theta/\pi_{\mathrm{old}}$의 의미
+- Clipping이 过大 업데이트를 어떻게 자르는지
+- Advantage $A_t$가 PPO 손실에서 하는 일
+- GAE(Generalized Advantage Estimation)의 고수준 위치
+- 작은 숫자로 clip 전후 손실을 직접 계산하기
 
----
-## 1. 왜 이것을 배우는가
-
+## 왜 중요한가?
 순수 Policy Gradient(제82강)는 이론적으로 가능하지만, 스텝이 크면 정책이 한순간에 망가질 수 있다.
 
 ```text
@@ -28,8 +26,7 @@ LLM RLHF에서 PPO가 자주 거론되는 이유는 “만능”이라서가 아
 **사실:** 최근에는 DPO·GRPO 등 대안도 활발하다(제90·92강).  
 **설명:** 이 강의는 PPO 자체를 이해시키는 것이 목적이지, “유일한 SOTA 알고리즘”을 주장하지 않는다.
 
-## 2. 먼저 알아야 할 개념
-
+## 선수 개념
 - Policy Gradient: $\nabla J \approx \mathbb{E}[\nabla\log\pi\cdot A]$ (제82강)
 - Advantage $A$ (제83강)
 - On-policy 롤아웃 (제86강)
@@ -42,8 +39,7 @@ LLM RLHF에서 PPO가 자주 거론되는 이유는 “만능”이라서가 아
 - KL 항의 다양한 추정식 비교 — 제89강
 - GRPO의 그룹 상대 베이스라인 — 제92강
 
-## 3. 핵심 개념 설명
-
+## 핵심 개념
 ### 3.1 PPO란?
 
 **PPO**는 정책 업데이트 폭을 제한하면서 surrogate 목표를 최적화하는 on-policy 알고리즘 계열이다. LLM 맥락에서 흔히 말하는 PPO는 **clipped surrogate objective**를 가리킨다.
@@ -233,8 +229,7 @@ $\pi_{\mathrm{old}}$의 logprob는 롤아웃 때 저장해 두고 고정한다.
 
 ε는 “한 업데이트에서 확률비가 허용하는 **상대 변화 폭**”이다. 절대 학습률과 별개 축이다.
 
-## 4. 직관적으로 이해하기
-
+## 직관적으로 이해하기
 등산 로프:
 
 ```text
@@ -255,8 +250,7 @@ clip = "한 문단에서 너무 많이 고치지 말 것"
 좋은 문장(A>0)은 조금 더 자주, 나쁜 문장(A<0)은 조금 덜.  
 “조금”을 강제하는 장치가 clip이다.
 
-## 5. 수학적으로 이해하기
-
+## 수학적으로 이해하기
 ### 5.1 비클립에서 클립으로
 
 비클립 목표 $L=\mathbb{E}[\rho A]$의 $\theta$ 경사는, $\rho=\pi_\theta/\pi_{\mathrm{old}}$이므로 $\log\pi_\theta$ 경사에 $\rho A$가 가중된 형태가 된다.  
@@ -292,8 +286,7 @@ L^{\mathrm{CLIP}}
 
 Outcome reward만 있으면 $A_t=\hat{A}(x,y)$로 토큰에 방송(broadcast)하는 단순화가 흔하다.
 
-## 6. 작은 숫자로 직접 계산하기
-
+## 작은 숫자로 직접 계산하기
 설정: $\epsilon=0.2$, 따라서 clip 구간 $[0.8, 1.2]$.
 
 ### 예제 1 — 좋은 행동, 과한 비율
@@ -359,8 +352,7 @@ Clip이 목표값을 낮춰 **과신을 제거**했다.
 
 손실로 바꿀 때 $\mathcal{L}=-0.50$ (최소화 프레임).
 
-## 7. 코드로 구현하기 — NumPy clip 손실
-
+## 코드로 구현하기 — NumPy clip 손실
 ```python
 import numpy as np
 
@@ -381,8 +373,7 @@ print(ppo_policy_loss(ratio, adv))
 
 기대 surrogate: `[1.1, 1.2, -0.8]`, loss: `-0.5`의 부호 반대 → `+0.5`가 아니라 평균의 음수이므로 `-0.5`.
 
-## 8. PyTorch로 구현하기 — 손실 함수
-
+## PyTorch로 구현하기 — 손실 함수
 ```python
 import torch
 
@@ -414,8 +405,7 @@ ratio = exp(logp - logp_old)   # 권장
 ratio = exp(logp)/exp(logp_old) # 비추천 (오버플로)
 ```
 
-## 9. 실제 LLM에서는 어떻게 사용하는가
-
+## LLM에서는 어디에 사용될까?
 RLHF-PPO 스택에서의 위치:
 
 ```text
@@ -448,8 +438,7 @@ rollout tokens + logp_old + rewards
 
 제92강 GRPO는 critic 없이 그룹 내 상대 점수로 Advantage를 대체하는 흐름과 대비된다.
 
-## 10. 실습
-
+## 실습
 ### 실습 A — 손계산
 
 $\epsilon=0.1$, $A=3$, $\rho=1.25$일 때 unclipped, clipped, min 값을 구하시오.
@@ -476,8 +465,7 @@ $A=-2$, $\rho=1.3$, $\epsilon=0.2$에서 min 값을 구하고, “정책이 이 
 
 제86강 파이프라인 그림에 $L^{\mathrm{CLIP}}$ 상자를 어디에 그릴지 표시하시오.
 
-## 11. 자주 하는 실수
-
+## 자주 하는 실수
 1. **ratio를 $\pi_{\mathrm{old}}/\pi_\theta$로 뒤집음**
 2. **Advantage 정규화 잊고 스케일 폭주**
 3. **clip 없이 여러 epoch** → 사실상 큰 off-policy 점프
@@ -487,16 +475,14 @@ $A=-2$, $\rho=1.3$, $\epsilon=0.2$에서 min 값을 구하고, “정책이 이 
 7. **GAE를 쓰면서 $\gamma,\lambda$를 보상 스케일과 무관하게 복붙**
 8. **clip_fraction=0만 보고 성공 선언** (그냥 업데이트가 죽은 것일 수도)
 
-## 12. 핵심 정리
-
+## 핵심 요약
 - PPO clipped objective는 $\rho A$와 clip된 $\rho A$의 최소를 취해 过大 업데이트를 막는다.
 - $\rho=\pi_\theta/\pi_{\mathrm{old}}$는 정책 변화의 국소 측정이다.
 - Advantage 부호가 “밀지/당길지”를 결정하고, clip이 “얼마나”를 제한한다.
 - GAE는 Advantage 추정의 분산-편향 조절 도구(고수준).
 - 구현은 제88강에서 토이 LM/밴딧으로 연결한다.
 
-## 13. 핵심 용어
-
+## 용어 사전
 | 용어 | 의미 |
 |---|---|
 | PPO | Proximal Policy Optimization |
@@ -510,7 +496,7 @@ $A=-2$, $\rho=1.3$, $\epsilon=0.2$에서 min 값을 구하고, “정책이 이 
 | Entropy bonus | 탐험을 위한 엔트로피 항 |
 | Old policy | 롤아웃 시점 정책 |
 
-## 14. 연습 문제
+## 연습문제
 ### 문제 1（수식）
 
 $\rho_t(\theta)$의 정의를 쓰시오.
@@ -542,7 +528,6 @@ GAE의 $\lambda$를 1에 가깝게 하면 보통 무엇이 커지는가? (편향
 ---
 
 ## 정답 및 해설
-
 ### 문제 1
 
 $\rho_t(\theta)=\pi_\theta(a_t\mid s_t)/\pi_{\theta_{\mathrm{old}}}(a_t\mid s_t)$.
@@ -571,8 +556,7 @@ $\min(3.0, 1.2\times2)=\min(3.0,2.4)=2.4$.
 
 원래 surrogate는 최대화 대상이므로, 최소화 옵티마이저에 넣으려면 부호를 뒤집는다.
 
-## 15. 다음 강의와 연결
-
+## 다음 강의와 연결
 수식을 손으로 계산할 수 있게 되었다. 남은 것은 **루프로 돌리는 일**이다.
 
 다음 **제88강. PPO 구현**에서는 토이 언어모델 또는 밴딧형 설정에서 단순화한 PPO 루프를 구현하고, 무엇이 full LLM PPO에서 빠졌는지 명시한다. 그다음 **제89강. KL Divergence의 역할**에서 RLHF 보상 안의 KL 닻을 본격적으로 다룬다.
@@ -585,7 +569,7 @@ $\min(3.0, 1.2\times2)=\min(3.0,2.4)=2.4$.
 
 ### 강의 이동
 
-- **이전 강:** [제86강. RLHF 전체 구조](86강_RLHF_전체_구조.md)
-- **다음 강:** [제88강. PPO 구현](88강_PPO_구현.md)
+- **이전 강:** [86강. RLHF 전체 구조](86강_RLHF_전체_구조.md)
+- **다음 강:** [88강. PPO 구현](88강_PPO_구현.md)
 
 <!-- /LECTURE_NAV -->

@@ -1,16 +1,14 @@
-# 제32강. Language Model과 Next Token Prediction
+# 32강. Language Model과 Next Token Prediction
+## 이번 강에서 배우는 내용
 
-> **학습 목표**
-> - Language Model(언어 모델)의 정의
-> - Next Token Prediction(다음 토큰 예측)이 조건부 확률 $P(x_{t+1}\mid x_{\le t})$로 쓰이는 방식
-> - Autoregressive(자기회귀) 생성 루프
-> - 학습 시 서열을 한 칸씩 밀어 타깃을 만드는 법
-> - Teacher Forcing의 개념(상세 Loss는 34강)
-> - GPT 파이프라인에서 “이해/생성”이 같은 목표에서 나오는 이유
+- Language Model(언어 모델)의 정의
+- Next Token Prediction(다음 토큰 예측)이 조건부 확률 $P(x_{t+1}\mid x_{\le t})$로 쓰이는 방식
+- Autoregressive(자기회귀) 생성 루프
+- 학습 시 서열을 한 칸씩 밀어 타깃을 만드는 법
+- Teacher Forcing의 개념(상세 Loss는 34강)
+- GPT 파이프라인에서 “이해/생성”이 같은 목표에서 나오는 이유
 
----
-## 1. 왜 이것을 배우는가
-
+## 왜 중요한가?
 표면적으로 LLM은 질문에 답하고, 코드를 짜고, 요약을 한다.  
 훈련 목표의 핵심은 놀랍도록 단일한 경우가 많다.
 
@@ -28,8 +26,7 @@ context tokens
         → 파라미터 업데이트
 ```
 
-## 2. 먼저 알아야 할 개념
-
+## 선수 개념
 - Token / Vocabulary (27·30강)
 - Embedding 서열 `[T, d]` (31강)
 - 확률의 초등 성질: $0 \le p \le 1$, $\sum p = 1$
@@ -39,8 +36,7 @@ context tokens
 Transformer 내부(Attention)는 아직 블랙박스로 두어도 된다.  
 오늘은 **입출력 계약**에 집중한다.
 
-## 3. 핵심 개념 설명
-
+## 핵심 개념
 ### 3.1 Language Model (언어 모델)
 
 **Language Model(랭귀지 모델, 언어 모델)**은 토큰 서열의 **확률 분포**를 모형화하는 모델이다.
@@ -174,8 +170,7 @@ $$
 같은 다음 단어 후보라도 문맥에 따라 확률이 달라진다.  
 Embedding만으로는 이 차이가 없고, **문맥을 섞는 모델(Transformer)**이 필요하다.
 
-## 4. 직관적으로 이해하기
-
+## 직관적으로 이해하기
 빈칸 채우기 시험과 같다.
 
 ```text
@@ -191,8 +186,7 @@ Embedding만으로는 이 차이가 없고, **문맥을 섞는 모델(Transforme
 그 부산물로 문법·사실·추론의 흔적이 통계 속에 남는다.  
 “이해”처럼 보이는 행동도, 메커니즘 수준에서는 **다음 토큰 분포의 정확도**에서 출발한다.
 
-## 5. 수학적으로 이해하기
-
+## 수학적으로 이해하기
 모델 파라미터 $\theta$에 대해
 
 $$
@@ -235,8 +229,7 @@ $$
 
 (온도·top-k 등은 33강·후반 생성 강의)
 
-## 6. 작은 숫자로 직접 보기
-
+## 작은 숫자로 직접 보기
 초소형 vocab:
 
 ```text
@@ -289,8 +282,7 @@ start: [0]
 → next=5 (<eos>)  stop
 ```
 
-## 7. 코드로 구현하기 — 타깃 shift
-
+## 코드로 구현하기 — 타깃 shift
 ```python
 # ntp_shift.py
 import torch
@@ -333,8 +325,7 @@ labels:
 
 모든 위치를 한 번에 학습할 수 있는 형태이다.
 
-## 8. 코드로 구현하기 — 초소형 Autoregressive 루프
-
+## 코드로 구현하기 — 초소형 Autoregressive 루프
 모델 본체는 “logit을 내는 함수”로 추상화한다.
 
 ```python
@@ -420,8 +411,7 @@ if __name__ == "__main__":
 
 진짜 Transformer가 아니어도, **API 계약**(ids in → logits out → next id)은 LLM과 같다.
 
-## 9. 실제 LLM에서는 어떻게 사용하는가
-
+## LLM에서는 어디에 사용될까?
 ### 9.1 Pretraining
 
 대규모 웹/책/코드 텍스트를 토큰 스트림으로 만들고,
@@ -456,8 +446,7 @@ prompt → encode → 반복:
 
 KV Cache 등은 5권 주제이나, 루프 구조는 오늘과 동일하다.
 
-## 10. “이해”와 Next Token Prediction
-
+## “이해”와 Next Token Prediction
 질문:
 
 > 다음 단어만 맞추는데 어떻게 추론을 하나?
@@ -471,8 +460,7 @@ KV Cache 등은 5권 주제이나, 루프 구조는 오늘과 동일하다.
 이 책의 입장은 신비화를 걷어내는 것이다.  
 메커니즘은 Next Token Prediction이고, 능력은 그 위의 창발·정렬·도구사용으로 확장된다.
 
-## 11. 실습
-
+## 실습
 ### 실습 1. Shift 타깃 만들기
 
 문장 하나를 tokenize한 뒤 `input_ids`/`labels`를 만들고, 각 위치의 (문맥 → 정답 토큰)을 표로 쓰시오.
@@ -494,8 +482,7 @@ KV Cache 등은 5권 주제이나, 루프 구조는 오늘과 동일하다.
 
 학습과 추론에서 “다음에 넣는 토큰의 출처”가 어떻게 다른지 두 문장으로 쓰시오.
 
-## 12. 자주 하는 실수
-
+## 자주 하는 실수
 1. **Language Model = 챗봇**으로만 이해  
    챗은 LM + 템플릿 + (대개) 추가 학습의 결과이다.
 
@@ -511,8 +498,7 @@ KV Cache 등은 5권 주제이나, 루프 구조는 오늘과 동일하다.
 5. **프롬프트 토큰에도 무조건 Loss**  
    SFT에서는 마스크 설계가 중요하다.
 
-## 13. 핵심 정리
-
+## 핵심 요약
 - Language Model은 토큰 서열의 확률을 모형화한다.
 - 자기회귀 분해로 $P(x_t\mid x_{<t})$를 학습·생성에 사용한다.
 - Next Token Prediction이 GPT식 LLM의 중심 목표이다.
@@ -520,8 +506,7 @@ KV Cache 등은 5권 주제이나, 루프 구조는 오늘과 동일하다.
 - 추론은 예측 토큰을 다시 조건에 넣는 autoregressive 루프이다.
 - Softmax(33)·Cross Entropy(34)가 이 목표를 숫자로 만든다.
 
-## 14. 핵심 용어
-
+## 용어 사전
 | 용어 | 의미 |
 |---|---|
 | Language Model | 토큰 서열 확률 모델 |
@@ -533,7 +518,7 @@ KV Cache 등은 5권 주제이나, 루프 구조는 오늘과 동일하다.
 | Greedy Decoding | 최대 확률 토큰만 선택 |
 | Sampling | 분포에서 확률적으로 선택 |
 
-## 15. 연습 문제
+## 연습문제
 ### 문제 1 (개념)
 
 자기회귀 언어 모델에서 결합 확률 $P(x_{1:T})$를 조건부 확률의 곱으로 쓰시오.
@@ -557,7 +542,6 @@ Pretraining과 챗 SFT가 둘 다 Next Token Prediction일 수 있다면, 무엇
 ---
 
 ## 정답 및 해설
-
 ### 문제 1
 
 $P(x_{1:T})=\prod_{t=1}^{T} P(x_t\mid x_{<t})$
@@ -580,8 +564,7 @@ $P(x_{1:T})=\prod_{t=1}^{T} P(x_t\mid x_{<t})$
 
 데이터 분포·포맷(문서 스트림 vs 지시-응답 템플릿)과 Loss 마스크(어떤 토큰을 예측 대상으로 삼는지)가 다르다. 목표의 수학 형태는 같은 가족이다.
 
-## 16. 다음 강의와 연결
-
+## 다음 강의와 연결
 이번 강의에서 “다음 토큰 확률”이라는 목표를 고정했다.
 
 다음 **제33강. Softmax와 Logit**에서는, 모델이 내는 점수(logit)를 확률로 바꾸는 Softmax를 **손으로 계산**하고, Temperature 미리보기와 수치 안정성을 다룬다.  
@@ -596,7 +579,7 @@ $P(x_{1:T})=\prod_{t=1}^{T} P(x_t\mid x_{<t})$
 
 ### 강의 이동
 
-- **이전 강:** [제31강. Embedding — 토큰을 벡터로](31강_Embedding_토큰을_벡터로.md)
-- **다음 강:** [제33강. Softmax와 Logit](33강_Softmax와_Logit.md)
+- **이전 강:** [31강. Embedding — 토큰을 벡터로](31강_Embedding_토큰을_벡터로.md)
+- **다음 강:** [33강. Softmax와 Logit](33강_Softmax와_Logit.md)
 
 <!-- /LECTURE_NAV -->

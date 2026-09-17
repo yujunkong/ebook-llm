@@ -1,14 +1,12 @@
-# 제9강. Scalar, Vector, Matrix, Tensor
+# 9강. Scalar, Vector, Matrix, Tensor
+## 이번 강에서 배우는 내용
 
-> **학습 목표**
-> - Scalar, Vector, Matrix, Tensor가 각각 무엇인지
-> - Rank(랭크, 계수/차원 수) 0~4가 무엇을 의미하는지
-> - Shape(형상)과 Axis(축)를 보고 데이터의 구조를 읽는 법
-> - LLM이 왜 3D·4D Tensor를 쓰는지 (batch, sequence, embedding, heads)
+- Scalar, Vector, Matrix, Tensor가 각각 무엇인지
+- Rank(랭크, 계수/차원 수) 0~4가 무엇을 의미하는지
+- Shape(형상)과 Axis(축)를 보고 데이터의 구조를 읽는 법
+- LLM이 왜 3D·4D Tensor를 쓰는지 (batch, sequence, embedding, heads)
 
----
-## 1. 왜 이것을 배우는가
-
+## 왜 중요한가?
 LLM 코드를 열면 거의 모든 곳이 Tensor다.
 
 ```text
@@ -21,8 +19,7 @@ Parameter → 수백만~수천억 개의 Scalar가 모인 Tensor
 즉, Tensor는 LLM의 **기본 자료형**이다.  
 Scalar/Vector/Matrix는 Tensor의 특수한 경우로 이해하면, 이후 수식과 코드가 한 줄로 이어진다.
 
-## 2. 먼저 알아야 할 개념
-
+## 선수 개념
 다음을 이미 알고 있다고 가정한다.
 
 - Python의 숫자, 리스트, 중첩 리스트
@@ -35,8 +32,7 @@ Scalar/Vector/Matrix는 Tensor의 특수한 경우로 이해하면, 이후 수�
 - 미분·Gradient → 11~12강
 - 신경망 구조 → 15강 이후
 
-## 3. 핵심 개념 설명
-
+## 핵심 개념
 ### 3.1 Scalar (스칼라)
 
 **Scalar(스칼라)**는 **하나의 숫자**이다. 방향이 없고, 크기만 있다.
@@ -149,8 +145,7 @@ Matrix = 2D Tensor
 - Multi-Head Attention에서는 4D로 재배열하는 일이 흔하다.
 - 이미지·비디오 모델은 더 높은 차원을 쓴다. LLM도 내부 연산에서 고차 Tensor를 자주 만든다.
 
-## 4. 직관적으로 이해하기
-
+## 직관적으로 이해하기
 상자로 비유하자.
 
 | 이름 | 비유 | 예 |
@@ -169,8 +164,7 @@ Matrix = 2D Tensor
 - Matrix 여러 개 → 3D Tensor
 - 3D Tensor 여러 개 → 4D Tensor
 
-## 5. Rank와 Shape
-
+## Rank와 Shape
 ### 5.1 Rank (랭크)
 
 여기서 **Rank(랭크)**는 선형대수에서 말하는 “행렬의 계수(rank)”와 다른, **배열의 축 개수**를 뜻한다. NumPy/PyTorch 문서에서는 **ndim(number of dimensions)**이라고도 한다.
@@ -211,8 +205,7 @@ axis=1  →  열 방향 (가로로 늘어남)
 
 축을 헷갈리면 `sum`, `mean`, `softmax`가 완전히 다른 결과가 된다. LLM 구현에서 가장 흔한 버그 중 하나다.
 
-## 6. 작은 숫자로 직접 계산하기
-
+## 작은 숫자로 직접 계산하기
 ### 6.1 Rank 0 — Scalar
 
 $$
@@ -318,8 +311,7 @@ Shape: `(1, 2, 2, 2)`
 
 이 구조는 Multi-Head Attention에서 Q/K/V를 나눌 때 반복해서 등장한다.
 
-## 7. 코드로 구현하기 (NumPy)
-
+## 코드로 구현하기
 8강에서 배운 NumPy를 수학 용어와 연결한다.
 
 ```python
@@ -376,8 +368,7 @@ print("Q[0, 1, 0, 1] =", Q[0, 1, 0, 1])  # 6
 실행하면 shape와 indexing이 앞 절의 손계산과 일치해야 한다.  
 일치하지 않으면 축 이해에 구멍이 있는 것이다.
 
-## 8. PyTorch로 맛보기
-
+## PyTorch로 맛보기
 PyTorch의 기본 자료형은 `torch.Tensor`이다. NumPy와 거의 같은 감각으로 쓴다.
 
 ```python
@@ -401,8 +392,7 @@ print(z.shape)  # torch.Size([2, 3, 2, 2])
 
 아직 Autograd는 쓰지 않는다. 지금은 **구조**만 본다.
 
-## 9. 실제 LLM에서는 어떻게 사용하는가
-
+## LLM에서는 어디에 사용될까?
 ### 9.1 전형적인 Shape 이름
 
 LLM 코드/논문에서 자주 보는 기호:
@@ -455,8 +445,7 @@ Loss
 
 LLM의 “수십억 파라미터”란, 결국 이런 Tensor들 안의 Scalar를 모두 센 개수다.
 
-## 10. Broadcasting과 Shape 사고
-
+## Broadcasting과 Shape 사고
 딥러닝 코드는 크기가 다른 Tensor를 더하기도 한다.
 
 예:
@@ -484,8 +473,7 @@ print(Y)
 LLM에서는 bias 더하기, mask 더하기, 위치 인코딩 더하기에서 계속 등장한다.  
 Shape가 안 맞으면 런타임 에러가 나거나, 더 무섭게는 **잘못된 축으로 조용히 연산**된다.
 
-## 11. 실습
-
+## 실습
 ### 실습 1 — 손으로 Shape 읽기
 
 다음 배열의 Rank, Shape, 원소 개수를 쓰시오.
@@ -519,8 +507,7 @@ $B=2$, $T=5$, $d=8$, $h=4$일 때 다음 Shape를 쓰시오.
 
 `(2, 3)` 행렬에서 `sum(axis=0)`과 `sum(axis=1)`의 Shape를 각각 예측하고 실행으로 검증하시오.
 
-## 12. 자주 하는 실수
-
+## 자주 하는 실수
 1. **Vector의 shape를 `(3)`과 `(3, 1)`로 혼동한다**  
    둘 다 “숫자 3개”처럼 보이지만, 행렬곱에서 결과가 달라진다. 항상 `.shape`를 출력한다.
 
@@ -536,16 +523,14 @@ $B=2$, $T=5$, $d=8$, $h=4$일 때 다음 Shape를 쓰시오.
 5. **4D를 “너무 어렵다”고 피한다**  
    4D는 대개 `(B, h, T, d_h)`처럼 **이름 있는 축 네 개**일 뿐이다. 이름을 붙이면 怖지 않다.
 
-## 13. 핵심 정리
-
+## 핵심 요약
 - Scalar는 숫자 하나(Rank 0), Vector는 1D, Matrix는 2D, Tensor는 그 일반화다.
 - Shape는 각 축의 크기, Axis는 그 축의 번호다.
 - LLM은 `(B, T, d)` 3D와 `(B, h, T, d_h)` 4D를 핵심적으로 사용한다.
 - Loss는 Scalar, Parameter는 거대한 Tensor, 연산은 그 사이의 변환이다.
 - 코드를 볼 때 값보다 먼저 **Shape를 읽는다.**
 
-## 14. 핵심 용어
-
+## 용어 사전
 | 용어 | 의미 |
 |---|---|
 | Scalar (스칼라) | 하나의 숫자, Rank 0 Tensor |
@@ -561,7 +546,7 @@ $B=2$, $T=5$, $d=8$, $h=4$일 때 다음 Shape를 쓰시오.
 | Transpose | 축 순서를 바꾸는 연산 (2D에서는 행↔열) |
 | Broadcasting | 작은 Tensor를 호환 축에 맞춰 확장해 연산 |
 
-## 15. 연습 문제
+## 연습문제
 ### 문제 1 (개념)
 
 Scalar, Vector, Matrix, Tensor의 관계를 Rank로 한 문장씩 설명하시오.
@@ -600,7 +585,6 @@ Attention에서 점수 행렬이 `(B, h, T, T)`인 이유를, “무엇을 무�
 ---
 
 ## 정답 및 해설
-
 ### 문제 1
 
 - Scalar: Rank 0 Tensor  
@@ -627,8 +611,7 @@ NumPy 0-based `A[1, 0] = 7` (2행 1열).
 
 각 헤드에서 쿼리 위치 $T$개와 키 위치 $T$개를 모두 비교하므로 마지막 두 축이 `(T, T)`가 된다. 배치와 헤드를 앞에 두면 `(B, h, T, T)`.
 
-## 16. 다음 강의와 연결
-
+## 다음 강의와 연결
 이번 강의에서 “상자(구조)”를 배웠다.
 
 다음 **제10강. 선형대수 기초 — 내적과 행렬곱**에서는 그 상자 안의 숫자를 **어떻게 섞는지** 배운다.  
@@ -642,7 +625,7 @@ NumPy 0-based `A[1, 0] = 7` (2행 1열).
 
 ### 강의 이동
 
-- **이전 강:** [제8강. NumPy로 배열 다루기](08강_NumPy로_배열_다루기.md)
-- **다음 강:** [제10강. 선형대수 기초 — 내적과 행렬곱](10강_선형대수_기초_내적과_행렬곱.md)
+- **이전 강:** [8강. NumPy로 배열 다루기](08강_NumPy로_배열_다루기.md)
+- **다음 강:** [10강. 선형대수 기초 — 내적과 행렬곱](10강_선형대수_기초_내적과_행렬곱.md)
 
 <!-- /LECTURE_NAV -->

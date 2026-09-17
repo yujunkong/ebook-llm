@@ -1,15 +1,13 @@
-# 제80강. 강화학습 기초 — State, Action, Reward
+# 80강. 강화학습 기초 — State, Action, Reward
+## 이번 강에서 배우는 내용
 
-> **학습 목표**
-> - State(상태), Action(행동), Reward(보상)의 정의
-> - LLM에서 state ≈ prompt + partial completion, action ≈ next token
-> - Episode / Trajectory / Return이 생성 한 번과 어떻게 대응하는지
-> - 보상이 “매 토큰”이 아니라 “응답 끝”에 오는 경우가 많다는 점
-> - 제81강 Policy·Value로 넘어갈 기호 $s_t, a_t, r_t$
+- State(상태), Action(행동), Reward(보상)의 정의
+- LLM에서 state ≈ prompt + partial completion, action ≈ next token
+- Episode / Trajectory / Return이 생성 한 번과 어떻게 대응하는지
+- 보상이 “매 토큰”이 아니라 “응답 끝”에 오는 경우가 많다는 점
+- 제81강 Policy·Value로 넘어갈 기호 $s_t, a_t, r_t$
 
----
-## 1. 왜 이것을 배우는가
-
+## 왜 중요한가?
 RLHF 논문을 열면 곧바로 다음이 나온다.
 
 $$
@@ -31,8 +29,7 @@ SFT만 알면 “토큰 CE”에 익숙하다.
 RLHF는 “토큰 결정의 연쇄가 만든 **결과물**에 점수”를 준다.  
 State / Action / Reward를 고정하지 않으면 PPO 식의 $A_t$, KL 항, GRPO 그룹 비교가 공중에 뜬다.
 
-## 2. 먼저 알아야 할 개념
-
+## 선수 개념
 - **Autoregressive generation(자기회귀 생성)**: $y_t \sim \pi(\cdot\mid x,y_{<t})$（3권 57~59）
 - **Policy $\pi_\theta$**: 조건부 토큰 분포를 내는 모델（제81강에서 정식화）
 - **스칼라(scalar)**: 하나의 실수. 보상은 보통 스칼라다
@@ -40,8 +37,7 @@ State / Action / Reward를 고정하지 않으면 PPO 식의 $A_t$, KL 항, GRPO
 
 선수 증명·벨만 최적성 정리까지는 필요하지 않다.
 
-## 3. 핵심 개념 설명
-
+## 핵심 개념
 ### 3.1 강화학습이 푸는 문제（한 줄）
 
 **Reinforcement Learning(강화학습)**은 에이전트가 환경과 상호작용하며, **누적 보상**을 크게 만드는 행동 규칙을 찾는 문제 설정이다.
@@ -179,8 +175,7 @@ $$
 응답 끝에만 보상 $R$이 있고 중간 $r_t=0$이면, $\gamma=1$일 때 모든 $t$에 대해 $G_t = R$이 된다.  
 “마지막 점수가 모든 토큰에 그대로 전파” — REINFORCE의 단순한 LLM 적용이 이렇게 보인다（제82강）.
 
-## 4. 직관적으로 이해하기
-
+## 직관적으로 이해하기
 ### 4.1 미로 vs 문장
 
 | | 미로 에이전트 | LLM |
@@ -226,8 +221,7 @@ $$
 
 Gym의 `env.step`과 모양이 달라도, 기호 $s,a,r$의 역할은 같다.
 
-## 5. 수학적으로 이해하기
-
+## 수학적으로 이해하기
 ### 5.1 MDP 튜플（라이트）
 
 **MDP(Markov Decision Process, 마르코프 결정 과정)**는 대략 다음 튜플이다.
@@ -286,8 +280,7 @@ LLM RLHF 구현에서는 terminal reward + $\gamma=1$ 또는 **토큰 평균 adv
 세부 관례는 PPO 구현 강（제88강）에서 맞춘다.  
 지금은 “$G_t$는 앞을 보는 누적 점수” 정도만 잡으면 된다.
 
-## 6. 작은 숫자로 직접 계산하기
-
+## 작은 숫자로 직접 계산하기
 어휘를 극단적으로 줄인다.
 
 $$
@@ -346,8 +339,7 @@ $$
 | 0.5 | 0.5 |
 | 0.9 | 0.9 |
 
-## 7. 코드로 구현하기
-
+## 코드로 구현하기
 작은 이산 환경과 무작위 정책 롤아웃.
 
 ```python
@@ -444,8 +436,7 @@ if __name__ == "__main__":
 실행하면 평균 반환과 한 trajectory의 $(s,a,r,G)$를 볼 수 있다.  
 정책이 고정 난수이므로 학습은 없다 — **기호가 코드 필드와 1:1**인지만 확인한다.
 
-## 8. PyTorch로 “토큰=행동”만 맛보기
-
+## PyTorch로 “토큰=행동”만 맛보기
 실제 LLM 없이도, 로짓 → 샘플 → 로그확률을 action으로 취급할 수 있다.
 
 ```python
@@ -473,8 +464,7 @@ if __name__ == "__main__":
 
 제82강 Policy Gradient는 이 `log_prob`에 보상（또는 Advantage）을 곱한다.
 
-## 9. 실제 LLM에서는 어떻게 사용하는가
-
+## LLM에서는 어디에 사용될까?
 ### 9.1 상태 표현
 
 - 학습 코드: `input_ids`가 prompt+completion을 이어 붙인 텐서
@@ -503,8 +493,7 @@ PPO 구현은 토큰마다 value head를 두더라도, **외부 보상은 termin
 형식은 chat template（3권 72강）이 규정한다.  
 개념적으로는 여전히 “문자열 상태 + 다음 토큰 행동”이다.
 
-## 10. 실습
-
+## 실습
 ### 실습 A — 기호 번역
 
 다음 문장을 $s,a,r$로 번역해 보시오.
@@ -523,8 +512,7 @@ PPO 구현은 토큰마다 value head를 두더라도, **외부 보상은 termin
 
 제79강 경로 중 RM을 쓰는 경로와 RLVR 경로에서, $r$의 **출처**만 각각 한 줄로 쓰시오.
 
-## 11. 자주 하는 실수
-
+## 자주 하는 실수
 1. **State = 프롬프트만**이라고 고정해 버리는 것  
    → 토큰 단위 결정에서는 partial completion이 상태에 포함된다.
 
@@ -543,16 +531,14 @@ PPO 구현은 토큰마다 value head를 두더라도, **외부 보상은 termin
 6. **에피소드 = 학습 에폭**  
    → episode는 한 번 생성, epoch는 데이터 패스. 용어를 섞지 말 것.
 
-## 12. 핵심 정리
-
+## 핵심 요약
 - RL은 상태·행동·보상 상호작용으로 누적 점수를 키우는 문제 설정이다.
 - LLM: $s_t=(x,y_{<t})$, $a_t=y_t$, 보상은 종종 terminal $r(x,y)$.
 - Trajectory는 토큰 결정의 연쇄이고, Return $G_t$는 앞을 본 누적 보상이다.
 - 전이는 대개 결정적 이어붙이기, 불확실성은 샘플링에 있다.
 - 다음 강의에서 “행동을 고르는 규칙”과 “상태가 얼마나 좋은지”를 함수로 이름 붙인다.
 
-## 13. 핵심 용어
-
+## 용어 사전
 | 용어 | 한 줄 의미 |
 |---|---|
 | State $s$ | 결정에 쓰는 상황 요약（prompt+partial） |
@@ -565,7 +551,7 @@ PPO 구현은 토큰마다 value head를 두더라도, **외부 보상은 termin
 | Terminal / sparse reward | 끝에만 오는 보상 |
 | Credit assignment | 늦게 온 점수를 어느 행동 탓으로 돌릴지 |
 
-## 14. 연습 문제
+## 연습문제
 ### 문제 1
 
 LLM 생성에서 state와 action의 표준 근사를 기호로 쓰시오.
@@ -589,7 +575,6 @@ SFT의 정답 토큰 라벨과 RL의 reward가 다른 점을 한 문장으로.
 ---
 
 ## 정답 및 해설
-
 ### 문제 1
 
 $s_t=(x,y_{<t})$, $a_t=y_t$（어휘 위 이산）.
@@ -610,8 +595,7 @@ SFT는 “이 토큰이 정답”이라는 지도 라벨이고, RL reward는 완
 
 $r_\phi(x,y)$ — 에피소드（응답）에 대한 보상 함수 근사.
 
-## 15. 다음 강의와 연결
-
+## 다음 강의와 연결
 기호 $s,a,r$가 생겼다.  
 다음 **제81강. Policy와 Value Function**에서는:
 
@@ -627,7 +611,7 @@ $r_\phi(x,y)$ — 에피소드（응답）에 대한 보상 함수 근사.
 
 ### 강의 이동
 
-- **이전 강:** [제79강. Post-Training 지도](79강_Post_Training_지도.md)
-- **다음 강:** [제81강. Policy와 Value Function](81강_Policy와_Value_Function.md)
+- **이전 강:** [79강. Post-Training 지도](79강_Post_Training_지도.md)
+- **다음 강:** [81강. Policy와 Value Function](81강_Policy와_Value_Function.md)
 
 <!-- /LECTURE_NAV -->

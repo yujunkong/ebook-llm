@@ -1,15 +1,13 @@
-# 제61강. Tokenization Pipeline과 Dataset Packing
+# 61강. Tokenization Pipeline과 Dataset Packing
+## 이번 강에서 배우는 내용
 
-> **학습 목표**
-> - 문서 → tokenize → token ids → 고정 길이 청크까지의 흐름을 설명한다.
-> - BOS / EOS가 packing에서 어떤 역할을 하는지 구분한다.
-> - Packing과 Padding의 차이를 표로 정리한다.
-> - 문서 경계를 넘는 Attention이 왜 문제인지, 어떻게 막는지를 말한다.
-> - 작은 코드로 packing과 label/mask를 직접 만든다.
+- 문서 → tokenize → token ids → 고정 길이 청크까지의 흐름을 설명한다.
+- BOS / EOS가 packing에서 어떤 역할을 하는지 구분한다.
+- Packing과 Padding의 차이를 표로 정리한다.
+- 문서 경계를 넘는 Attention이 왜 문제인지, 어떻게 막는지를 말한다.
+- 작은 코드로 packing과 label/mask를 직접 만든다.
 
----
-## 1. 왜 이것을 배우는가
-
+## 왜 중요한가?
 Pretraining의 학습 단위는 “파일”이 아니라 **고정 길이 토큰 윈도우**다. GPU는 `[B, T]` 텐서를 원한다. 문서는 길이가 제각각이다.
 
 ```text
@@ -31,8 +29,7 @@ Pretraining의 학습 단위는 “파일”이 아니라 **고정 길이 토큰
 
 제62강 Training Loop는 이 파이프라인이 만든 배치를 전제로 돈다. 지금 경계를 분명히 해야 한다.
 
-## 2. 먼저 알아야 할 개념
-
+## 선수 개념
 1. **Tokenizer / Vocabulary / Special Tokens** — 제27~30강
 2. **Causal LM / Next Token Prediction** — 제32, 48, 57강
 3. **Causal Mask / Attention Mask** — 제40강, 제30강
@@ -41,8 +38,7 @@ Pretraining의 학습 단위는 “파일”이 아니라 **고정 길이 토큰
 
 아직 Optimizer·AMP·Checkpoint는 제63~65강이다. 이번 강의의 산출물은 **정수 텐서 배치**다.
 
-## 3. 핵심 개념 — Tokenization Pipeline
-
+## 핵심 개념 — Tokenization Pipeline
 **Tokenization Pipeline**이란 원문 텍스트를 모델 입력 정수 열로 바꾸는 일련의 단계다.
 
 전형적인 단계는 다음과 같다.
@@ -71,8 +67,7 @@ Pretraining의 학습 단위는 “파일”이 아니라 **고정 길이 토큰
 
 사실(관행): GPT-2 계열 학습에서는 문서 사이에 EOS를 넣고 packing하는 패턴이 흔하다. BOS를 항상 쓰는지는 토크나이저·레시피마다 다르다. “모든 LLM이 BOS를 쓴다”는 사실이 아니다.
 
-## 4. 문서에서 토큰 ID까지
-
+## 문서에서 토큰 ID까지
 ### 4.1 한 문서의 tokenize
 
 개념 코드:
@@ -108,8 +103,7 @@ labels:     t1  t2  t3  t4  ...  t_T      (한 칸 시프트)
 
 구현에서는 같은 `ids`를 두고 loss 함수 안에서 shift하거나, 미리 labels를 만들어 둔다. 어느 쪽이든 **PAD나 문서 경계에서 무시할 위치**를 `ignore_index`(흔히 `-100`)로 표시하는 패턴이 많다.
 
-## 5. Packing이란 무엇인가
-
+## Packing이란 무엇인가
 **Packing(시퀀스 패킹)**은 여러 문서의 토큰을 이어 붙여 하나의 길이 $T$ 윈도우를 채우는 기법이다.
 
 직관:
@@ -133,8 +127,7 @@ T = 12 로 packing한 한 샘플 예:
 - 문서 경계를 Attention·Loss에서 **명시적으로 다루지 않으면** 잘못된 맥락이 섞인다.
 - 구현·디버깅이 padding-only보다 복잡하다.
 
-## 6. Padding이란 무엇인가
-
+## Padding이란 무엇인가
 **Padding**은 한 시퀀스가 $T$보다 짧을 때 남는 칸을 PAD로 채우는 것이다.
 
 ```text
@@ -156,8 +149,7 @@ labels (PAD 위치 ignore):
 - 짧은 문서가 많으면 PAD가 대부분인 배치가 나와 **계산 낭비**가 커진다.
 - 긴 문서는 여전히 truncate가 필요하다.
 
-## 7. Packing vs Padding 비교
-
+## Packing vs Padding 비교
 | 항목 | Packing | Padding |
 |---|---|---|
 | 한 윈도우의 내용 | 여러 문서(또는 문서 조각) | 보통 한 문서(+PAD) |
@@ -168,8 +160,7 @@ labels (PAD 위치 ignore):
 
 둘은 배타적이지 않다. packing 후에도 마지막 윈도우가 $T$에 못 미치면 **끝부분만 padding**하는 혼합이 일반적이다.
 
-## 8. BOS / EOS와 문서 경계
-
+## BOS / EOS와 문서 경계
 ### 8.1 EOS의 역할
 
 Pretraining packing에서 EOS는 대개 다음을 신호한다.
@@ -201,8 +192,7 @@ packing, 문서마다 BOS 사용(가정 bos=B):
 [B h i EOS B b y e]   # 길이에 따라 truncate/pad
 ```
 
-## 9. Attention과 Packing 경계
-
+## Attention과 Packing 경계
 Causal LM의 Attention은 기본적으로 **같은 시퀀스 안의 과거 토큰**을 본다. packing하면 “같은 시퀀스” 안에 **서로 다른 문서**가 공존한다.
 
 문제 상황:
@@ -250,8 +240,7 @@ def document_aware_causal_mask(doc_ids, T):
 
 주의: Attention 누수와 Loss 마스킹은 **다른 층위**의 문제다. 용어를 섞지 말 것.
 
-## 10. Packing 알고리즘 (개념 구현)
-
+## Packing 알고리즘 (개념 구현)
 아래는 교육용 단순 packing이다. 대용량에서는 메모리 맵·샤드·비동기 로더를 쓴다.
 
 ```python
@@ -322,8 +311,7 @@ for batch in pack_token_streams(docs, block_size=8, pad_id=0):
     print(labels)
 ```
 
-## 11. Dataset / DataLoader로 연결
-
+## Dataset / DataLoader로 연결
 제22강의 Dataset 패턴을 토큰 스트림에 적용한다.
 
 ```python
@@ -361,8 +349,7 @@ def build_loader(chunks, pad_id, batch_size=4, shuffle=True):
 
 온라인 packing(스트리밍)에서는 `__getitem__` 대신 **iterable dataset**이 더 자연스럽다. 원리는 같다: 버퍼를 채우다 $T$가 되면 yield.
 
-## 12. 실무에서 자주 하는 설계 선택
-
+## 실무에서 자주 하는 설계 선택
 1. **문서 단위 EOS 강제**  
    원문에 없어도 학습용으로 EOS를 붙일지 결정한다.
 
@@ -378,8 +365,7 @@ def build_loader(chunks, pad_id, batch_size=4, shuffle=True):
 5. **SFT와의 차이(미리보기)**  
    Instruction Tuning(제69~71강)에서는 packing보다 **샘플 단위 padding + loss mask(프롬프트 구간 무시)** 가 더 흔하다. Pretraining packing 습관을 그대로 가져가면 안 된다.
 
-## 13. 흔한 버그
-
+## 흔한 버그
 1. **EOS 이중 삽입**  
    토크나이저가 이미 EOS를 넣었는데 파이프라인에서 또 붙임.
 
@@ -398,8 +384,7 @@ def build_loader(chunks, pad_id, batch_size=4, shuffle=True):
 6. **디토크나이즈 없이 파이프라인만 믿음**  
    샘플 몇 개를 `decode`해 사람이 읽어야 한다.
 
-## 14. 미니 점검 체크리스트
-
+## 미니 점검 체크리스트
 파이프라인을 닫기 전에:
 
 - [ ] 랜덤 문서 3개를 encode→decode 왕복해 보았는가?
@@ -408,16 +393,18 @@ def build_loader(chunks, pad_id, batch_size=4, shuffle=True):
 - [ ] labels의 `ignore_index` 비율이 비정상적으로 크지 않은가?
 - [ ] (경계 마스크 사용 시) 문서가 바뀌는 위치 전후로 attend 금지인지 단위 테스트가 있는가?
 
-## 15. 핵심 정리
+## LLM에서는 어디에 사용될까?
 
+이번 61강에서 배운 개념은 이후 Transformer · GPT · 서빙 강의에서 반복해서 등장합니다. 각 수식·코드 블록을 “실제 모델의 어느 단계인가”와 연결해 다시 읽어 보세요.
+
+## 핵심 요약
 - Tokenization Pipeline은 문서 → token ids → 고정 길이 텐서 배치까지의 생산 라인이다.
 - Packing은 효율을 위해 문서를 이어 붙이고, Padding은 빈칸을 PAD로 채운다.
 - EOS(및 선택적 BOS)는 문서 경계를 토큰 수준에서 표시한다.
 - packing 시 Attention/Loss에서 경계를 어떻게 다룰지 **명시적으로** 정해야 한다.
 - 제62강은 이 배치를 받아 `forward → loss → backward → step`을 돌린다.
 
-## 16. 핵심 용어
-
+## 용어 사전
 | 용어 | 의미 |
 |---|---|
 | Tokenization Pipeline | 텍스트를 학습 텐서로 바꾸는 단계열 |
@@ -429,7 +416,7 @@ def build_loader(chunks, pad_id, batch_size=4, shuffle=True):
 | Document boundary | packing된 시퀀스 안의 문서 경계 |
 | `ignore_index` | Loss에서 무시할 label 값 |
 
-## 17. 연습 문제
+## 연습문제
 ### 문제 1 (개념)
 
 Packing과 Padding을 한 문장씩 정의하고, Pretraining에서 packing을 쓰는 주된 이유를 쓰시오.
@@ -459,7 +446,6 @@ PAD label을 마스킹하지 않으면 어떤 잘못된 학습 신호가 생기�
 ---
 
 ## 정답 및 해설
-
 ### 문제 1
 
 Packing: 여러 문서 토큰을 이어 고정 길이를 채우는 것.  
@@ -483,8 +469,7 @@ EOS(2) 뒤가 경계 후보. 문서1 끝=인덱스2, 문서2 끝=인덱스6, 문
 
 필터/샤드는 **tokenizeize·packing 이전**(또는 tokenize와 병행하되 packing 입력 전)에 와야 한다. 이미 packing된 청크만 있으면 문서 단위 품질 제어·재셔플·라이선스 단위 제거가 어렵다.
 
-## 18. 다음 강의와 연결
-
+## 다음 강의와 연결
 토큰 배치가 준비되었다.
 
 다음 **제62강. Training Loop 설계**에서는 이 배치를 받아 `zero_grad → forward → loss → backward → clip → step`으로 이어지는 **학습 스텝**을 설계한다. epoch과 token budget, 로깅 항목도 함께 고정한다.
@@ -498,7 +483,7 @@ EOS(2) 뒤가 경계 후보. 문서1 끝=인덱스2, 문서2 끝=인덱스6, 문
 
 ### 강의 이동
 
-- **이전 강:** [제60강. Pretraining Dataset 구성](60강_Pretraining_Dataset_구성.md)
-- **다음 강:** [제62강. Training Loop 설계](62강_Training_Loop_설계.md)
+- **이전 강:** [60강. Pretraining Dataset 구성](60강_Pretraining_Dataset_구성.md)
+- **다음 강:** [62강. Training Loop 설계](62강_Training_Loop_설계.md)
 
 <!-- /LECTURE_NAV -->

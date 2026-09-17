@@ -1,15 +1,13 @@
-# 제34강. Cross Entropy Loss
+# 34강. Cross Entropy Loss
+## 이번 강에서 배우는 내용
 
-> **학습 목표**
-> - Cross Entropy Loss(교차 엔트로피 손실)가 무엇인지, 왜 $-\log p_{\text{correct}}$인지
-> - Logits → Softmax → Cross Entropy의 전체 파이프라인
-> - 작은 vocabulary로 손계산하기
-> - Next-Token Prediction에서 CE가 어떻게 쓰이는지
-> - NumPy와 `torch.nn.functional.cross_entropy`로 같은 값을 재현하기
+- Cross Entropy Loss(교차 엔트로피 손실)가 무엇인지, 왜 $-\log p_{\text{correct}}$인지
+- Logits → Softmax → Cross Entropy의 전체 파이프라인
+- 작은 vocabulary로 손계산하기
+- Next-Token Prediction에서 CE가 어떻게 쓰이는지
+- NumPy와 `torch.nn.functional.cross_entropy`로 같은 값을 재현하기
 
----
-## 1. 왜 이것을 배우는가
-
+## 왜 중요한가?
 Language Model은 매 위치에서 vocabulary 크기 $V$개의 점수를 낸다. Softmax로 확률 $p$를 만든 뒤, **정답 토큰**에 부여한 확률이 높을수록 좋다.
 
 그런데 “좋다/나쁘다”를 파라미터 업데이트에 쓰려면 **미분 가능한 숫자 하나**가 필요하다. 그 숫자가 Cross Entropy다.
@@ -25,8 +23,7 @@ Language Model은 매 위치에서 vocabulary 크기 $V$개의 점수를 낸다.
 
 1권 13강에서 CE의 **직관**을 미리 보았다. 이번 강의는 Softmax(33강) 직후에 붙여, **logits에서부터 Loss까지를 끝까지** 계산한다.
 
-## 2. 먼저 알아야 할 개념
-
+## 선수 개념
 - Softmax와 Logit (33강)
 - Loss Function 일반 개념 (1권 13강)
 - Next-Token Prediction (32강)
@@ -38,8 +35,7 @@ Language Model은 매 위치에서 vocabulary 크기 $V$개의 점수를 낸다.
 - Attention 내부 구조 (35강 이후)
 - Label smoothing, KL divergence의 깊은 이론
 
-## 3. 핵심 개념 설명
-
+## 핵심 개념
 ### 3.1 Cross Entropy Loss란?
 
 **Cross Entropy(교차 엔트로피)**는 “정답이 가리키는 분포”와 “모델이 예측한 확률 분포”가 얼마나 다른지를 재는 척도다. 분류·토큰 예측에서 **Loss Function**으로 쓸 때 **Cross Entropy Loss**라고 부른다.
@@ -121,8 +117,7 @@ $$
 - Padding 위치는 mask로 제외하는 경우가 많다.
 - $N$은 유효 토큰 개수다.
 
-## 4. 직관적으로 이해하기
-
+## 직관적으로 이해하기
 ### 4.1 왜 $-\log$인가?
 
 확률이 1에 가까우면 Loss는 0에 가깝다. 확률이 0에 가까우면 Loss는 커진다.
@@ -159,8 +154,7 @@ $$
 
 한 문장의 학습 신호는 보통 **각 위치의 CE를 평균**한 것이다.
 
-## 5. 수학적으로 이해하기
-
+## 수학적으로 이해하기
 ### 5.1 Softmax + CE의 한 줄 정의
 
 $$
@@ -196,8 +190,7 @@ $$
 
 를 쓴다. Softmax도 같은 트릭을 쓴다(33강).
 
-## 6. 작은 숫자로 직접 계산하기
-
+## 작은 숫자로 직접 계산하기
 Vocabulary를 아주 작게 잡는다. $V=4$, 토큰 이름:
 
 | 인덱스 | 토큰 |
@@ -324,8 +317,7 @@ $$
 
 $-\ln p_3$와 일치한다.
 
-## 7. 코드로 구현하기 (NumPy)
-
+## 코드로 구현하기
 ```python
 # lecture34_cross_entropy_numpy.py
 # Softmax → Cross Entropy를 밑바닥에서 계산한다.
@@ -386,8 +378,7 @@ if __name__ == "__main__":
 
 실행하면 손계산(약 0.461)과 맞는지 확인할 수 있다.
 
-## 8. PyTorch로 구현하기
-
+## PyTorch로 구현하기
 ```python
 # lecture34_cross_entropy_torch.py
 # F.cross_entropy는 logits를 받고 내부에서 log-softmax + NLL을 한다.
@@ -441,8 +432,7 @@ if __name__ == "__main__":
 - 이미 Softmax한 확률을 넣으면 잘못된 Loss가 나온다.
 - LM에서는 `(B, T, V)`를 `(B*T, V)`로 펼쳐 쓰는 패턴이 흔하다.
 
-## 9. 실제 LLM에서는 어떻게 사용하는가
-
+## LLM에서는 어디에 사용될까?
 ### 9.1 학습 목표
 
 Causal LM(GPT 계열)은 위치 $t$에서 토큰 $x_t$를, 이전 토큰 $x_{<t}$로 예측한다.
@@ -477,8 +467,7 @@ logits의 위치 0은 `t1`을, 위치 1은 `t2`를 예측하도록 **target을 �
 학습 Loss 계산은 `cross_entropy(logits, target)` 한 번이면 된다.  
 생성(추론) 시에만 Softmax/샘플링이 겉으로 드러나는 경우가 많다.
 
-## 10. 실습
-
+## 실습
 ### 실습 1 — 손계산
 
 $\mathbf{z}=[0, 0, 0, 0]$, $c=1$일 때 $p_c$와 CE를 구하시오. ($V=4$)
@@ -504,8 +493,7 @@ logits 위치와 target 매칭을 적으시오. (예: 위치 0의 target은?)
 
 평균 CE가 $0.693$이면 Perplexity $\approx e^{0.693}$는 얼마인가?
 
-## 11. 자주 하는 실수
-
+## 자주 하는 실수
 1. **확률을 한 번 더 Softmax한다**  
    `F.cross_entropy`는 logits를 기대한다. Softmax 결과를 넣으면 Loss가 왜곡된다.
 
@@ -524,16 +512,14 @@ logits 위치와 target 매칭을 적으시오. (예: 위치 0의 target은?)
 6. **Accuracy만 보고 Loss를 무시한다**  
    Softmax 확률의 교정은 CE Gradient가 담당한다. 맞춘 개수만으로는 확신이 안 보인다.
 
-## 12. 핵심 정리
-
+## 핵심 요약
 - Cross Entropy Loss는 정답 확률에 $-\log$를 취한 값이다: $\ell=-\log p_c$.
 - LLM에서는 Softmax 확률의 $p_c$가 “다음 토큰이 정답일 확률”이다.
 - 구현은 logits에서 `logsumexp`로 바로 CE를 계산하는 편이 안정적이다.
 - Softmax+CE의 Gradient는 $p - y$로, 직관과 수학이 잘 맞는다.
 - 시퀀스 LM Loss는 위치별 CE의 (유효 토큰) 평균이다.
 
-## 13. 핵심 용어
-
+## 용어 사전
 | 용어 | 의미 |
 |---|---|
 | Cross Entropy Loss | 정답 분포와 예측 분포의 차이를 재는 손실, 분류/LM 표준 |
@@ -545,7 +531,7 @@ logits 위치와 target 매칭을 적으시오. (예: 위치 0의 target은?)
 | ignore_index | Loss 계산에서 특정 라벨(예: pad)을 무시 |
 | log-sum-exp | $\log\sum e^{z}$의 안정 계산 |
 
-## 14. 연습 문제
+## 연습문제
 ### 문제 1 (계산)
 
 $p_c=1/e$일 때 $\ell=-\ln p_c$는?
@@ -569,7 +555,6 @@ $\mathbf{z}=[0, 1]$, $c=0$일 때 Softmax 확률과 CE를 구하시오.
 ---
 
 ## 정답 및 해설
-
 ### 문제 1
 
 $-\ln(e^{-1})=1$.
@@ -593,8 +578,7 @@ Accuracy는 맞음/틀림의 거친 신호라 미분이 거의 없거나 불연�
 $p$의 정답 성분이 $-\log p_c$의 입력이 된다.  
 지금까지는 “한 위치의 점수→확률→Loss”까지다. 남은 큰 구멍은 **여러 토큰 문맥을 어떻게 한 벡터/표현으로 모을 것인가** — 곧 **Attention**이다.
 
-## 15. 다음 강의와 연결
-
+## 다음 강의와 연결
 이제 Softmax(33강)와 Cross Entropy(34강)로 **다음 토큰 학습의 출력단**이 완성되었다.
 
 그런데 Transformer의 핵심은 출력단이 아니라, 문맥을 섞는 **Attention**이다.  
@@ -608,7 +592,7 @@ $p$의 정답 성분이 $-\log p_c$의 입력이 된다.
 
 ### 강의 이동
 
-- **이전 강:** [제33강. Softmax와 Logit](33강_Softmax와_Logit.md)
-- **다음 강:** [제35강. Attention이 필요한 이유](35강_Attention이_필요한_이유.md)
+- **이전 강:** [33강. Softmax와 Logit](33강_Softmax와_Logit.md)
+- **다음 강:** [35강. Attention이 필요한 이유](35강_Attention이_필요한_이유.md)
 
 <!-- /LECTURE_NAV -->

@@ -1,14 +1,12 @@
-# 제28강. Character / Word / Subword Tokenization
+# 28강. Character / Word / Subword Tokenization
+## 이번 강에서 배우는 내용
 
-> **학습 목표**
-> - Character / Word / Subword Tokenization의 정의와 차이
-> - OOV(Out-of-Vocabulary)가 왜 문제인지
-> - 토큰 수가 길어지면 생기는 비용(길이·계산·문맥 창)
-> - 현대 LLM이 왜 Subword(특히 BPE 계열)를 주로 쓰는지
+- Character / Word / Subword Tokenization의 정의와 차이
+- OOV(Out-of-Vocabulary)가 왜 문제인지
+- 토큰 수가 길어지면 생기는 비용(길이·계산·문맥 창)
+- 현대 LLM이 왜 Subword(특히 BPE 계열)를 주로 쓰는지
 
----
-## 1. 왜 이것을 배우는가
-
+## 왜 중요한가?
 Tokenizer는 “전처리 옵션”이 아니라 **모델의 입력 언어**를 정의한다.
 
 같은 문장 `"unhappiness"`도 분할 방식에 따라 모델이 보는 서열이 달라진다.
@@ -28,15 +26,13 @@ Vocab을 줄이면 → 문장이 길어질 수 있음 (조각이 잘게 쪼개�
 
 LLM의 계산량·메모리·Context Window는 **토큰 길이**에 민감하므로, 이 트레이드오프를 이해하지 못하면 이후 Attention·학습 비용 이야기도 공중에 뜬다.
 
-## 2. 먼저 알아야 할 개념
-
+## 선수 개념
 - Token / Token ID / Vocabulary (27강)
 - OOV의 존재 (27강 실습에서 `<unk>`로 맛봄)
 - 서열 길이 $T$가 커지면 Self-Attention 비용이 대략 $O(T^2)$로 커진다는 감각 (상세는 이후 Attention 강의)
 - “압축”이란 같은 정보를 더 짧은 기호열로 나타내는 것
 
-## 3. 핵심 개념 설명
-
+## 핵심 개념
 ### 3.1 Character Tokenization (문자 단위)
 
 **Character Tokenization(캐릭터 토큰화)**은 텍스트를 **글자(또는 코드포인트) 단위**로 나눈다.
@@ -173,8 +169,7 @@ Embedding 파라미터 ≈ V × d
 
 균형점이 Subword의 존재 이유이다.
 
-## 4. 직관적으로 이해하기
-
+## 직관적으로 이해하기
 세 방식을 택배 포장에 비유한다.
 
 | 방식 | 비유 | 실패 모드 |
@@ -186,8 +181,7 @@ Embedding 파라미터 ≈ V × d
 LLM 사전학습 코퍼스는 거대하고 잡다하다. 신조어·코드·다국어·오타가 섞인다.  
 이 조건에서 Word는 너무 깨지기 쉽고, Character는 너무 길다. Subword가 실무 기본값이 된 배경이다.
 
-## 5. 작은 숫자로 비교하기
-
+## 작은 숫자로 비교하기
 문장:
 
 ```text
@@ -240,8 +234,7 @@ Subword:   토큰 ~2,500
 
 Attention이 $O(T^2)$라면 Character는 Word 대비  Roughly $(10000/1800)^2 ≈ 30$배 무거운 자기주의 비용을 치를 수 있다. (상수·구현·근사 제외한 스케치)
 
-## 6. 코드로 구현하기
-
+## 코드로 구현하기
 세 방식을 같은 인터페이스로 비교한다.
 
 ```python
@@ -308,8 +301,7 @@ if __name__ == "__main__":
 
 이 코드의 목적은 “완벽한 Tokenizer”가 아니라 **분할 철학의 차이**를 화면에 고정하는 것이다.
 
-## 7. 한국어·코드·다국어에서의 차이
-
+## 한국어·코드·다국어에서의 차이
 영어 공백 단어는 비교적 또렷하다. 한국어는 다르다.
 
 ```text
@@ -332,8 +324,7 @@ Subword는 `variable`, `_`, `name`처럼 조각내 통계를 공유한다.
 결론: “어떤 단위가 정답인가?”는 언어·도메인·모델 목적에 따라 달라진다.  
 범용 LLM에서는 Subword가 평균적으로 가장 실용적이다.
 
-## 8. 실제 LLM에서는 어떻게 사용하는가
-
+## LLM에서는 어디에 사용될까?
 대표적 선택:
 
 | 모델 계열 | Tokenizer 경향 |
@@ -360,8 +351,7 @@ Subword는 `variable`, `_`, `name`처럼 조각내 통계를 공유한다.
 
 추정만으로 Context Overflow를 논하면 자주 틀린다.
 
-## 9. 실습
-
+## 실습
 ### 실습 1. 세 방식 토큰 수 비교
 
 다음 문장을 char / word / (가능하면 tiktoken 또는 HuggingFace tokenizer)로 나눠 토큰 수를 비교하시오.
@@ -384,8 +374,7 @@ compression ≈ len(text) / len(tokens)
 
 영어 문장과 한국어 문장의 값을 비교하고, Context Window 관점에서 한 단락 해석을 쓰시오.
 
-## 10. 자주 하는 실수
-
+## 자주 하는 실수
 1. **“Subword가 항상 더 짧다”고 믿음**  
    Word보다 길어질 수 있다. 목표는 OOV·vocab 크기의 균형이다.
 
@@ -401,8 +390,7 @@ compression ≈ len(text) / len(tokens)
 5. **모델 비교 시 토큰 수를 무시**  
    “8k context”가 모든 언어에 같은 문자 용량을 의미하지 않는다.
 
-## 11. 핵심 정리
-
+## 핵심 요약
 - Tokenization 단위는 Character / Word / Subword로 나뉜다.
 - Character는 OOV에 강하지만 서열이 길다.
 - Word는 짧을 수 있지만 OOV와 거대 Vocabulary에 취약하다.
@@ -410,8 +398,7 @@ compression ≈ len(text) / len(tokens)
 - LLM 실무의 기본값은 Subword(BPE/WordPiece/Unigram)이다.
 - 토큰 효율은 Context·비용·다국어 성능과 직접 연결된다.
 
-## 12. 핵심 용어
-
+## 용어 사전
 | 용어 | 의미 |
 |---|---|
 | Character Tokenization | 글자/코드포인트 단위 분할 |
@@ -423,7 +410,7 @@ compression ≈ len(text) / len(tokens)
 | Unigram LM | 후보 조각의 확률로 분할하는 방식 |
 | Compression / 토큰 효율 | 텍스트량 대비 토큰 수 효율 |
 
-## 13. 연습 문제
+## 연습문제
 ### 문제 1 (개념)
 
 Character Tokenization의 장점과 단점을 각각 한 가지씩 쓰시오.
@@ -447,7 +434,6 @@ Context Window가 토큰 기준인 이유와, 토큰 효율이 낮은 언어에�
 ---
 
 ## 정답 및 해설
-
 ### 문제 1
 
 장점 예: OOV가 거의 없음 / vocab이 작음.  
@@ -469,8 +455,7 @@ $120 / 30 = 4$
 
 모델·인프라가 다루는 단위가 토큰이기 때문이다. 토큰 효율이 낮으면 같은 창에 들어가는 실제 문자·문장 수가 줄어, 긴 문서 이해·대화 기억에 불리해질 수 있다.
 
-## 14. 다음 강의와 연결
-
+## 다음 강의와 연결
 이번 강의에서 세 가지 분할 철학과 OOV·압축 트레이드오프를 비교했다.
 
 다음 **제29강. BPE Tokenizer 직접 구현**에서는, 작은 코퍼스로 **merge table을 학습**하고, encode/decode까지 밑바닥에서 구현한다.  
@@ -484,7 +469,7 @@ $120 / 30 = 4$
 
 ### 강의 이동
 
-- **이전 강:** [제27강. 텍스트가 숫자가 되는 과정](27강_텍스트가_숫자가_되는_과정.md)
-- **다음 강:** [제29강. BPE Tokenizer 직접 구현](29강_BPE_Tokenizer_직접_구현.md)
+- **이전 강:** [27강. 텍스트가 숫자가 되는 과정](27강_텍스트가_숫자가_되는_과정.md)
+- **다음 강:** [29강. BPE Tokenizer 직접 구현](29강_BPE_Tokenizer_직접_구현.md)
 
 <!-- /LECTURE_NAV -->

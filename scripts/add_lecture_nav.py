@@ -20,7 +20,7 @@ BOOKS = [
 
 NAV_START = "<!-- LECTURE_NAV -->"
 NAV_END = "<!-- /LECTURE_NAV -->"
-TITLE_RE = re.compile(r"^#{1,2}\s*제(\d+)강\.\s*(.+?)\s*$", re.M)
+TITLE_RE = re.compile(r"^#{1,2}\s*(?:제)?(\d+)강\.\s*(.+?)\s*$", re.M)
 NUM_RE = re.compile(r"^(\d+)강_")
 
 
@@ -74,7 +74,7 @@ def build_nav(prev: Path | None, curr: Path, nxt: Path | None) -> str:
         title = lecture_title(prev)
         num = lecture_num(prev)
         href = rel_link(curr, prev)
-        lines.append(f"- **이전 강:** [제{num}강. {title}]({href})")
+        lines.append(f"- **이전 강:** [{num}강. {title}]({href})")
 
     if nxt is None:
         lines.append("- **다음 강:** 없음 (시리즈 끝)")
@@ -82,7 +82,7 @@ def build_nav(prev: Path | None, curr: Path, nxt: Path | None) -> str:
         title = lecture_title(nxt)
         num = lecture_num(nxt)
         href = rel_link(curr, nxt)
-        lines.append(f"- **다음 강:** [제{num}강. {title}]({href})")
+        lines.append(f"- **다음 강:** [{num}강. {title}]({href})")
 
     lines.extend(["", NAV_END, ""])
     return "\n".join(lines)

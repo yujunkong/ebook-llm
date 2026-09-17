@@ -1,14 +1,12 @@
-# 제75강. SFT 평가와 실패 사례
+# 75강. SFT 평가와 실패 사례
+## 이번 강에서 배우는 내용
 
-> **학습 목표**
-> - instruction overfitting, style collapse, data leakage를 사례로 구분한다.
-> - 작은 eval harness（고정 프롬프트 세트 + 규칙/채점）아이디어를 스케치한다.
-> - automatic metric과 human/LLM-judge의 역할을 남용 없이 배치한다.
-> - 제76강 프로젝트에서 before/after를 비교할 때 무엇을 볼지 체크리스트로 만든다.
+- instruction overfitting, style collapse, data leakage를 사례로 구분한다.
+- 작은 eval harness（고정 프롬프트 세트 + 규칙/채점）아이디어를 스케치한다.
+- automatic metric과 human/LLM-judge의 역할을 남용 없이 배치한다.
+- 제76강 프로젝트에서 before/after를 비교할 때 무엇을 볼지 체크리스트로 만든다.
 
----
-## 1. 왜 이것을 배우는가
-
+## 왜 중요한가?
 Pretraining의 perplexity（제67강）는 “다음 토큰을 얼마나 잘 맞추는가”에 가깝다. SFT는 목표가 다르다.
 
 > 주어진 지시에 **알맞은 형식·내용·거절/준수**로 응답하는가?
@@ -21,15 +19,13 @@ Loss만 보면 다음이 전부 “성공”으로 보인다.
 
 실패를 이름 붙이지 않으면, LoRA/QLoRA（제73~74강）를 얼마나 우아하게 써도 **잘못된 최적점**으로 달려간다.
 
-## 2. 먼저 알아야 할 개념
-
+## 선수 개념
 1. SFT의 response-only loss mask（제71강）
 2. Chat template / special tokens（제72강）
 3. Train/val 분리와 과적합（1권 제24강）
 4. 생성 디코딩: greedy / temperature（제58~59강）
 
-## 3. 평가가 답해야 할 질문
-
+## 평가가 답해야 할 질문
 SFT 평가를 한 장으로 나누면 대략 네 축이다.
 
 | 축 | 질문 | 실패 시 증상 |
@@ -41,8 +37,7 @@ SFT 평가를 한 장으로 나누면 대략 네 축이다.
 
 한 숫자로 모든 축을 대체하지 않는다. harness는 **여러 작은 검사**의 묶음이다.
 
-## 4. 실패 사례 1 — Instruction overfitting
-
+## 실패 사례 1 — Instruction overfitting
 ### 4.1 현상
 
 모델이 학습에 나온 **지시 패턴**에만 과도하게 맞춰진다.
@@ -72,8 +67,7 @@ Loss는 낮다. 사용자는 화난다.
 2. early stopping을 **eval harness** 기준으로 건다（train loss 금지）.
 3. LoRA $r$·epoch를 줄이는 ablation.
 
-## 5. 실패 사례 2 — Style collapse
-
+## 실패 사례 2 — Style collapse
 ### 5.1 현상
 
 내용과 무관하게 말투·구조가 한 가지로 붕괴한다.
@@ -100,8 +94,7 @@ SFT는 **응답 분포를 학습셋 응답 분포에 끌어당긴다**. 특정 a
 2. 시스템 프롬프트로 톤을 분리（템플릿 설계, 제72강）.
 3. 평가에 **스타일 준수 문항**을 넣는다.
 
-## 6. 실패 사례 3 — Data leakage
-
+## 실패 사례 3 — Data leakage
 ### 6.1 현상
 
 평가 세트（또는 벤치마크）의 문항·답이 학습 데이터에 섞여, 점수가 **가짜로** 높다.
@@ -129,8 +122,7 @@ SFT는 **응답 분포를 학습셋 응답 분포에 끌어당긴다**. 특정 a
 **사실:** 누수가 있으면 자동 점수는 일반화를 과장한다.  
 **설명:** “점수가 올랐다 = 모델이 똑똑해졌다”는 해석은 누수 검사 없이는 위험하다.
 
-## 7. 그 밖의 흔한 실패
-
+## 그 밖의 흔한 실패
 | 이름 | 증상 | 짧은 처방 |
 |---|---|---|
 | Format break | JSON/XML 깨짐 | 형식 전용 평가 + 수리 데이터 |
@@ -140,8 +132,7 @@ SFT는 **응답 분포를 학습셋 응답 분포에 끌어당긴다**. 특정 a
 | Over-refusal | 정상 요청도 거절 | 거절 경계 예시 균형 |
 | Mask bug | prompt까지 loss | mask 단위 테스트（제71·76강） |
 
-## 8. Eval harness 아이디어
-
+## Eval harness 아이디어
 거창한 프레임워크가 아니어도 된다. **고정된 입출력 계약**이면 harness다.
 
 ### 8.1 최소 구조
@@ -206,8 +197,7 @@ def run_suite(model, tokenizer, items, decode_cfg):
 
 같은 체크포인트라도 decoding이 바뀌면 점수가 흔들린다.
 
-## 9. Before / After 비교 프로토콜
-
+## Before / After 비교 프로토콜
 제76강 프로젝트와 맞추기 위한 최소 프로토콜:
 
 1. **동일 프롬프트 10~30개**를 고정한다（학습에 미포함）.
@@ -223,8 +213,7 @@ def run_suite(model, tokenizer, items, decode_cfg):
 [tag] format_ok
 ```
 
-## 10. 학습 중 모니터 vs 최종 평가
-
+## 학습 중 모니터 vs 최종 평가
 | 신호 | 용도 | 단독 결정? |
 |---|---|---|
 | Train CE | 버그·발산 확인 | 불가 |
@@ -234,8 +223,7 @@ def run_suite(model, tokenizer, items, decode_cfg):
 
 Val CE가 내려가도 harness가 안 오르면, **마스크 버그·스타일 붕괴·누수**를 의심한다.
 
-## 11. 실전 체크리스트
-
+## 실전 체크리스트
 SFT 실험 종료 전:
 
 - [ ] Train과 eval 문항의 중복 검사
@@ -246,15 +234,17 @@ SFT 실험 종료 전:
 - [ ] LoRA $r$/epoch ablation 적어도 한 번
 - [ ] “공개 벤치 점수만으로 성공 선언” 금지
 
-## 12. 핵심 정리
+## LLM에서는 어디에 사용될까?
 
+이번 75강에서 배운 개념은 이후 Transformer · GPT · 서빙 강의에서 반복해서 등장합니다. 각 수식·코드 블록을 “실제 모델의 어느 단계인가”와 연결해 다시 읽어 보세요.
+
+## 핵심 요약
 - SFT 성공은 train loss가 아니라 **지시 준수·일반화·형식**으로 정의한다.
 - Instruction overfitting, style collapse, data leakage는 서로 다른 처방을 요구한다.
 - 작은 rule 기반 harness만으로도 많은 회귀를 잡을 수 있다.
 - Before/after를 고정 프로토콜로 남겨야 제76강·이후 실험이 누적된다.
 
-## 13. 핵심 용어
-
+## 용어 사전
 | 용어 | 한 줄 의미 |
 |---|---|
 | Instruction overfitting | 학습 지시 패턴 암기·과적합 |
@@ -264,7 +254,7 @@ SFT 실험 종료 전:
 | Held-out | 학습에 쓰지 않은 평가 분할 |
 | LLM-as-judge | 다른 LLM으로 루브릭 채점 |
 
-## 14. 연습 문제
+## 연습문제
 ### 문제 1（구분）
 
 Train loss↓, held-out 형식 준수율↓ 이면 어떤 실패를 먼저 의하는가?
@@ -288,7 +278,6 @@ Rule scorer로 잡기 좋은 문항과 나쁜 문항을 한 개씩 쓰시오.
 ---
 
 ## 정답 및 해설
-
 ### 문제 1
 
 Instruction overfitting（또는 형식 일반화 실패）. 마스크 버그도 점검.
@@ -309,8 +298,7 @@ Instruction overfitting（또는 형식 일반화 실패）. 마스크 버그도
 
 예: 형식 제약（불릿/JSON）과 paraphrase된 지시（학습 문장과 다른 표현）.
 
-## 15. 다음 강의와 연결
-
+## 다음 강의와 연결
 이론은 여기까지다.  
 **제76강. 프로젝트 — Mini GPT + SFT**에서는 아주 작은 instruction set으로 SFT를 직접 돌리고, loss mask·before/after 생성·간단한 평가를 한 프로젝트로 닫는다.
 
@@ -320,7 +308,7 @@ Instruction overfitting（또는 형식 일반화 실패）. 마스크 버그도
 
 ### 강의 이동
 
-- **이전 강:** [제74강. QLoRA](74강_QLoRA.md)
-- **다음 강:** [제76강. 프로젝트 — Mini GPT + SFT](76강_프로젝트_Mini_GPT_SFT.md)
+- **이전 강:** [74강. QLoRA](74강_QLoRA.md)
+- **다음 강:** [76강. 프로젝트 — Mini GPT + SFT](76강_프로젝트_Mini_GPT_SFT.md)
 
 <!-- /LECTURE_NAV -->

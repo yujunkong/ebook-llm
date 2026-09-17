@@ -1,15 +1,13 @@
-# 제99강. Training과 Inference의 차이
+# 99강. Training과 Inference의 차이
+## 이번 강에서 배우는 내용
 
-> **학습 목표**
-> - Training과 Inference의 목표·그래프·메모리·성공 지표 차이
-> - 같은 체크포인트라도 training graph와 inference graph가 다른 이유
-> - 왜 서빙 병목이 “loss를 더 줄이는 것”이 아니라 지연·처리량·메모리인지
-> - Prefill / Decode / KV Cache / Continuous Batching이 왜 다음 강의에 필요한지（예고）
-> - 사실 / 설명 / 해석을 섞지 않고 Training–Inference 경계를 서술하는 습관
+- Training과 Inference의 목표·그래프·메모리·성공 지표 차이
+- 같은 체크포인트라도 training graph와 inference graph가 다른 이유
+- 왜 서빙 병목이 “loss를 더 줄이는 것”이 아니라 지연·처리량·메모리인지
+- Prefill / Decode / KV Cache / Continuous Batching이 왜 다음 강의에 필요한지（예고）
+- 사실 / 설명 / 해석을 섞지 않고 Training–Inference 경계를 서술하는 습관
 
----
-## 1. 왜 이것을 배우는가
-
+## 왜 중요한가?
 정렬이 끝난 모델은 파일이고, 사용자가 만나는 것은 **매 요청마다 토큰이 나오는 시스템**이다.
 
 ```text
@@ -28,8 +26,7 @@
 
 **해석:** 커리큘럼이 5권으로 꺾이는 이유는 “할 학습 이야기가 없어서”가 아니라, **다음 병목이 하드웨어·스케줄러·메모리 관리 쪽**으로 이동하기 때문이다（제98강에서 예고한 표의 본문）.
 
-## 2. 먼저 알아야 할 개념
-
+## 선수 개념
 1. **Causal LM / Autoregressive Generation** — 제48, 58강. 프롬프트 뒤 토큰을 하나씩（또는 스펙큘러티브로 여러 개）이어 붙인다.
 2. **Forward vs Backward** — 제16~20강. Inference는 기본적으로 forward만, Training은 forward+backward+optimizer.
 3. **Mixed Precision** — 제64강. 학습에서도 정밀도를 섞지만, 서빙의 Quantization（제103강）과는 목적·기법이 겹치면서도 다르다.
@@ -38,8 +35,7 @@
 
 아직 Prefill/Decode 세부를 깊게 다루지 않는다. 오늘은 **두 세계가 무엇이 다른지**다.
 
-## 3. 핵심 개념 설명
-
+## 핵심 개념
 ### 3.1 Training(학습)
 
 **Training(트레이닝, 학습)**은 데이터（또는 보상·선호 신호）에 맞춰 파라미터 $\theta$를 갱신하는 과정이다.
@@ -107,8 +103,7 @@ vLLM 같은 **Inference Engine(추론 엔진)**은 Serving의 핵심 부품이�
 **사실:** 동일 가중치 파일이라도 training 코드 경로와 inference 코드 경로는 다르다.  
 **설명:** `model.train()`과 `model.eval()`, `torch.no_grad()`, KV cache, 커널 선택이 갈라진다.
 
-## 4. 직관적으로 이해하기
-
+## 직관적으로 이해하기
 식당에 비유한다（비유는 **설명**이지 증명이 아니다）.
 
 | | Training | Serving |
@@ -123,8 +118,7 @@ vLLM 같은 **Inference Engine(추론 엔진)**은 Serving의 핵심 부품이�
 긴 chain-of-thought를 강화하면（제94강） **평균 출력 토큰 수**가 늘 수 있고, 그러면 decode 비용이 커진다.  
 **해석:** 정렬 성공이 곧 서빙 부하 증가로 이어질 수 있다. 숫자를 여기서 단정하지 않는다 — 제107강에서 지표로 다룬다.
 
-## 5. 수학적으로 이해하기
-
+## 수학적으로 이해하기
 ### 5.1 학습 목표（복습 압축）
 
 지도 학습 CE（3권）:
@@ -180,8 +174,7 @@ KV를 재사용하면 decode 한 스텝은 대략 **새 토큰 1개**에 대한 
 
 **사실:** 위는 복잡도 **감각**이지, 실제 FLOPs·벽시계 시간의 측정값이 아니다.
 
-## 6. 작은 숫자로 직접 생각해 보기（예시·가정）
-
+## 작은 숫자로 직접 생각해 보기（예시·가정）
 > 아래 숫자는 **교육용 가정**이다. 특정 모델·GPU 벤치마크가 아니다.
 
 가정:
@@ -213,8 +206,7 @@ KV cache를 쓰면:
 
 정확한 GB는 모델 크기·층 수·헤드·dtype·동시 요청 수에 달려 있으므로 **여기서 GB를 단정하지 않는다**. 제101강에서 기호로 식을 세운다.
 
-## 7. 코드로 구현하기 — 두 루프의 골격
-
+## 코드로 구현하기 — 두 루프의 골격
 ### 7.1 Training step 골격（이미 익숙한 것）
 
 ```python
@@ -275,8 +267,7 @@ API 이름（`past_key_values`, `use_cache`）은 라이브러리마다 다를 �
 **사실:** Hugging Face Transformers 등 많은 스택이 cache 인자를 제공한다.  
 **설명:** 서빙 엔진은 이 아이디어를 **연속 배치·페이지 메모리**로 확장한다（제102, 105강）.
 
-## 8. PyTorch로 확인하는 최소 차이
-
+## PyTorch로 확인하는 최소 차이
 작은 모델에서 “학습 모드”와 “추론 모드”가 텐서에 미치는 영향만 확인한다.
 
 ```python
@@ -318,8 +309,7 @@ print("requires_grad (logits):", logits.requires_grad)
 
 이 차이가 “서빙 최적화 전부”는 아니다. 다만 **그래프를 안 남기는 것**이 추론의 출발점임을 보여 준다.
 
-## 9. 실제 LLM Serving에서는 어떻게 달라지는가
-
+## 실제 LLM Serving에서는 어떻게 달라지는가
 단일 스크립트 `generate()`와 프로덕션 서빙의 차이:
 
 | 단일 추론 스크립트 | LLM Serving |
@@ -347,8 +337,7 @@ Training에서 쓰던 습관이 서빙을 해치는 예:
 | KL로 묶인 문체 | temperature/top-p와 상호작용 |
 | 샘플 다수@train | 온라인은 보통 1경로 |
 
-## 10. 실습
-
+## 실습
 ### 실습 A — 대조표 채우기
 
 빈칸을 자신의 말로 채운다.
@@ -389,8 +378,7 @@ $$
 
 > “RLHF로 정책 분포는 정렬 목표에 맞게 바뀌었을 수 있다. 서비스 지연은 Prefill/Decode·배치·하드웨어에 달려 있으며 별도로 측정해야 한다.”
 
-## 11. 자주 하는 실수
-
+## 자주 하는 실수
 1. **Training throughput과 Serving throughput을 같은 단위로 비교**  
    tokens/sec라도 “학습 토큰”과 “생성 토큰”의 의미가 다르다.
 
@@ -409,16 +397,18 @@ $$
 6. **정렬 품질만 보고 배포**  
    템플릿 불일치·EOS·stop string·최대 길이 설정이 학습과 다르면 “다른 모델”처럼 동작한다.
 
-## 12. 핵심 정리
+## LLM에서는 어디에 사용될까?
 
+이번 99강에서 배운 개념은 이후 Transformer · GPT · 서빙 강의에서 반복해서 등장합니다. 각 수식·코드 블록을 “실제 모델의 어느 단계인가”와 연결해 다시 읽어 보세요.
+
+## 핵심 요약
 - Training은 $\theta$를 바꾸고, Inference는 고정 $\theta$로 토큰을 만든다.
 - 메모리 주인공이 grad/optimizer에서 **가중치+KV**로 이동한다.
 - Serving은 Inference를 동시 요청·SLA 관점으로 확장한 시스템이다다.
 - 순진한 재계산 생성은 비용 감각상 불리하며, Prefill/Decode·KV가 필수 입구다.
 - 정렬 성공과 서빙 성공은 **다른 축**이다. 둘 다 필요하다.
 
-## 13. 핵심 용어
-
+## 용어 사전
 | 용어 | 한 줄 의미 |
 |---|---|
 | Training | 파라미터 갱신 과정 |
@@ -432,7 +422,7 @@ $$
 | TTFT / TPOT | 첫 토큰·토큰당 지연 지표（제107강） |
 | Inference Engine | vLLM 등 고성능 추론 런타임（제104강） |
 
-## 14. 연습 문제
+## 연습문제
 ### 문제 1（목표）
 
 Training과 Inference의 최적화/생성 목표를 수식 또는 한 줄로 대조하시오.
@@ -464,7 +454,6 @@ Inference와 Serving을 한 줄씩 구분하시오.
 ---
 
 ## 정답 및 해설
-
 ### 문제 1
 
 Training: $\theta$에 대해 loss/objective 최소화·보상 최대화 등.  
@@ -497,8 +486,7 @@ Inference: 생성 계산 자체. Serving: 그 계산을 다수 요청·운영 �
 제목: Prefill과 Decode.  
 이유: 학습 배치는 보통 고정 길이 텐서를 한 번에 forward/backward하지만, 서빙은 프롬프트 일괄（prefill）과 토큰 단위 연장（decode）이 시간·병목 특성이 다른 두 국면으로 나뉜다.
 
-## 15. 다음 강의와 연결
-
+## 다음 강의와 연결
 좌표계가 고정되었다.  
 다음 **제100강. Prefill과 Decode**에서는 한 요청의 수명을 **프롬프트를 밀어 넣는 구간**과 **토큰을 잇는 구간**으로 쪼개고, 왜 한쪽은 compute에 가깝고 다른 쪽은 memory bandwidth에 가까운 이야기가 나오는지（설명 수준）를 다룬다.
 
@@ -510,7 +498,7 @@ Inference: 생성 계산 자체. Serving: 그 계산을 다수 요청·운영 �
 
 ### 강의 이동
 
-- **이전 강:** [제98강. 4권 총정리 — Inference와 Serving으로](../04_rlhf_ppo_grpo/98강_4권_총정리_Inference와_Serving으로.md)
-- **다음 강:** [제100강. Prefill과 Decode](100강_Prefill과_Decode.md)
+- **이전 강:** [98강. 4권 총정리 — Inference와 Serving으로](../04_rlhf_ppo_grpo/98강_4권_총정리_Inference와_Serving으로.md)
+- **다음 강:** [100강. Prefill과 Decode](100강_Prefill과_Decode.md)
 
 <!-- /LECTURE_NAV -->

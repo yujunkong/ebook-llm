@@ -25,14 +25,17 @@ Python → 수학 → Tensor → Neural Network → Backpropagation → PyTorch 
 
 1. 쉽게 설명하되 얕게 설명하지 않는다.
 2. 직관 → 용어 → 수학 → 숫자 예제 → 코드 → LLM 연결 → 실습.
-3. 최종 결과물은 Sigil에서 편집 가능한 EPUB3이다.
-4. ChatGPT 대화체를 쓰지 않는다. 기술 서적 문체를 유지한다.
-5. 성능 수치는 임의로 만들지 않는다.
+3. 최종 결과물은 **Apple Books에서 읽기 좋은 EPUB3**이다. Markdown 원본 하나로 생성한다.
+4. Sigil 전용 HTML/CSS·인라인 스타일에 의존하지 않는다.
+5. ChatGPT 대화체를 쓰지 않는다. 기술 서적 문체를 유지한다.
+6. 성능 수치는 임의로 만들지 않는다.
 
 ## 파일 규칙
 
 - 강의 원고: `books/0N_.../NN강_제목.md`
+- 이미지: `books/0N_.../images/figNN-01.svg` (권별)
 - 용어집: `glossary/`
 - EPUB 산출물: `epub/`
 - 공통 문서: `docs/`
-- **Markdown 공식 스타일:** [MARKDOWN_STYLE_GUIDE.md](MARKDOWN_STYLE_GUIDE.md)
+- **Apple Books 가이드:** [APPLE_BOOKS_GUIDE.md](APPLE_BOOKS_GUIDE.md)
+- **Markdown 스타일:** [MARKDOWN_STYLE_GUIDE.md](MARKDOWN_STYLE_GUIDE.md)

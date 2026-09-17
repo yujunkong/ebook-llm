@@ -87,6 +87,7 @@ def build_book(book_num: int) -> Path:
             "--toc",
             "--toc-depth=2",
             "--split-level=1",
+            f"--resource-path={book_dir}",  # images/ 상대경로 해석
             "-o",
             str(out_path),
             "--metadata",

@@ -1,16 +1,14 @@
-# 제82강. Policy Gradient
+# 82강. Policy Gradient
+## 이번 강에서 배우는 내용
 
-> **학습 목표**
-> - 목적 $J(\theta)=\mathbb{E}_{\tau\sim\pi_\theta}[G_0]$의 의미
-> - $\nabla\log\pi\cdot G$（또는 $R$）직관: “잘한 행동의 로그확률을 키운다”
-> - 작은 이산 예제에서 그라디언트 방향 계산
-> - 코드로 REINFORCE 한 스텝
-> - LLM 토큰 로그확률에 같은 식을 붙이는 방법
-> - 분산이 크다는 한계 → 제83강 Advantage로 이어짐
+- 목적 $J(\theta)=\mathbb{E}_{\tau\sim\pi_\theta}[G_0]$의 의미
+- $\nabla\log\pi\cdot G$（또는 $R$）직관: “잘한 행동의 로그확률을 키운다”
+- 작은 이산 예제에서 그라디언트 방향 계산
+- 코드로 REINFORCE 한 스텝
+- LLM 토큰 로그확률에 같은 식을 붙이는 방법
+- 분산이 크다는 한계 → 제83강 Advantage로 이어짐
 
----
-## 1. 왜 이것을 배우는가
-
+## 왜 중요한가?
 RLHF·PPO·GRPO·일부 RLVR 구현의 공통 뼈대는 다음과 같다.
 
 ```text
@@ -25,15 +23,13 @@ Policy Gradient는 weight 자리에 **경험적으로 얻은 점수**가 들어�
 
 이 뿌리를 모르면 PPO의 surrogate loss가 “그냥 복잡한 CE”로만 보인다.
 
-## 2. 먼저 알아야 할 개념
-
+## 선수 개념
 - Trajectory · Return $G_t$（제80강）
 - $\pi_\theta$, $\log\pi$（제81강）
 - Chain rule / autograd（1권）
 - Softmax cross-entropy와의 관계: CE는 $-\log\pi(a^*)$
 
-## 3. 핵심 개념 설명
-
+## 핵심 개념
 ### 3.1 목적 함수
 
 $$
@@ -165,8 +161,7 @@ $$
 형태는 “가중 CE”에 가깝다.  
 가중치가 데이터 라벨이 아니라 **롤아웃 점수**라는 점이 핵심이다.
 
-## 4. 직관적으로 이해하기
-
+## 직관적으로 이해하기
 ### 4.1 칭찬·꾸중 비유
 
 모델이 문장을 말한다.  
@@ -191,8 +186,7 @@ Policy Gradient는 **당첨된 티켓의 번호를 다음에 더 사게** 만든
 모든 $R\ge0$이면 “덜 나쁜” 샘플도 확률이 올라갈 수 있다.  
 상대 비교·Advantage·그룹 내 정규화（GRPO）가 등장하는 이유 중 하나다.
 
-## 5. 수학적으로 이해하기
-
+## 수학적으로 이해하기
 ### 5.1 단스텝 유도 스케치
 
 $$
@@ -245,8 +239,7 @@ $$
 “원-핫 $- \pi$” 형태다.  
 즉 보상 가중 CE의 backward와 구현이 공유된다.
 
-## 6. 작은 숫자로 직접 계산하기
-
+## 작은 숫자로 직접 계산하기
 행동 $\{L,R\}$, 보상 $R(L)=1$, $R(R)=0$.  
 정책 $\pi(L)=p$, $\pi(R)=1-p$.  
 파라미터를 $p$ 자체로 둔다（$0<p<1$）.
@@ -279,8 +272,7 @@ $p=0.5$에서 $L$이 나오면 추정 기울기 $2$.
 
 좋은 응답의 로그확률을（상승 방향으로）키우는 신호가 산다.
 
-## 7. 코드로 구현하기 — 순수 Python bandit
-
+## 코드로 구현하기 — 순수 Python bandit
 ```python
 # reinforce_bandit.py
 """2-arm bandit에서 REINFORCE로 p(L)을 올리기."""
@@ -336,8 +328,7 @@ if __name__ == "__main__":
     print("early", [round(x, 3) for x in hist[::50][:5]])
 ```
 
-## 8. PyTorch로 REINFORCE
-
+## PyTorch로 REINFORCE
 ```python
 # reinforce_torch.py
 import torch
@@ -381,8 +372,7 @@ if __name__ == "__main__":
 `baseline=0.5`를 넣으면 같은 식의 분산이 줄어든다.  
 제83강에서 이를 $V(s)$로 일반화한다.
 
-## 9. LLM 연결 — 토큰 루프
-
+## LLM 연결 — 토큰 루프
 ```python
 # llm_reinforce_sketch.py
 """의사코드에 가까운 스케치. 실제 모델 forward는 생략."""
@@ -426,8 +416,7 @@ if __name__ == "__main__":
 
 이 강의의 `reward * sum logπ`는 (3)의 가장 거친 형태다.
 
-## 10. 실제 LLM에서는 어떻게 사용하는가
-
+## LLM에서는 어디에 사용될까?
 ### 10.1 RLHF
 
 Reward Model이 $R=r_\phi(x,y)$를 주면, 정책은 Policy Gradient 계열（대개 PPO）로 $J$를 키운다.  
@@ -448,8 +437,7 @@ REINFORCE 기본형은 **지금 정책으로 샘플한** 데이터에 대한 온
 롤아웃 temperature↑ → 탐색↑, 그라디언트 분산↑.  
 학습용 logprob는 보통 temperature=1 로짓 기준이다.
 
-## 11. 실습
-
+## 실습
 ### 실습 A
 
 $p=0.25$, $R(L)=1$, $R(R)=0$일 때 $L$ 샘플 하나의 REINFORCE 기울기（$\partial/\partial p$）는?
@@ -466,8 +454,7 @@ $p=0.25$, $R(L)=1$, $R(R)=0$일 때 $L$ 샘플 하나의 REINFORCE 기울기（$
 
 제79강 KL 항이 Policy Gradient 목적에 붙으면 식이 어떻게 바뀌는지 **말로** 쓰시오（수식 완전 유도는 제89강）.
 
-## 12. 자주 하는 실수
-
+## 자주 하는 실수
 1. **loss에 $+\log\pi\cdot R$를 두고 descent**  
    → 부호 규약을 고정할 것. “maximize $R$”인지 확인.
 
@@ -486,16 +473,14 @@ $p=0.25$, $R(L)=1$, $R(R)=0$일 때 $L$ 샘플 하나의 REINFORCE 기울기（$
 6. **분산이 큰데 LR만 키움**  
    → 더 흔들린다. baseline부터.
 
-## 13. 핵심 정리
-
+## 핵심 요약
 - Policy Gradient는 $\mathbb{E}[R]$를 $\nabla\log\pi\cdot R$로 추정해 정책을 갱신한다.
 - REINFORCE는 그 가장 단순한 몬테카를로 형태다.
 - LLM에서는 $\sum_t\nabla\log\pi(y_t)\cdot R$가 기본 스케치다.
 - 추정은 불편일 수 있으나 분산이 크다.
 - 다음 강의에서 $R-V$ / $Q-V$로 분산을 줄이는 Advantage를 다룬다.
 
-## 14. 핵심 용어
-
+## 용어 사전
 | 용어 | 한 줄 의미 |
 |---|---|
 | Policy Gradient | 정책 파라미터로 기대 반환의 경사 |
@@ -506,7 +491,7 @@ $p=0.25$, $R(L)=1$, $R(R)=0$일 때 $L$ 샘플 하나의 REINFORCE 기울기（$
 | Surrogate loss | 직접 $J$ 대신 쓰는 대체 목표（PPO） |
 | Credit assignment | 점수 기여를 토큰에 배분하는 문제 |
 
-## 15. 연습 문제
+## 연습문제
 ### 문제 1
 
 단스텝 bandit에서 $\nabla J=\mathbb{E}[\nabla\log\pi(a)\,R]$를 한 줄로 유도하는 핵심 항등은?
@@ -530,7 +515,6 @@ $b(s)$ baseline을 빼도 기댓값 기울기가 남는 이유（스케치）.
 ---
 
 ## 정답 및 해설
-
 ### 문제 1
 
 $\nabla\pi=\pi\nabla\log\pi$（score function identity）.
@@ -551,8 +535,7 @@ $\mathbb{E}_{a\sim\pi}[\nabla\log\pi(a\mid s)b(s)]=b(s)\nabla\sum_a\pi=0$.
 
 Advantage（우세 / $Q-V$ 또는 $G-V$）.
 
-## 16. 다음 강의와 연결
-
+## 다음 강의와 연결
 Policy Gradient의 뼈대는 얻었다.  
 다음 **제83강. Advantage**에서는
 
@@ -573,7 +556,7 @@ $$
 
 ### 강의 이동
 
-- **이전 강:** [제81강. Policy와 Value Function](81강_Policy와_Value_Function.md)
-- **다음 강:** [제83강. Advantage](83강_Advantage.md)
+- **이전 강:** [81강. Policy와 Value Function](81강_Policy와_Value_Function.md)
+- **다음 강:** [83강. Advantage](83강_Advantage.md)
 
 <!-- /LECTURE_NAV -->

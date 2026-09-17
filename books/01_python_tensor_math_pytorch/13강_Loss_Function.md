@@ -1,15 +1,13 @@
-# 제13강. Loss Function
+# 13강. Loss Function
+## 이번 강에서 배우는 내용
 
-> **학습 목표**
-> - Loss Function(손실 함수)이 무엇인지, 왜 학습에 필수인지
-> - MSE(Mean Squared Error)를 손으로 계산하고 미분과 연결하기
-> - Cross Entropy(교차 엔트로피)의 직관 (상세 Softmax는 이후, 여기서는 점수→확률→Loss 감각)
-> - “좋은 모델”을 Loss 감소로 표현하는 법
-> - LLM이 왜 Next-Token Cross Entropy를 쓰는지
+- Loss Function(손실 함수)이 무엇인지, 왜 학습에 필수인지
+- MSE(Mean Squared Error)를 손으로 계산하고 미분과 연결하기
+- Cross Entropy(교차 엔트로피)의 직관 (상세 Softmax는 이후, 여기서는 점수→확률→Loss 감각)
+- “좋은 모델”을 Loss 감소로 표현하는 법
+- LLM이 왜 Next-Token Cross Entropy를 쓰는지
 
----
-## 1. 왜 이것을 배우는가
-
+## 왜 중요한가?
 모델은 숫자를 출력한다. 사람 눈에는 “답이 맞다/틀리다”가 보이지만, 컴퓨터가 파라미터를 업데이트하려면 **틀린 정도를 미분 가능한 숫자 하나(또는 배치 평균)**로 바꿔야 한다.
 
 ```text
@@ -21,8 +19,7 @@
 
 이 파이프라인의 첫 변환이 Loss Function이다.
 
-## 2. 먼저 알아야 할 개념
-
+## 선수 개념
 - Scalar / Vector (9강)
 - 평균, 제곱
 - 미분·Gradient·GD (11~12강)
@@ -30,8 +27,7 @@
 
 아직 Softmax를 엄밀히 몰라도 된다. 이번 강의는 Cross Entropy의 **의미**에 초점을 둔다.
 
-## 3. 핵심 개념 설명
-
+## 핵심 개념
 ### 3.1 Loss Function (손실 함수)
 
 **Loss Function(손실 함수, cost function과 비슷하게 쓰이기도 함)**은 모델의 예측이 정답과 **얼마나 다른지**를 하나의 숫자로 요약하는 함수다.
@@ -167,8 +163,7 @@ LLM LM Head는 각 토큰에 대해 길이 $V$인 logits를 내고, Softmax(+Cro
 Accuracy가 높아도 Cross Entropy가 더 정보적일 수 있다.  
 확률 0.51로 맞춘 것과 0.99로 맞춘 것을 Accuracy는 같게 보지만 Loss는 구분한다.
 
-## 4. 직관적으로 이해하기
-
+## 직관적으로 이해하기
 선생님(Loss)이 숙제를 채점한다고 하자.
 
 - MSE 선생님: “숫자 답이 얼마나 멀리 떨어졌나”를 제곱으로 감점
@@ -185,8 +180,7 @@ LLM 관점:
 모델이 0.80을 줌 → Loss 작음 → 약하게 수정
 ```
 
-## 5. 작은 숫자로 직접 계산하기 — MSE
-
+## 작은 숫자로 직접 계산하기 — MSE
 ### 5.1 한 샘플
 
 예측 $\hat{y}=3$, 정답 $y=5$
@@ -238,8 +232,7 @@ $$
 
 예측이 정답보다 크면 Gradient가 양수 → 예측을 줄이는 방향이 하강 방향.
 
-## 6. 작은 숫자로 직접 계산하기 — Cross Entropy
-
+## 작은 숫자로 직접 계산하기 — Cross Entropy
 ### 6.1 세 클래스, 정답은 클래스 1 (0-based index 1)
 
 모델 확률:
@@ -320,8 +313,7 @@ $$
 
 이것이 Next Token Prediction 학습의 Loss다.
 
-## 7. 코드로 구현하기
-
+## 코드로 구현하기
 ```python
 # lecture13_loss.py
 import numpy as np
@@ -389,8 +381,7 @@ for step in range(40):
 
 Loss가 줄며 $w\to 3$, $b\to 1$에 가까워지는지 확인한다.
 
-## 8. PyTorch로 Loss
-
+## PyTorch로 Loss
 ```python
 # lecture13_torch_loss.py
 import torch
@@ -408,8 +399,7 @@ print(F.cross_entropy(logits, target))     # Softmax+NLL을 한 번에
 `F.cross_entropy`는 내부에서 Softmax와 $-\log p_c$를 **수치적으로 안정적**으로 계산한다.  
 실무에서는 확률을 직접 만든 뒤 로그를 취하기보다 이 API를 쓰는 편이 안전하다.
 
-## 9. 실제 LLM에서는 어떻게 사용하는가
-
+## LLM에서는 어디에 사용될까?
 ### 9.1 표준 목적
 
 Pretraining / SFT의 기본:
@@ -439,8 +429,7 @@ Padding 토큰은 mask로 Loss에서 제외하는 경우가 많다.
 - 그래서 3~4권에서 SFT, Preference Learning, RLHF 등이 **추가 목표**를 얹는다
 - 그래도 바닥의 학습 신호는 여전히 “미분 가능한 Loss/보상”이다
 
-## 10. 어떤 Loss를 고를까 (초보 가이드)
-
+## 어떤 Loss를 고를까 (초보 가이드)
 | 문제 유형 | 대표 Loss |
 |---|---|
 | 숫자 회귀 | MSE, MAE |
@@ -450,8 +439,7 @@ Padding 토큰은 mask로 Loss에서 제외하는 경우가 많다.
 
 LLM Volume 1 단계에서는 **MSE로 GD 감각**, **Cross Entropy로 LLM 연결** 두 축이면 충분하다.
 
-## 11. 실습
-
+## 실습
 ### 실습 1 — MSE 손계산
 
 예측 `[0, 2, 4]`, 정답 `[1, 2, 3]`의 MSE를 구하시오.
@@ -472,8 +460,7 @@ $p=[0.2,0.5,0.3]$, 정답 인덱스 0일 때와 1일 때 $\ell=-\ln p_c$를 비�
 
 문장 정답 토큰이 4개이고 각 위치에서 $p_{\text{correct}}$가 `0.5, 0.5, 0.5, 0.5`일 때 평균 Cross Entropy를 구하시오.
 
-## 12. 자주 하는 실수
-
+## 자주 하는 실수
 1. **확률과 logits를 혼동한다**  
    Cross Entropy에 넣을 $p$는 확률이다. logits에 바로 $-\log z$를 적용하면 안 된다. (`F.cross_entropy`는 logits 입력이 맞음)
 
@@ -489,16 +476,14 @@ $p=[0.2,0.5,0.3]$, 정답 인덱스 0일 때와 1일 때 $\ell=-\ln p_c$를 비�
 5. **MSE를 토큰 분류에 그대로 쓴다**  
    클래스는 one-hot 회귀로도 가능하지만, Softmax+CE가 표준이며 해석·학습이 더 잘 맞다.
 
-## 13. 핵심 정리
-
+## 핵심 요약
 - Loss는 예측과 정답의 차이를 미분 가능한 Scalar로 요약한다.
 - MSE는 제곱 오차의 평균으로, 회귀와 GD 연습에 적합하다.
 - Cross Entropy는 정답 확률에 $-\log$를 취해, 틀린 확신에 큰 벌점을 준다.
 - LLM 학습의 기본 Loss는 Next-Token Cross Entropy다.
 - GD는 Loss가 정의한 지형을 내려간다. Loss 설계가 곧 학습 목표 설계다.
 
-## 14. 핵심 용어
-
+## 용어 사전
 | 용어 | 의미 |
 |---|---|
 | Loss Function | 예측 오류를 숫자로 요약하는 함수 |
@@ -510,7 +495,7 @@ $p=[0.2,0.5,0.3]$, 정답 인덱스 0일 때와 1일 때 $\ell=-\ln p_c$를 비�
 | Target / Label | 정답 |
 | Metric | 평가용 지표 (반드시 Loss는 아님) |
 
-## 15. 연습 문제
+## 연습문제
 ### 문제 1 (계산)
 
 $\hat{y}=10$, $y=7$일 때 제곱 오차는?
@@ -534,7 +519,6 @@ LLM이 문맥 “서울의 수도는” 다음에 “부산”에 높은 확률�
 ---
 
 ## 정답 및 해설
-
 ### 문제 1
 
 $(10-7)^2=9$.
@@ -555,8 +539,7 @@ Accuracy는 맞음/틀림의 계단 함수에 가까워 미분이 거의  everyw
 
 정답이 “서울”인데 “부산”에 높은 확률(그리고 “서울”에 낮은 확률)을 주면 $-\log p_{\text{서울}}$이 커져 Loss가 **커진다**. 학습은 “서울” 확률을 높이는 쪽으로 파라미터를 수정한다.
 
-## 16. 다음 강의와 연결
-
+## 다음 강의와 연결
 Loss까지 정의했다. 그런데 실제 네트워크는
 
 $$
@@ -578,7 +561,7 @@ $$
 
 ### 강의 이동
 
-- **이전 강:** [제12강. Gradient와 Gradient Descent](12강_Gradient와_Gradient_Descent.md)
-- **다음 강:** [제14강. Chain Rule](14강_Chain_Rule.md)
+- **이전 강:** [12강. Gradient와 Gradient Descent](12강_Gradient와_Gradient_Descent.md)
+- **다음 강:** [14강. Chain Rule](14강_Chain_Rule.md)
 
 <!-- /LECTURE_NAV -->

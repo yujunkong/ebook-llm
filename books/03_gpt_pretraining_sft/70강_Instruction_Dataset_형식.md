@@ -1,15 +1,13 @@
-# 제70강. Instruction Dataset 형식
+# 70강. Instruction Dataset 형식
+## 이번 강에서 배우는 내용
 
-> **학습 목표**
-> - Alpaca-like 필드(`instruction` / `input` / `output`)를 읽고 단일 프롬프트로 조립하기
-> - Chat messages 형식(`system` / `user` / `assistant`)의 의미
-> - 멀티턴 대화에서 역할이 어떻게 교차하는지
-> - Prompt masking이 왜 필요한지 미리보기 (구현은 제71강)
-> - 잘못된 JSON·역할 누락·응답 누락을 걸러내는 체크리스트
+- Alpaca-like 필드(`instruction` / `input` / `output`)를 읽고 단일 프롬프트로 조립하기
+- Chat messages 형식(`system` / `user` / `assistant`)의 의미
+- 멀티턴 대화에서 역할이 어떻게 교차하는지
+- Prompt masking이 왜 필요한지 미리보기 (구현은 제71강)
+- 잘못된 JSON·역할 누락·응답 누락을 걸러내는 체크리스트
 
----
-## 1. 왜 이것을 배우는가
-
+## 왜 중요한가?
 SFT 코드 버그의 상당수는 모델이 아니라 **데이터 스키마 불일치**에서 온다.
 
 ```text
@@ -28,15 +26,13 @@ loss를 전체 시퀀스에 줌
 
 형식은 취향이 아니다. **학습과 추론이 공유하는 계약**이다.
 
-## 2. 먼저 알아야 할 개념
-
+## 선수 개념
 - Instruction Tuning / SFT 목표 (제69강)
 - JSON / JSONL (한 줄에 샘플 하나) 기본
 - Special tokens 감각 (2권 제30강, 제72강에서 확장)
 - Causal LM이 하나의 긴 토큰 시퀀스를 본다는 사실
 
-## 3. 핵심 개념 설명
-
+## 핵심 개념
 ### 3.1 두 가지 대표 스키마
 
 실습·공개 데이터에서 자주 만나는 큰 줄기는 둘이다.
@@ -166,8 +162,7 @@ mask: 0  0  0  0  1  1  1  1
 
 상세 구현·학습 루프는 제71강. 이번 강의에서는 **데이터에 역할 경계가 드러나야 마스크를 칠 수 있다**는 점만 고정한다. Alpaca 템플릿이면 `### Response:` 뒤가 응답 구간이다. Messages면 `role==assistant` 콘텐츠가 응답 구간이다.
 
-## 4. 직관적으로 이해하기
-
+## 직관적으로 이해하기
 데이터 형식 = **연극 대본의 서식**.
 
 - Alpaca: “지문(instruction) + 소품(input) + 대사(output)” 단막극
@@ -175,8 +170,7 @@ mask: 0  0  0  0  1  1  1  1
 
 배우(모델)는 서식에 익숙해진다. 공연(추론) 날 다른 서식을 주면 헤맨다. 제72강 Chat Template은 이 서식을 **토크나이저 함수로 고정**하는 장치다.
 
-## 5. 스키마 변환
-
+## 스키마 변환
 Alpaca → messages (개념 코드):
 
 ```python
@@ -195,8 +189,7 @@ def alpaca_to_messages(ex: dict) -> list[dict]:
 
 messages → 학습 문자열은 **반드시 동일한 `apply_chat_template`**로 (제72강). 여기서 임의로 문자열을 섞어 붙이면 학습/추론 불일치가 생긴다.
 
-## 6. 작은 숫자·토큰 예
-
+## 작은 숫자·토큰 예
 역할 경계를 특수 기호로 표시하는 미니 템플릿:
 
 ```text
@@ -206,8 +199,7 @@ messages → 학습 문자열은 **반드시 동일한 `apply_chat_template`**�
 문자 단위로 보면 응답 구간은 `서울`뿐이라고 치고, 그 앞은 마스크 0일 수 있다.  
 (실제 토크나이저는 서브워드라 경계가 토큰 중간에 걸리지 않게 **특수 토큰 ID**로 역할을 끊는 편이 안전하다. 제72강.)
 
-## 7. 코드로 다루기 — 로드와 검증
-
+## 코드로 다루기 — 로드와 검증
 ```python
 # inspect_sft_data.py
 """Instruction JSONL 기초 검증."""
@@ -269,8 +261,7 @@ if __name__ == "__main__":
     print("ok", demo)
 ```
 
-## 8. 품질·다양성 체크리스트 (형식 너머)
-
+## 품질·다양성 체크리스트 (형식 너머)
 형식만 맞아도 내용이 나쁘면 SFT는 틀린 선생을 복사한다.
 
 | 검사 | 질문 |
@@ -284,8 +275,7 @@ if __name__ == "__main__":
 
 이 책은 특정 공개 데이터셋의 “점수”를 주장하지 않는다. **자기 미니 JSONL을 깨끗하게 만드는 습관**이 목표다.
 
-## 9. 실제 LLM에서는 어떻게 사용하는가
-
+## LLM에서는 어디에 사용될까?
 - 공개 SFT 데이터는 Alpaca-like와 ShareGPT/messages 계열이 공존한다.
 - 많은 학습 프레임워크가 messages를 받아 내부에서 chat template을 적용한다.
 - System prompt 정책(항상 넣기 / 가끔 넣기 / 모델 기본 system)은 제품마다 다르다.
@@ -293,8 +283,7 @@ if __name__ == "__main__":
 
 추론 시에는 학습에 쓴 것과 **같은 템플릿**으로 messages를 렌더링한다. (제72강)
 
-## 10. 실습
-
+## 실습
 ### 실습 1 — 미니 JSONL 작성
 
 다음 세 과제를 messages JSONL로 직접 만들어 `tiny_sft.jsonl`에 저장하라.
@@ -315,8 +304,7 @@ if __name__ == "__main__":
 
 고의로 `assistant` 없는 messages, 빈 `output`, 잘못된 role을 넣고 `validate_*`가 잡는지 확인하라.
 
-## 11. 자주 하는 실수
-
+## 자주 하는 실수
 1. **`input`과 `instruction`을 중복 서술**  
    모델이 어느 쪽을 따라야 할지 모호해진다.
 
@@ -332,16 +320,14 @@ if __name__ == "__main__":
 5. **system에 과도한 비밀·장문 정책**  
    미니 실험에선 짧게. 실전에서도 토큰 예산을 생각하라.
 
-## 12. 핵심 정리
-
+## 핵심 요약
 - Instruction 데이터는 주로 Alpaca-like 또는 messages 스키마로 표현된다.
 - `system` / `user` / `assistant`는 역할이며, SFT 타깃의 중심은 assistant다.
 - Prompt masking을 하려면 역할·템플릿 경계가 데이터에서 명확해야 한다.
 - 형식 검증과 내용 품질 검증을 분리해서 본다.
 - 학습·추론 템플릿 일치가 Instruction following의 전제 조건이다.
 
-## 13. 핵심 용어
-
+## 용어 사전
 | 용어 | 의미 |
 |---|---|
 | Alpaca-like | instruction/input/output 필드 스키마 |
@@ -352,7 +338,7 @@ if __name__ == "__main__":
 | Response span | assistant(또는 ### Response) 토큰 구간 |
 | Schema validation | 필수 필드·역할·비어 있음 검사 |
 
-## 14. 연습 문제
+## 연습문제
 ### 문제 1 (형식)
 
 Alpaca 샘플에서 `input`이 비어 있을 때 프롬프트 조립 시 흔한 처리를 쓰시오.
@@ -376,7 +362,6 @@ Alpaca → messages 변환 후에도 학습 문자열이 달라질 수 있는 �
 ---
 
 ## 정답 및 해설
-
 ### 문제 1
 
 `### Input:` 절을 생략하거나, 빈 Input 절 없이 instruction만 넣는 방식이 흔하다. 데이터셋마다 하나로 고정해야 한다.
@@ -397,8 +382,7 @@ Alpaca → messages 변환 후에도 학습 문자열이 달라질 수 있는 �
 
 프롬프트(조건) 구간과 응답(타깃) 구간.
 
-## 15. 다음 강의와 연결
-
+## 다음 강의와 연결
 데이터 모양이 정해졌다. 이제 **학습 루프에서 마스크를 실제로 칠 차례**다.
 
 다음 **제71강. SFT 구현**에서는 Pretraining 루프와의 차이를 코드로 고정하고, assistant 토큰에만 loss를 주는 SFT를 구현한다.
@@ -411,7 +395,7 @@ Alpaca → messages 변환 후에도 학습 문자열이 달라질 수 있는 �
 
 ### 강의 이동
 
-- **이전 강:** [제69강. Instruction Tuning의 개념](69강_Instruction_Tuning의_개념.md)
-- **다음 강:** [제71강. SFT 구현](71강_SFT_구현.md)
+- **이전 강:** [69강. Instruction Tuning의 개념](69강_Instruction_Tuning의_개념.md)
+- **다음 강:** [71강. SFT 구현](71강_SFT_구현.md)
 
 <!-- /LECTURE_NAV -->

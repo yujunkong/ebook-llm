@@ -1,16 +1,14 @@
-# 제41강. Multi-Head Attention
+# 41강. Multi-Head Attention
+## 이번 강에서 배우는 내용
 
-> **학습 목표**
-> - Single-Head Attention과 Multi-Head Attention의 차이
-> - $d_{\text{model}}$, $h$, $d_k = d_{\text{model}} / h$의 관계
-> - 각 head에서 $Q, K, V$를 계산하고, 결과를 concat한 뒤 $W^O$로 섞는 전체 흐름
-> - 왜 “한 번에 크게” 보는 대신 “여러 관점으로 작게” 보는지
-> - Causal Mask가 Multi-Head에서도 동일하게 적용되는 방식
-> - NumPy/PyTorch로 MHA를 스케치하는 방법
+- Single-Head Attention과 Multi-Head Attention의 차이
+- $d_{\text{model}}$, $h$, $d_k = d_{\text{model}} / h$의 관계
+- 각 head에서 $Q, K, V$를 계산하고, 결과를 concat한 뒤 $W^O$로 섞는 전체 흐름
+- 왜 “한 번에 크게” 보는 대신 “여러 관점으로 작게” 보는지
+- Causal Mask가 Multi-Head에서도 동일하게 적용되는 방식
+- NumPy/PyTorch로 MHA를 스케치하는 방법
 
----
-## 1. 왜 이것을 배우는가
-
+## 왜 중요한가?
 Self-Attention 한 번으로도 “토큰끼리 정보를 섞는” 일은 가능하다.  
 그런데 한 번의 Attention은 **하나의 유사도 기준**으로 섞는다.
 
@@ -38,8 +36,7 @@ LLM 관점에서는 더 직접적이다.
 Transformer Block의 첫 핵심 연산이 바로 MHA다.  
 제46강에서 블록을 조립할 때, 오늘은 그 안쪽의 “Attention 엔진”을 완성한다.
 
-## 2. 먼저 알아야 할 개념
-
+## 선수 개념
 이미 알고 있어야 하는 것:
 
 - Query / Key / Value (제36강)
@@ -59,8 +56,7 @@ Transformer Block의 첫 핵심 연산이 바로 MHA다.
 | $W^Q, W^K, W^V$ | 전체 입력에서 Q/K/V를 만드는 선형 변환 |
 | $W^O$ | head 출력을 합친 뒤 다시 $d_{\text{model}}$로 섞는 출력 투영 |
 
-## 3. 핵심 개념 설명
-
+## 핵심 개념
 ### 3.1 Single-Head를 한 줄로 복습
 
 입력 행렬 $X \in \mathbb{R}^{T \times d_{\text{model}}}$가 있을 때,
@@ -186,8 +182,7 @@ Multi-Head에서는:
 
 제48강 Causal LM은 이 MHA + Causal Mask가 층층이 쌓인 결과물이다.
 
-## 4. 직관적으로 이해하기
-
+## 직관적으로 이해하기
 ### 4.1 한 눈으로 보는 것과 여러 눈으로 보는 것
 
 Single-Head:
@@ -231,8 +226,7 @@ X  (T × d_model)
 
 큰 $W^Q,W^K,W^V,W^O$를 각각 $d_{	ext{model}}	imes d_{	ext{model}}$로 두면 Single-Head full-$d_k$와 파라미터 규모가 비슷하다. Multi-Head의 이득은 예산을 폭발시키는 것이 아니라 **같은 예산으로 여러 부분 공간을 쓰는 것**에 가깝다.
 
-## 5. 수학적으로 이해하기
-
+## 수학적으로 이해하기
 ### 5.1 Head별 수식
 
 전체 투영을 한 번에 쓰고 head로 쪼개는 표기:
@@ -297,8 +291,7 @@ $$
 `transpose` 순서를 잘못 잡으면 가장 흔한 버그가 난다.  
 `(B, T, h, d_k)` → `(B, h, T, d_k)`로 바꾸는 패턴을 몸과 손에 익힌다.
 
-## 6. 작은 숫자로 직접 계산하기
-
+## 작은 숫자로 직접 계산하기
 목표는 “거대한 모델”이 아니라 **split → attend → concat → $W^O$**를 손으로 한 바퀴 도는 것이다.
 
 ### 6.1 설정
@@ -500,8 +493,7 @@ $$
 3. $W^O$가 최종 혼합을 담당한다.
 4. Causal Mask는 각 head의 $(T, T)$에 동일하게 들어간다.
 
-## 7. 코드로 구현하기 (NumPy 스케치)
-
+## 코드로 구현하기
 아래 코드는 교육용이다. 속도·수치 안정성·패딩 마스크까지 챙긴 상용 구현은 아니다.
 
 ```python
@@ -588,8 +580,7 @@ if __name__ == "__main__":
 - Causal이면 `j > i` 위치의 확률이 0에 가까워야 한다
 - `out.shape`가 입력과 같아야 Residual에 더하기 쉽다
 
-## 8. PyTorch로 구현하기
-
+## PyTorch로 구현하기
 ```python
 # mha_torch.py
 """교육용 Multi-Head Attention (PyTorch)."""
@@ -652,8 +643,7 @@ if __name__ == "__main__":
 `nn.MultiheadAttention`을 쓸 수도 있다.  
 다만 이 책은 **내부 reshape·mask·$W^O$**를 직접 보는 것이 목적이므로, 위 스케치를 먼저 이해한다.
 
-## 9. 실제 LLM에서는 어떻게 사용하는가
-
+## LLM에서는 어디에 사용될까?
 ### 9.1 GPT류 (Decoder-only)
 
 - Self-Attention + **Causal Mask**가 기본
@@ -686,14 +676,12 @@ if __name__ == "__main__":
 
 오늘 만든 `MHA(x, causal=True)`는 제48강에서 **층의 심장**으로 다시 등장한다.
 
-## 10. 실습
-
+## 실습
 1. $d_{\text{model}}=8,\ h=2$와 $h=4$로 같은 입력에 MHA를 돌려 `out.shape`가 동일한지 확인하라.
 2. Causal를 켠 뒤, `attn[0, 0]` 상삼각(미래)이 0에 가까운지 출력하라.
 3. `n_heads`가 `d_model`의 약수가 아닐 때 assert가 뜨는지 확인하라.
 
-## 11. 자주 하는 실수
-
+## 자주 하는 실수
 1. **`d_model % n_heads != 0`**  
    head 차원이 정수가 되지 않는다. 설계 단계에서 약수로 맞춘다.
 
@@ -712,8 +700,7 @@ if __name__ == "__main__":
 6. **Single-Head 결과와 ‘평균’을 비교하려 하기**  
    Multi-Head는 단순 평균이 아니라 부분 공간 병렬 + 출력 투영이다.
 
-## 12. 핵심 정리
-
+## 핵심 요약
 - Multi-Head Attention은 Self-Attention을 $h$개 부분 공간에서 병렬로 수행한다.
 - 보통 $d_k = d_{\text{model}} / h$로 두어 비용을 제어한다.
 - 각 head 출력을 concat한 뒤 $W^O$로 $d_{\text{model}}$ 표현을 만든다.
@@ -721,8 +708,7 @@ if __name__ == "__main__":
 - shape `(B, H, T, D)`를 안정적으로 다루는 것이 구현의 핵심이다.
 - LLM의 Transformer Block에서 MHA는 토큰 간 정보 혼합의 중심이다.
 
-## 13. 핵심 용어
-
+## 용어 사전
 | 용어 | 설명 |
 |---|---|
 | Multi-Head Attention (MHA) | 여러 Attention head를 병렬 수행 후 결합하는 메커니즘 |
@@ -733,7 +719,7 @@ if __name__ == "__main__":
 | $W^O$ (Output Projection) | concat 결과를 통합하는 선형층 |
 | Causal Mask | 미래 토큰을 보지 못하게 하는 마스크(제40강) |
 
-## 14. 연습 문제
+## 연습문제
 **문제 1.** $d_{\text{model}}=768$, $h=12$일 때 $d_k$는?
 
 **문제 2.** 왜 head를 늘리면서 $d_k$를 나누는가? 한 가지 이유를 쓰라.
@@ -760,8 +746,7 @@ if __name__ == "__main__":
 
 6. 제40강이 만든 미래 차단 규칙을, 제41강이 $h$개 head에 동시에 적용하고 concat+$W^O$로 합친다.
 
-## 15. 다음 강의와 연결
-
+## 다음 강의와 연결
 MHA는 “토큰 사이 관계를 여러 눈으로 본다”.  
 그런데 아직 **토큰의 순서**를 모델이 본질적으로 알지는 못한다. Attention 자체는 집합에 가까운 연산이라, 위치 정보가 빠지면 “누가 먼저인지”가 약해진다.
 
@@ -782,7 +767,7 @@ MHA는 “토큰 사이 관계를 여러 눈으로 본다”.
 
 ### 강의 이동
 
-- **이전 강:** [제40강. Causal Mask](40강_Causal_Mask.md)
-- **다음 강:** [제42강. Positional Encoding](42강_Positional_Encoding.md)
+- **이전 강:** [40강. Causal Mask](40강_Causal_Mask.md)
+- **다음 강:** [42강. Positional Encoding](42강_Positional_Encoding.md)
 
 <!-- /LECTURE_NAV -->

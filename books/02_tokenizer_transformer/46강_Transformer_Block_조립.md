@@ -1,16 +1,14 @@
-# 제46강. Transformer Block 조립
+# 46강. Transformer Block 조립
+## 이번 강에서 배우는 내용
 
-> **학습 목표**
-> - Pre-LN Block의 데이터 흐름을 그림·수식으로 쓰기
-> - `x → Norm → Attn → + → Norm → FFN → +` 순서를 구현으로 옮기기
-> - 왜 각 서브층이 `d_model`을 보존해야 하는지
-> - Block을 $N$개 쌓아 “깊이”를 만드는 방법
-> - NumPy 스케치와 PyTorch `nn.Module` 조립 코드
-> - 제47~48강에서 Encoder/Decoder·Causal LM으로 확장하는 지점
+- Pre-LN Block의 데이터 흐름을 그림·수식으로 쓰기
+- `x → Norm → Attn → + → Norm → FFN → +` 순서를 구현으로 옮기기
+- 왜 각 서브층이 `d_model`을 보존해야 하는지
+- Block을 $N$개 쌓아 “깊이”를 만드는 방법
+- NumPy 스케치와 PyTorch `nn.Module` 조립 코드
+- 제47~48강에서 Encoder/Decoder·Causal LM으로 확장하는 지점
 
----
-## 1. 왜 이것을 배우는가
-
+## 왜 중요한가?
 부품을 따로 알면 “이해한 기분”이 든다.  
 실제로 한 블록을 조립해 보면 다음이 드러난다.
 
@@ -22,8 +20,7 @@
 LLM의 “층이 32개”라는 말은 대개 **이 Block을 32번 반복**한다는 뜻이다.  
 제48강 Causal LM, 제49~50강 Mini Transformer의 직접 선수과목이다.
 
-## 2. 먼저 알아야 할 개념
-
+## 선수 개념
 체크리스트:
 
 - [ ] MHA 입출력 shape `(B,T,C)` (제41강)
@@ -34,8 +31,7 @@ LLM의 “층이 32개”라는 말은 대개 **이 Block을 32번 반복**한�
 
 부족하면 해당 강의를 짧게 재독한다.
 
-## 3. 핵심 개념 설명
-
+## 핵심 개념
 ### 3.1 Transformer Block이란?
 
 **Transformer Block(또는 Layer)**는 Self-Attention 서브층과 FFN 서브층을 Residual·Norm과 함께 묶은 **반복 단위**다.
@@ -138,8 +134,7 @@ x + dropout(sublayer(norm(x)))
 너무 많은 dropout은 소규모 실험에서 학습을 죽이기 쉽다.  
 기본값 0.0~0.1에서 시작한다.
 
-## 4. 직관적으로 이해하기
-
+## 직관적으로 이해하기
 한 블록을 공장의 한 공정으로 본다.
 
 ```text
@@ -158,8 +153,7 @@ $N$번 반복하면 “깊은 추론 스택”이 된다.
 각 층이 다른 추상도에서 관계를 재구성한다는 해석이 가능하지만,  
 층마다 역할을 사람이 이름 붙이는 것은 사후 해석에 가깝다.
 
-## 5. 수학적으로 이해하기
-
+## 수학적으로 이해하기
 ### 5.1 한 블록의 완전 식 (Causal)
 
 $$
@@ -211,8 +205,7 @@ $N$층이면 $\sim 12 N d^2$.
 
 이 숫자로 “왜 큰 모델이 메모리를 많이 쓰는지”를 가늠할 수 있다.
 
-## 6. 작은 숫자로 흐름 따라가기
-
+## 작은 숫자로 흐름 따라가기
 설정:
 
 - $B=1,\ T=2,\ d_{\text{model}}=4$
@@ -241,8 +234,7 @@ $$
 
 숫자 자체가 예쁘지 않아도, **shape 불변 + causal 확률**이 조립의 합격 기준이다.
 
-## 7. 코드로 구현하기 — NumPy 조립
-
+## 코드로 구현하기 — NumPy 조립
 교육용으로만 사용한다.
 
 ```python
@@ -346,8 +338,7 @@ if __name__ == "__main__":
     print(y.shape)  # (2, 5, 8)
 ```
 
-## 8. PyTorch로 구현하기 — 모듈 조립
-
+## PyTorch로 구현하기 — 모듈 조립
 ```python
 # transformer_block_torch.py
 """Pre-LN Transformer Block (PyTorch)."""
@@ -466,8 +457,7 @@ if __name__ == "__main__":
 - `causal=True`일 때 학습·추론 경로가 미래 누수를 막는지(제40강 테스트 아이디어)
 - `n_layers`를 늘려도 shape 불변
 
-## 9. 조립 체크리스트 (디버깅)
-
+## 조립 체크리스트 (디버깅)
 구현이 안 되면 이 순서로 좁힌다.
 
 1. **Shape**  
@@ -491,8 +481,7 @@ if __name__ == "__main__":
 7. **Final LN**  
    스택 끝에 `ln_f`를 두었다면 LM Head 앞에 한 번 더 정규화되는가?
 
-## 10. Encoder용 / Decoder용으로 스위치
-
+## Encoder용 / Decoder용으로 스위치
 제47강 예고:
 
 ```python
@@ -508,8 +497,7 @@ h = stack(x, causal=False)
 
 제48강은 `causal=True` 스택 위에 Embedding과 LM Head를 얹는다.
 
-## 11. 실제 LLM에서는 어떻게 사용하는가
-
+## LLM에서는 어디에 사용될까?
 사실:
 
 - GPT형 모델은 이런 Block을 수십 층 쌓는다.
@@ -532,8 +520,7 @@ h = stack(x, causal=False)
           → 제48강 Causal LM
 ```
 
-## 12. 실습
-
+## 실습
 1. `TransformerBlock` 하나에 랜덤 텐서를 통과시켜 shape를 확인하라.
 2. `MiniTransformerStack(..., n_layers=4)`로 깊게 쌓아도 shape가 유지되는지 보라.
 3. `causal=True`와 `False`에서 같은 입력의 첫 토큰 출력이 달라지는지 비교하라.  
@@ -542,8 +529,7 @@ h = stack(x, causal=False)
 5. Residual을 주석 처리하고(`x = self.attn(...)`) 깊을 때 수치가 얼마나 불안정해지는지 관찰하라(학습 없이도 forward 분산으로 힌트를 얻을 수 있음).
 6. (선택) MHA forward에 RoPE 훅을 실제로 연결해 보라.
 
-## 13. 자주 하는 실수
-
+## 자주 하는 실수
 1. **Post-LN 수식을 Pre-LN 코드에 혼입**  
    순서가 바뀌면 다른 모델이 된다.
 
@@ -562,8 +548,7 @@ h = stack(x, causal=False)
 6. **파라미터 init 스케일 무시**  
    너무 큰 초기화는 Softmax/Residual을 망가뜨린다. 작은 표준편차로 시작한다.
 
-## 14. 핵심 정리
-
+## 핵심 요약
 - Pre-LN Transformer Block =  
   `x + MHA(LN(x))` 후 `x + FFN(LN(x))`.
 - MHA와 FFN은 모두 `d_model`을 보존해 Residual과 맞춘다.
@@ -572,8 +557,7 @@ h = stack(x, causal=False)
 - 위치 인코딩은 임베딩 add 또는 RoPE 훅으로 연결한다.
 - 제48강은 이 스택 위에 LM Head를 얹은 결과다.
 
-## 15. 핵심 용어
-
+## 용어 사전
 | 용어 | 설명 |
 |---|---|
 | Transformer Block / Layer | Attn+FFN+Norm+Residual 반복 단위 |
@@ -582,7 +566,7 @@ h = stack(x, causal=False)
 | Final LayerNorm | 스택 끝 정규화 |
 | Residual Stream | 더하기 본선으로 흐르는 표현 |
 
-## 16. 연습 문제
+## 연습문제
 **문제 1.** Pre-LN Block의 두 줄 수식을 쓰라.
 
 **문제 2.** 왜 MHA/FFN 출력이 `d_model`이어야 하는가?
@@ -609,8 +593,7 @@ h = stack(x, causal=False)
 
 6. Post-LN은 residual 뒤에 Norm, Pre-LN은 서브층 앞에 Norm을 둔다.
 
-## 17. 다음 강의와 연결
-
+## 다음 강의와 연결
 Block이라는 “벽돌”이 생겼다.  
 제47강에서는 이 벽돌로 **Encoder 벽**을 쌓을지, **Decoder 탑**을 쌓을지, 둘을 다리(Cross-Attention)로 이을지 지형도를 그린다.
 
@@ -629,7 +612,7 @@ Embedding → (Causal Block × N) → LM Head
 
 ### 강의 이동
 
-- **이전 강:** [제45강. Feed-Forward Network (MLP)](45강_Feed_Forward_Network_MLP.md)
-- **다음 강:** [제47강. Encoder와 Decoder](47강_Encoder와_Decoder.md)
+- **이전 강:** [45강. Feed-Forward Network (MLP)](45강_Feed_Forward_Network_MLP.md)
+- **다음 강:** [47강. Encoder와 Decoder](47강_Encoder와_Decoder.md)
 
 <!-- /LECTURE_NAV -->
