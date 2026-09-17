@@ -382,6 +382,8 @@ SFT 단계로 가면 PPL만으로 성공을 선언하지 않습니다（제75강
 <!-- visual-example-67 -->
 ## 숫자로 따라가기 — Perplexity
 
+![그림 67-1](images/fig67-01.png)
+
 평균 NLL이 2.3 nats/token이면
 
 $$

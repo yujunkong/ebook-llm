@@ -389,6 +389,8 @@ SVD 해석(설명): $\Delta W$의 상위 특잇값 방향만 연다 — 학습�
 <!-- visual-example-73 -->
 ## 숫자로 따라가기 — LoRA
 
+![그림 73-1](images/fig73-01.png)
+
 $r=2$, $\alpha=4$이면 스케일 $\alpha/r=2$.  
 작은 행렬 $B\in\mathbb{R}^{d\times 2}$, $A\in\mathbb{R}^{2\times d}$만 학습해
 

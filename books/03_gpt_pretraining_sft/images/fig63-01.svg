@@ -1,0 +1,16 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<svg xmlns="http://www.w3.org/2000/svg" width="1200" height="680" viewBox="0 0 1200 680" role="img">
+  <rect width="1200" height="680" fill="#f7f4ef"/>
+  <text x="60" y="56" font-family="Georgia, serif" font-size="28" fill="#1a1a1a">Fig 63-1. Warmup + Cosine Decay</text>
+  <text x="60" y="96" font-size="18" fill="#555">η_base=3e-4, Tw=1000, T_total=10000</text>
+  <line x1="120" y1="480" x2="1080" y2="480" stroke="#888" stroke-width="2"/>
+  <line x1="120" y1="160" x2="120" y2="480" stroke="#888" stroke-width="2"/>
+  <path d="M 120 480 L 280 200 L 1080 420" fill="none" stroke="#0b6e4f" stroke-width="4"/>
+  <line x1="280" y1="160" x2="280" y2="500" stroke="#1d4e89" stroke-dasharray="4 4"/>
+  <text x="250" y="150" font-size="16" fill="#1d4e89">Tw=1000</text>
+  <text x="100" y="190" font-size="16">η</text>
+  <text x="1050" y="510" font-size="16">step</text>
+  <text x="300" y="220" font-size="16" fill="#0b6e4f">3e-4 peak</text>
+  <rect x="80" y="540" width="1040" height="100" rx="8" fill="#fff" stroke="#d0cbc3"/>
+  <text x="110" y="600" font-size="18">t=500 → η=0.5·3e-4=1.5e-4 (선형 워밍업 중간)</text>
+</svg>

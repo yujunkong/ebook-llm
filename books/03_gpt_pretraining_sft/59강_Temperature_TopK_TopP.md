@@ -398,6 +398,8 @@ $$
 <!-- visual-example-59 -->
 ## 숫자로 따라가기 — Temperature
 
+![그림 59-1](images/fig59-01.png)
+
 logits $[2.0,\,1.0]$, $\tau=1$ vs $\tau=2$:
 
 | $\tau$ | Softmax 감 |

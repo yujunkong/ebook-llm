@@ -526,6 +526,24 @@ $$
 \pi_{\mathrm{PT}}\;\xrightarrow{\mathrm{SFT}}\;\pi_{\mathrm{SFT}}\;\xrightarrow{\mathrm{pref}}\;\pi_{\mathrm{aligned}}
 $$
 
+<!-- visual-example-77 -->
+## 숫자로 따라가기 — PT vs SFT 마스크
+
+![그림 77-1](images/fig77-01.png)
+
+프롬프트 20토큰 + 답 10토큰, 토큰당 NLL이 모두 $2.0$이라고 가정합니다.
+
+$$
+L_{\mathrm{SFT}}=\frac{1}{\sum_t m_t}\sum_t m_t\,(-\log p_t)
+$$
+
+| 구간 | 길이 | $m_t$ | Loss 기여 |
+|---|---|---|---|
+| prompt | 20 | 0 | 무시 |
+| answer | 10 | 1 | $10\times 2.0 = 20$ → 평균 2.0 |
+
+Pretraining은 보통 **전 구간** CE, SFT는 **답 구간만** CE로 형식을 옮깁니다.
+
 ## LLM에서는 어디에 사용될까?
 
 이번 77강에서 배운 개념은 이후 Transformer · GPT · 서빙 강의에서 반복해서 등장합니다. 각 수식·코드 블록을 “실제 모델의 어느 단계인가”와 연결해 다시 읽어 보세요.

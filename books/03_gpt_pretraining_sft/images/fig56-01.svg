@@ -1,0 +1,21 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<svg xmlns="http://www.w3.org/2000/svg" width="1200" height="680" viewBox="0 0 1200 680" role="img">
+  <rect width="1200" height="680" fill="#f7f4ef"/>
+  <text x="60" y="56" font-family="Georgia, serif" font-size="28" fill="#1a1a1a">Fig 56-1. GPT 블록 스택과 파라미터 감각</text>
+  <text x="60" y="96" font-size="18" fill="#555">d=64, L=2, V=1000 — 장난감 규모로 세기</text>
+  <rect x="100" y="140" width="220" height="80" rx="8" fill="#1d4e89"/>
+  <text x="130" y="188" font-size="20" fill="#fff">Embed V×d</text>
+  <text x="340" y="188" font-size="28" fill="#b35c00">→</text>
+  <rect x="380" y="140" width="220" height="80" rx="8" fill="#0b6e4f"/>
+  <text x="420" y="175" font-size="18" fill="#fff">Block × L</text>
+  <text x="410" y="200" font-size="16" fill="#e8f5f0">MHA+FFN</text>
+  <text x="620" y="188" font-size="28" fill="#b35c00">→</text>
+  <rect x="660" y="140" width="220" height="80" rx="8" fill="#1d4e89"/>
+  <text x="700" y="188" font-size="20" fill="#fff">LM head</text>
+  <rect x="80" y="280" width="1040" height="320" rx="8" fill="#fff" stroke="#d0cbc3"/>
+  <text x="110" y="340" font-size="20">Embed ≈ V·d = 1000·64 = 64,000</text>
+  <text x="110" y="390" font-size="20">FFN(한 층, 4d) 대략 2·d·4d = 2·64·256 ≈ 32,768</text>
+  <text x="110" y="440" font-size="20">MHA QKV+O ≈ 4·d² = 4·4096 = 16,384</text>
+  <text x="110" y="490" font-size="20">L=2 → 블록 ≈ 2·(16k+33k) ≈ 98k + embed/head</text>
+  <text x="110" y="550" font-size="18" fill="#555">직관: d·L·V가 커질수록 파라미터가 빠르게 불어난다</text>
+</svg>

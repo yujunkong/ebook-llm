@@ -1,0 +1,25 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<svg xmlns="http://www.w3.org/2000/svg" width="1200" height="680" viewBox="0 0 1200 680" role="img">
+  <rect width="1200" height="680" fill="#f7f4ef"/>
+  <text x="60" y="56" font-family="Georgia, serif" font-size="28" fill="#1a1a1a">Fig 55-1. GPT: 다음 토큰 확률의 곱</text>
+  <text x="60" y="96" font-size="18" fill="#555">문장 "나 / 는 / 학 / 생" → P = ∏ p(x_t | x_&lt;t)</text>
+  <rect x="80" y="160" width="160" height="70" rx="8" fill="#fff" stroke="#1d4e89" stroke-width="2"/>
+  <text x="110" y="205" font-size="22">나</text>
+  <text x="260" y="205" font-size="28" fill="#b35c00">→</text>
+  <rect x="300" y="160" width="160" height="70" rx="8" fill="#fff" stroke="#1d4e89" stroke-width="2"/>
+  <text x="330" y="205" font-size="22">는</text>
+  <text x="480" y="205" font-size="28" fill="#b35c00">→</text>
+  <rect x="520" y="160" width="160" height="70" rx="8" fill="#fff" stroke="#1d4e89" stroke-width="2"/>
+  <text x="550" y="205" font-size="22">학</text>
+  <text x="700" y="205" font-size="28" fill="#b35c00">→</text>
+  <rect x="740" y="160" width="160" height="70" rx="8" fill="#fff" stroke="#1d4e89" stroke-width="2"/>
+  <text x="770" y="205" font-size="22">생</text>
+  <text x="100" y="300" font-size="18">p=0.40</text>
+  <text x="320" y="300" font-size="18">p=0.55</text>
+  <text x="540" y="300" font-size="18">p=0.30</text>
+  <text x="760" y="300" font-size="18">p=0.70</text>
+  <rect x="80" y="360" width="1040" height="240" rx="8" fill="#fff" stroke="#d0cbc3"/>
+  <text x="110" y="420" font-size="22" font-family="Georgia, serif">P(문장) = 0.40 × 0.55 × 0.30 × 0.70</text>
+  <text x="110" y="480" font-size="22">= 0.0462</text>
+  <text x="110" y="540" font-size="18" fill="#555">직관: 매 칸에서 “다음에 올 말”만 잘 맞히면 문장 확률이 커진다</text>
+</svg>

@@ -432,6 +432,22 @@ $$
 
 각 Block은 (대략) LN → MHA → Residual → LN → FFN → Residual입니다.
 
+<!-- visual-example-56 -->
+## 숫자로 따라가기 — 장난감 GPT 파라미터
+
+![그림 56-1](images/fig56-01.png)
+
+$d=64$, 층 $L=2$, vocab $V=1000$인 미니 GPT를 가정합니다.
+
+| 기호 | 값 | 대략 파라미터 |
+|---|---|---|
+| $W_{\mathrm{tok}}$ | $V\times d$ | $1000\times 64=64{,}000$ |
+| MHA (한 층) | $\approx 4d^2$ | $4\times 4096=16{,}384$ |
+| FFN (한 층, $4d$) | $\approx 2\cdot d\cdot 4d$ | $\approx 32{,}768$ |
+| 블록 $\times L$ | $L=2$ | $\approx 2\times(16k+33k)\approx 98k$ |
+
+실제 GPT는 $d$·$L$·$V$가 훨씬 크지만, **같은 식**으로 파라미터를 센다.
+
 ## LLM에서는 어디에 사용될까?
 대규모 구현과의 대응:
 
