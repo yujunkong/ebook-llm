@@ -539,6 +539,29 @@ def train_toy_regression(steps=200, lr=0.05):
 
 ---
 
+
+<!-- visual-example-20 -->
+## 숫자로 따라가기 — Autograd = 손미분
+
+![그림 20-1](images/fig20-01.png)
+
+초미니: $x=2$, $w=3$, $b=1$, $y=wx+b=7$, $L=(y-10)^2=9$.
+
+$$
+\frac{\partial L}{\partial y}=-6,\quad
+\frac{\partial L}{\partial w}=-12,\quad
+\frac{\partial L}{\partial b}=-6
+$$
+
+| 기호 | 값 | Autograd 대응 |
+|---|---|---|
+| $w,x,b$ | leaf | `requires_grad=True` |
+| $y$ | $7$ | 중간 노드 |
+| $L$ | $9$ | 스칼라 → `backward()` |
+| $w.\mathrm{grad}$ | $-12$ | leaf에 저장(누적) |
+
+17강의 2-2-1도 같은 방식으로 `loss.backward()` 후 `.grad`가 손계산 표와 일치해야 합니다. `zero_grad()`를 빼면 누적됩니다.
+
 ## LLM에서는 어디에 사용될까?
 
 ```python

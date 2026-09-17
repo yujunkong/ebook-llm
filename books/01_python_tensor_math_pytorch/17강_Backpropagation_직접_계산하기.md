@@ -557,6 +557,33 @@ print("dW1=\n", dL_dW1)
 
 ---
 
+
+<!-- visual-example-17 -->
+## 숫자로 따라가기 — Backward δ 전파
+
+![그림 17-1](images/fig17-01.png)
+
+Forward 결과 $\hat{y}=0.21$, $y=1$에서 시작합니다.
+
+$$
+\frac{\partial L}{\partial\hat{y}}=\hat{y}-y=-0.79
+$$
+
+| 파라미터 | Gradient | 한 줄 해석 |
+|---|---|---|
+| $b^{(2)}$ | $-0.79$ | 출력 bias로 바로 전달 |
+| $W^{(2)}$ | $[-0.237,\ -0.2765]$ | $\delta^{(2)}(\mathbf{a}^{(1)})^{\top}$ |
+| $\mathbf{b}^{(1)}$ | $[-0.395,\ 0.316]$ | ReLU′=1이라 $\delta^{(1)}=\partial L/\partial\mathbf{a}^{(1)}$ |
+| $W^{(1)}$ | $\begin{bmatrix}-0.395 & -0.1975\\ 0.316 & 0.158\end{bmatrix}$ | $\delta^{(1)}\mathbf{x}^{\top}$ |
+
+$\eta=0.1$이면
+
+$$
+b^{(2)}\leftarrow 0.2-0.1\cdot(-0.79)=0.279
+$$
+
+$\partial L/\partial\hat{y}<0$이므로 $\hat{y}$를 **키우는** 쪽으로 파라미터가 움직입니다. `loss.backward()`가 하는 일의 손계산 버전입니다.
+
 ## LLM에서는 어디에 사용될까?
 
 LLM 학습의 Backward도 원리는 동일합니다. 다만 그래프가 깁니다.

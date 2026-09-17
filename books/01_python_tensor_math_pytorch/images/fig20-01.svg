@@ -1,0 +1,29 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<svg xmlns="http://www.w3.org/2000/svg" width="1200" height="720" viewBox="0 0 1200 720" role="img">
+  <title>Autograd tape</title>
+  <defs>
+    <marker id="arrow" markerWidth="10" markerHeight="10" refX="8" refY="3" orient="auto">
+      <path d="M0,0 L8,3 L0,6 Z" fill="#1a1a1a"/>
+    </marker>
+  </defs>
+  <rect width="1200" height="720" fill="#f7f4ef"/>
+
+  <text x="60" y="56" font-family="Georgia, serif" font-size="28" fill="#1a1a1a">Fig 20-1. Autograd: 촬영(Forward) → 재생(Backward)</text>
+  <text x="60" y="96" font-size="18" fill="#555">x=2, w=3, b=1 → y=7 → L=(y−10)²=9</text>
+  <rect x="80" y="180" width="200" height="80" rx="8" fill="#fff" stroke="#1d4e89" stroke-width="2"/>
+  <text x="130" y="230" font-size="22">w,x leaf</text>
+  <text x="300" y="220" font-size="24">→</text>
+  <rect x="340" y="180" width="160" height="80" rx="8" fill="#fff" stroke="#b35c00" stroke-width="2"/>
+  <text x="380" y="230" font-size="22">× → wx</text>
+  <text x="520" y="220" font-size="24">→</text>
+  <rect x="560" y="180" width="160" height="80" rx="8" fill="#fff" stroke="#b35c00" stroke-width="2"/>
+  <text x="590" y="230" font-size="22">+b → y</text>
+  <text x="740" y="220" font-size="24">→</text>
+  <rect x="780" y="180" width="200" height="80" rx="8" fill="#fff" stroke="#0b6e4f" stroke-width="2"/>
+  <text x="820" y="230" font-size="22">L=9</text>
+  <rect x="150" y="340" width="900" height="240" rx="8" fill="#fff" stroke="#d0cbc3"/>
+  <text x="200" y="410" font-size="22" font-family="Georgia, serif">backward: ∂L/∂y=−6 → ∂L/∂w=−12, ∂L/∂b=−6</text>
+  <text x="200" y="470" font-size="18" fill="#555">requires_grad=True 인 leaf에 .grad 저장 (누적)</text>
+  <text x="200" y="530" font-size="18" fill="#0b6e4f">17강 손계산 = loss.backward() 가 하는 일의 미니 버전</text>
+
+</svg>

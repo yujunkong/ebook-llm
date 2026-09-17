@@ -582,13 +582,26 @@ LLM은 같은 원리를 수천억 개로 확장한 것입니다. 구조의 원�
 <!-- visual-example-15 -->
 ## 숫자로 따라가기 — Affine + 활성화
 
-$x=2$, $w=3$, $b=1$, $\mathrm{ReLU}(z)=\max(0,z)$:
+![그림 15-1](images/fig15-01.png)
+
+한 뉴런의 최소 단위:
 
 $$
-z=wx+b=7,\quad h=\mathrm{ReLU}(7)=7
+z = wx + b,\quad h=\mathrm{ReLU}(z)=\max(0,z)
 $$
 
-$w=-3$이면 $z=-5$, $h=0$ (음수 구간 차단).
+| 기호 | 값 | 의미 |
+|---|---|---|
+| $x$ | $2$ | 입력 |
+| $w$ | $3$ | weight |
+| $b$ | $1$ | bias |
+| $z$ | $7$ | pre-activation |
+| $h$ | $7$ | post-activation |
+
+계산: $z=3\cdot2+1=7$, $h=\max(0,7)=7$.  
+$w=-3$이면 $z=-5$, $h=0$ — **음수 구간은 Gradient도 0**이 됩니다.
+
+15강의 2-2-1 미니망도 같은 Affine+ReLU를 행렬로 쌓은 것뿐입니다 ($x=[1.0,0.5]$ → $\hat{y}=0.21$).
 
 ## LLM에서는 어디에 사용될까?
 

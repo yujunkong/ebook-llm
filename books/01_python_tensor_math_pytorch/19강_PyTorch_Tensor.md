@@ -530,6 +530,34 @@ if __name__ == "__main__":
 
 ---
 
+
+<!-- visual-example-19 -->
+## 숫자로 따라가기 — Tensor matmul
+
+배치 2×특징 2 입력과 Linear weight:
+
+$$
+X=\begin{bmatrix}1.0 & 0.5\\ 0.0 & 1.0\end{bmatrix},\quad
+W=\begin{bmatrix}0.3 & -0.2\\ 0.4 & 0.1\end{bmatrix}
+$$
+
+PyTorch Linear는 $XW^{\top}$ (행 벡터 규약):
+
+$$
+XW^{\top}
+=
+\begin{bmatrix}0.20 & 0.45\\ -0.20 & 0.10\end{bmatrix}
+$$
+
+| 기호 | Shape | 이번 값(첫 행) |
+|---|---|---|
+| $X$ | $(B,d_{\mathrm{in}})=(2,2)$ | $[1.0,\ 0.5]$ |
+| $W$ | $(d_{\mathrm{out}},d_{\mathrm{in}})=(2,2)$ | $[0.3,\ -0.2]$ |
+| $XW^{\top}$ | $(2,2)$ | $[0.20,\ 0.45]$ |
+
+첫 샘플: $1\cdot0.3+0.5\cdot(-0.2)=0.20$, $1\cdot0.4+0.5\cdot0.1=0.45$.  
+dtype·device·`requires_grad`만 더하면 Autograd(20강)로 이어집니다.
+
 ## LLM에서는 어디에 사용될까?
 
 ```text
