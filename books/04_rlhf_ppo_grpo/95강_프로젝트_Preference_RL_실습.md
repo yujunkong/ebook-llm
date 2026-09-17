@@ -969,6 +969,35 @@ Reasoning outcome RL을 이 폴더에 억지로 넣지 않아도 된다. 여력�
 
 이번 95강에서 배운 개념은 이후 Transformer · GPT · 서빙 강의에서 반복해서 등장합니다. 각 수식·코드 블록을 “실제 모델의 어느 단계인가”와 연결해 다시 읽어 보세요.
 
+## 필수 수식 포스터（이 프로젝트）
+손구현에서 헷갈리면 이 네 줄로 돌아온다.
+
+$$
+
+\begin{aligned}
+L_{\mathrm{DPO}}
+&=
+-\log\sigma\big(\beta[({\ell}_\theta-{\ell}_{\mathrm{ref}})_w-({\ell}_\theta-{\ell}_{\mathrm{ref}})_l]\big)
+\\
+L_{\mathrm{RM}}
+&=
+-\log\sigma\big(r_\phi(x,y_w)-r_\phi(x,y_l)\big)
+\\
+\nabla J
+&\propto
+\mathbb{E}\big[(r-b)\nabla\log\pi_\theta(y\mid x)\big]
+\\
+\mathrm{margin}
+&\approx
+\log\pi(y_w\mid x)-\log\pi(y_l\mid x)
+\end{aligned}
+
+$$
+
+${\ell}=\log\pi$ （toy에서는 토큰 평균 logprob 가능）.  
+$\beta$·마스킹·ref freeze가 틀리면 식이 맞아도 학습이 반대로 간다.
+
+
 ## 핵심 요약
 - 미니 프로젝트의 완결 조건은 유창한 챗봇이 아니라 **선호 방향 메트릭의 이동**이다.
 - 경로 A（DPO）만으로 4권 중반의 수식을 코드에 고정할 수 있다.

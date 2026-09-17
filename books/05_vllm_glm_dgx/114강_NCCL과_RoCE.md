@@ -417,6 +417,13 @@ $$
 데이터가 CPU를 우회할수록 latency에 유리한 **후보**가 된다. NUMA 노드와 NIC 친화도가 어긋나면 같은 케이블도 느릴 수 있다. 플랫폼 문서를 보고, 추측으로 `export`를 복사하지 말 것.
 
 
+## All-reduce 부피 한 줄 복습
+$$
+T_{\mathrm{AR}}\gtrsim\frac{2(P-1)}{P}\frac{M}{B_{\mathrm{eff}}}+T_{\mathrm{latency}}
+$$
+$M$: 메시지 바이트, $P$: 참여 GPU, $B_{\mathrm{eff}}$: 실효 대역폭（$\le B_{\mathrm{link}}$）.
+
+
 ## 핵심 요약
 - NCCL은 멀티 GPU 집합 통신의 사실상 표준 경로다.
 - TP의 비용은 수식만이 아니라 **NCCL이 고른 수송 경로**에서 결정된다.

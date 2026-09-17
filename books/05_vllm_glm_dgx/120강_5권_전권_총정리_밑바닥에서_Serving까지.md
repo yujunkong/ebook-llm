@@ -323,6 +323,23 @@ print(int(idx), float(p[idx]))
 
 Embedding · Attention · KV Cache · Continuous Batching · 양자화 · TP는 각각 Prefill/Decode 지연과 처리량에 직접 영향을 줍니다.
 
+## 전권 연결 — RLHF에서 Serving 한 줄
+4권:
+
+$$
+\max_\theta\mathbb{E}[r]-\beta\mathrm{KL}(\pi_\theta\|\pi_{\mathrm{ref}})
+$$
+
+5권（고정 $\theta$）:
+
+$$
+T\approx\mathrm{TTFT}+(N_{\mathrm{out}}-1)\mathrm{TPOT},\quad
+\mathrm{Throughput}\approx\frac{N_{\mathrm{tokens}}}{\Delta t}
+$$
+
+정렬이 $N_{\mathrm{out}}$을 키우면 서빙 식이 먼저 아파진다. 두 권을 한 제품 방정식으로 읽는다.
+
+
 ## 핵심 요약 — 5권
 - Inference는 Training과 목표·병목·메트릭이 다르다.
 - Prefill/Decode·KV·Continuous Batching이 서빙 성능의 뼈대다.
