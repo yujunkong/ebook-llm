@@ -269,7 +269,7 @@ class DictDataset(Dataset):
 
 기본 collate는 같은 키끼리 리스트/텐서로 묶는다. 텍스트 문자열은 텐서가 아니므로, 학습 전에 토큰 ID 텐서로 바꾸거나 커스텀 `collate_fn`이 필요하다.
 
-## 수식 보강 — 배치 · 에폭 · 스텝 수
+## 배치 · 에폭 · 스텝 수
 
 데이터셋 크기 $N$, 배치 크기 $B$이면 한 에폭의 업데이트 횟수는
 
@@ -283,52 +283,94 @@ $$
 \mathrm{total\ steps} \approx E \cdot \left\lceil \frac{N}{B} \right\rceil
 $$
 
-입니다.
+입니다. (`drop_last=True`이면 바닥 함수 $\lfloor N/B\rfloor$에 가깝습니다.)
 
-미니배치 평균 손실은 샘플 손실의 평균입니다.
+### 미니배치 손실
+
+미니배치 $\mathcal{B}$에 대한 평균 손실은
 
 $$
 L_{\mathcal{B}}(\theta)
 =
 \frac{1}{|\mathcal{B}|}
-\sum_{i\in\mathcal{B}} \ell(f_\theta(x_i), y_i)
+\sum_{i\in\mathcal{B}} \ell\bigl(f_\theta(x_i), y_i\bigr)
 $$
 
-LLM의 언어모델링에서는 $(x_i,y_i)$가 “문맥 토큰 → 다음 토큰” 쌍이며, 패킹되면 한 배치 Shape가 `(B, T)` 토큰 ID가 됩니다.
+입니다. SGD 한 스텝은
+
+$$
+\theta \leftarrow \theta - \eta\, \nabla_\theta L_{\mathcal{B}}(\theta)
+$$
+
+입니다.
+
+### 토큰 배치 Shape
+
+언어 모델에서 한 배치의 토큰 ID는
+
+$$
+X\in\{0,\ldots,V-1\}^{B\times T}
+$$
+
+이고, 다음 토큰 예측이면 타깃도
+
+$$
+Y\in\{0,\ldots,V-1\}^{B\times T}
+$$
+
+(보통 $Y_{b,t}=X_{b,t+1}$, 마지막은 패딩/무시)입니다.
+
+한 스텝에서 보는 토큰 수는
+
+$$
+N_{\mathrm{tok}} = B\cdot T
+$$
+
+입니다. LLM 로그의 “tokens/sec”는 $N_{\mathrm{tok}}/\Delta t$입니다.
+
+### Epoch vs Step
+
+에폭은 데이터 전체를 **한 바퀴** 도는 단위이고, 스텝은 **배치 하나**마다의 업데이트입니다.
+
+$$
+t = e\cdot M + m,\qquad M=\left\lceil N/B\right\rceil,\ 0\le m<M
+$$
+
+학습률 스케줄 $\eta_t$는 보통 스텝 $t$의 함수입니다.
+
+### DataLoader를 집합으로
+
+셔플된 인덱스 순열 $\pi$에 대해 $m$번째 배치 인덱스는
+
+$$
+\mathcal{B}_m = \{\pi(mB),\ldots,\pi(\min((m+1)B,N)-1)\}
+$$
+
+입니다. DataLoader는 이 $\mathcal{B}_m$을 만들어 텐서로 묶는 장치입니다.
+
+```python
+# 스텝 수 감각
+N, B, E = 1000, 32, 3
+steps_per_epoch = (N + B - 1) // B  # ceil
+total_steps = E * steps_per_epoch
+print(steps_per_epoch, total_steps)
+```
+
+### 패딩과 유효 손실
+
+패딩 위치를 마스크 $m_{b,t}\in\{0,1\}$로 두면
+
+$$
+L
+=
+\frac{\sum_{b,t} m_{b,t}\,\ell_{b,t}}{\sum_{b,t} m_{b,t}}
+$$
+
+입니다. `ignore_index`가 이 역할을 합니다.
 
 > **핵심**
 >
-> DataLoader는 수학적으로 “인덱스 집합 $\mathcal{B}$를 샘플링해 $L_{\mathcal{B}}$를 만드는 장치”입니다.
-
-
-<!-- enrich-batch2-22 -->
-## DataLoader와 미니배치 수식
-
-$$
-\mathcal{B}_k=\{x_{(k-1)B+1},\ldots,x_{kB}\}
-$$
-
-한 스텝 손실:
-
-$$
-L_k=\frac{1}{|\mathcal{B}_k|}\sum_{x\in\mathcal{B}_k}\ell(f_\theta(x),y)
-$$
-
-```python
-from torch.utils.data import DataLoader, TensorDataset
-import torch
-X = torch.randn(100, 8)
-y = torch.randint(0, 3, (100,))
-loader = DataLoader(TensorDataset(X, y), batch_size=16, shuffle=True)
-xb, yb = next(iter(loader))
-print(xb.shape, yb.shape)  # (16,8), (16,)
-```
-
-드롭 라스트:
-
-$$
-N_{\mathrm{steps}}=\lfloor N/B\rfloor\ \text{(drop_last)}
-$$
+> Dataset은 $i\mapsto(x_i,y_i)$, DataLoader는 $\mathcal{B}\mapsto$ 배치 텐서, 학습 루프는 $L_{\mathcal{B}}$의 반복입니다.
 
 ## LLM에서는 어디에 사용될까?
 LLM 학습 데이터는 대략 다음 파이프라인을 따른다.

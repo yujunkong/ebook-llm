@@ -479,7 +479,7 @@ if __name__ == "__main__":
 
 절대 수치보다 “NumPy가 같은 일을 훨씬 짧게 끝내는 경우가 많다”는 경험이면 충분하다.
 
-## 수식 보강 — 브로드캐스팅 · 축소 · Softmax 축
+## 브로드캐스팅 · 축소 · Softmax 축
 
 NumPy/PyTorch의 축 연산은 수식으로 쓰면 명확합니다. 벡터 $\mathbf{x}\in\mathbb{R}^{n}$에 대해
 
@@ -494,11 +494,15 @@ $$
 행렬 $A\in\mathbb{R}^{m\times n}$에서 `axis=1`(행 방향 합)은
 
 $$
-(\mathrm{sum}(A,\ \mathrm{axis}=1))_i = \sum_{j=1}^{n} A_{ij}
+\bigl(\mathrm{sum}(A,\ \mathrm{axis}=1)\bigr)_i = \sum_{j=1}^{n} A_{ij}
 \ \in\ \mathbb{R}^{m}
 $$
 
-입니다. Softmax를 마지막 축에 적용한다는 말은, logits $\mathbf{z}\in\mathbb{R}^{V}$에 대해
+입니다.
+
+### Softmax와 축
+
+logits $\mathbf{z}\in\mathbb{R}^{V}$에 대해
 
 $$
 \mathrm{softmax}(\mathbf{z})_k
@@ -506,9 +510,14 @@ $$
 \frac{e^{z_k}}{\sum_{j=1}^{V} e^{z_j}}
 $$
 
-를 **각 토큰 위치마다** 독립적으로 계산한다는 뜻입니다. 배치·시퀀스가 있으면 Shape는 `(B, T, V) → (B, T, V)`이고, 합은 $V$축에서만 1이 됩니다.
+를 **각 토큰 위치마다** 독립적으로 계산합니다. 배치·시퀀스가 있으면 Shape는 `(B, T, V) → (B, T, V)`이고, 합은 $V$축에서만 1이 됩니다.
 
-### 브로드캐스팅 한 줄
+$$
+\sum_{k=1}^{V} \mathrm{softmax}(Z)_{b,t,k} = 1
+\quad\forall\, b,t
+$$
+
+### 브로드캐스팅
 
 $$
 A\in\mathbb{R}^{B\times T\times d},\ 
@@ -519,33 +528,58 @@ $$
 
 bias를 더할 때 앞 축 $B,T$가 자동으로 맞춰집니다.
 
-> ⚠️ **주의**
->
-> `(3,1) + (3,)` 와 `(3,1) + (3,1)`의 결과는 같을 수 있어도, Shape 실수는 조용히 잘못된 합을 만듭니다. 항상 `.shape`를 확인하세요.
+### 요소별 곱과 행렬곱
 
+Hadamard(요소별) 곱은 Shape가 같을 때
 
-<!-- enrich-extra-8 -->
-## NumPy 브로드캐스팅과 배치
+$$
+(A \odot B)_{ij} = A_{ij} B_{ij}
+$$
+
+행렬곱은
+
+$$
+(AB)_{ik} = \sum_j A_{ij} B_{jk}
+$$
+
+입니다. NumPy에서 `*`는 보통 요소별, `@`는 행렬곱입니다.
+
+### 정규화 한 줄
+
+행 벡터를 L2 정규화하면
+
+$$
+\hat{a}_i = \frac{a_i}{\|a\|_2},\qquad
+\|a\|_2=\sqrt{\sum_j a_j^2}
+$$
+
+임베딩 유사도 비교 전에 자주 씁니다.
 
 ```python
 import numpy as np
-X = np.random.randn(4, 3).astype(np.float32)  # (B,d)
-W = np.random.randn(3, 5).astype(np.float32)  # (d,C)
-b = np.random.randn(5).astype(np.float32)
-Y = X @ W + b  # (B,C)
-print(Y.shape, Y.mean())
+
+a = np.array([3.0, 4.0])
+a_hat = a / np.linalg.norm(a)
+print(a_hat, np.sum(a_hat**2))  # 단위 벡터, 제곱합 ≈ 1
 ```
 
-$$
-Y=XW+b,\quad
-X\in\mathbb{R}^{B\times d},\ W\in\mathbb{R}^{d\times C}
-$$
+### Shape 추적 연습
 
-`*`는 요소곱, `@`/`matmul`이 행렬곱임을 구분하세요.
+임베딩 조회 후 Linear를 거친다고 가정합니다.
 
 $$
-(A\odot B)_{ij}=A_{ij}B_{ij}
+X\in\mathbb{Z}^{B\times T}
+\;\rightarrow\;
+E\in\mathbb{R}^{B\times T\times d}
+\;\rightarrow\;
+Z = E W \in\mathbb{R}^{B\times T\times V}
 $$
+
+NumPy로도 `(B*T, d) @ (d, V)` 후 reshape로 같은 결과를 낼 수 있습니다.
+
+> ⚠️ **주의**
+>
+> `(3,1) + (3,)` 와 `(3,1) + (3,1)`의 결과는 같을 수 있어도, Shape 실수는 조용히 잘못된 합을 만듭니다. 항상 `.shape`를 확인하세요.
 
 ## LLM에서는 어디에 사용될까?
 | NumPy 개념 | LLM/PyTorch에서의 대응 |
