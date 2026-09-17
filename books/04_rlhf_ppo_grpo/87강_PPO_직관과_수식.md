@@ -406,12 +406,45 @@ ratio = exp(logp)/exp(logp_old) # 비추천 (오버플로)
 ```
 
 ## 수식 보강 — PPO clip 한 줄
+<!-- enrich-87-clip-depth -->
 
 $$
-L^{\mathrm{CLIP}}=\mathbb{E}\big[\min(r_t A_t,\ \mathrm{clip}(r_t,1-\varepsilon,1+\varepsilon)A_t)\big]
+L^{\mathrm{CLIP}}=\mathbb{E}\big[\min(\rho_t A_t,\ \mathrm{clip}(\rho_t,1-\varepsilon,1+\varepsilon)A_t)\big]
 $$
 
-$r_t=\pi_\theta/\pi_{\mathrm{old}}$입니다.
+$\rho_t=\pi_\theta(a_t\mid s_t)/\pi_{\mathrm{old}}(a_t\mid s_t)$입니다.
+
+### 왜 $\min$인가（복습 압축）
+
+$A_t>0$이고 $\rho_t>1+\varepsilon$이면
+
+$$
+\min(\rho_t A_t,(1+\varepsilon)A_t)=(1+\varepsilon)A_t
+$$
+
+추가 이득이 잘려 **한 배치에서 과한 확률 상승**을 막는다.
+
+$A_t<0$이고 $\rho_t<1-\varepsilon$이면
+
+$$
+\min(\rho_t A_t,(1-\varepsilon)A_t)
+$$
+
+쪽이 더 작은（더 음수인） 값을 제한해, 확률을 과도하게 깎는 스텝을 보수화한다.
+
+### 모니터 식
+
+$$
+\mathrm{clip\_frac}=\mathbb{E}\big[\mathbf{1}(|\rho_t-1|>\varepsilon)\big]
+$$
+
+$$
+\widehat{\mathrm{KL}}_{\mathrm{approx}}
+\approx
+\mathbb{E}\big[\log\pi_\theta-\log\pi_{\mathrm{old}}\big]
+$$
+
+clip_frac이  persistently 크면 $\varepsilon$·lr·롤아웃 freshness를 의심한다.
 
 ## LLM에서는 어디에 사용될까?
 RLHF-PPO 스택에서의 위치:

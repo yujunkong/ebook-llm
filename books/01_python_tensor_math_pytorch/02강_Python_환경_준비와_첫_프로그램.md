@@ -472,6 +472,32 @@ $$
 >
 > “모델이 안 돌아요”의 절반은 Env 문제입니다. 2강에서 환경을 분리하는 습관을 들이면, 이후 디버깅 시간이 크게 줄어듭니다.
 
+
+<!-- enrich-batch3-2 -->
+## 실습 — 첫 스크립트와 경로
+
+```python
+from pathlib import Path
+root = Path(".").resolve()
+print("cwd", root)
+# 패키지/데이터 경로는 Path로 다루면 OS 차이가 줄어든다
+assert root.exists()
+```
+
+의존성 고정 예시 개념:
+
+$$
+\mathrm{lock}=\{p_i==v_i\}_{i=1}^{M}
+$$
+
+가상환경 + requirements/lock이 재현성의 뼈대입니다.
+
+### 버전 확인 체크리스트
+
+1. `python --version`
+2. `pip freeze | rg torch`
+3. CUDA/`nvidia-smi` (해당 시)
+
 ## LLM에서는 어디에 사용될까?
 환경 준비는 “기초 교양”처럼 보이지만, 실제 LLM 실험에서도 같은 원리가 그대로 쓰인다.
 

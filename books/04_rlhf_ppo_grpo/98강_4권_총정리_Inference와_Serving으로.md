@@ -406,6 +406,159 @@ Goodhart / 평가 과적합 / proxy 숭배（택1 이상）.
 다음 책은 **5권. vLLM · GLM · DGX Spark**다.  
 첫 강의는 **제99강. Training과 Inference의 차이**다. 정렬된 가중치를 들고, 이제 **토큰이 하드웨어 위에서 어떻게 흐르는지**로 넘어간다.
 
+<!-- enrich-98-finale -->
+## 4권 전체 스토리라인을 한 호흡으로
+
+```text
+79 지도
+ → 80~83 RL 기초 (s,a,r / π,V / ∇logπ / A)
+ → 84~85 선호 데이터와 RM (BT)
+ → 86~89 RLHF·PPO·KL
+ → 90~91 DPO
+ → 92~94 GRPO·RLVR·Reasoning
+ → 95 미니 실습
+ → 96 한계·부작용
+ → 97 논문→실무 읽기
+ → 98 총정리 → 5권 Inference/Serving
+```
+
+각 블록에서 **지우면 안 되는 식**만 다시 적는다.
+
+### 블록 A — RL 기초
+
+$$
+J(\theta)=\mathbb{E}_{\tau\sim\pi_\theta}\Big[\sum_t\gamma^t r_t\Big]
+$$
+
+$$
+A(s,a)=Q(s,a)-V(s)
+$$
+
+$$
+\nabla_\theta J
+\approx
+\mathbb{E}\big[\nabla_\theta\log\pi_\theta(a\mid s)\,A\big]
+$$
+
+### 블록 B — 선호와 RM
+
+$$
+P(y_w\succ y_l\mid x)=\sigma\big(r_\phi(x,y_w)-r_\phi(x,y_l)\big)
+$$
+
+$$
+\mathcal{L}_{\mathrm{RM}}=-\log\sigma(\Delta),\quad\Delta=r_w-r_l
+$$
+
+### 블록 C — RLHF / PPO / KL
+
+$$
+\max_\pi\mathbb{E}[r_\phi]-\beta\mathrm{KL}(\pi\|\pi_{\mathrm{ref}})
+$$
+
+$$
+\rho_t=\frac{\pi_\theta}{\pi_{\mathrm{old}}},\quad
+L^{\mathrm{CLIP}}=\mathbb{E}\big[\min(\rho A,\mathrm{clip}(\rho)A)\big]
+$$
+
+### 블록 D — DPO / 그룹 / 검증
+
+$$
+L_{\mathrm{DPO}}=-\log\sigma\big(\beta(\hat r_w-\hat r_l)\big)
+$$
+
+$$
+\hat A_i=\frac{r_i-\mu_x}{\sigma_x+\varepsilon}
+\quad\text{（GRPO 감각）}
+$$
+
+$$
+r_{\mathrm{VR}}=V(x,y)\in\{0,1\}
+\quad\text{（RLVR 감각）}
+$$
+
+## 미니 실습（95）에서 검증할 계약
+
+코드로 옮길 때 깨지기 쉬운 네 가지:
+
+1. chosen/rejected 마스킹이 반대로 붙지 않았는가
+2. ref 로그확률이 **고정**인가（실수로 같이 학습）
+3. $\beta$·clip $\epsilon$ 로그가 남았는가
+4. 평가가 학습 쌍과 **같은 분포 복사**만은 아닌가
+
+계약이 맞으면 절대 점수가 작아도 **기호↔텐서**가 학습된다.
+
+## 한계（96）를 출시 게이트로
+
+다축 예:
+
+| 축 | 최소 질문 |
+|---|---|
+| 도움됨 | 인간/다운스트림이 올랐는가 |
+| 안전 | over-refusal과 위험 통과를 함께 봤는가 |
+| 정직 | sycophancy 프브가 있는가 |
+| 비용 | 평균 $L_{\mathrm{out}}$이 SLO 안인가 |
+
+한 축만 초록이면 배포하지 않는다는 팀 규칙을 문서화한다.
+
+## 5권으로 넘기는 성능 언어
+
+정렬이 끝난 가중치 $\theta^\star$를 고정하면, 사용자 체감은 대략
+
+$$
+T_{\mathrm{total}}
+\approx
+\mathrm{TTFT}+(N_{\mathrm{out}}-1)\cdot\mathrm{TPOT}
+$$
+
+메모리:
+
+$$
+M_{\mathrm{KV}}
+\approx
+2\cdot L\cdot H\cdot d_h\cdot T\cdot B\cdot b_{\mathrm{bytes}}
+$$
+
+처리량:
+
+$$
+\mathrm{Throughput}
+\approx
+\frac{\sum_i N_{\mathrm{out},i}}{\Delta t_{\mathrm{wall}}}
+$$
+
+이제 질문은 “보상을 어떻게 올리나”에서 “**같은 품질을 어떻게 더 싸게·빠르게 내보내나**”로 바뀐다. 그 공학이 5권이다.
+
+## 자가 점검 12문항（답은 노트에）
+
+1. BT에서 관측 가능한 것은 $r$인가 $\Delta r$인가
+2. RM 손실의 기울기가 쉬운 쌍에서 작아지는 이유
+3. $\pi_{\mathrm{ref}}$를 보통 SFT로 두는 이유
+4. PPO에서 $\rho$와 $A$의 역할
+5. clip_frac이 높을 때 의심할 것 두 가지
+6. KL $\beta$를 키우면 생기는 전형적 증상
+7. DPO가 제거하는 상자 / 못 제거하는 것
+8. GRPO의 그룹 상대 $\hat A$가 필요한 상황
+9. RLVR의 $V$가 preference와 다른 점
+10. reward hacking의 최소 감사 트리거
+11. 논문 6칸 템플릿을 빈칸 없이 채울 수 있는가
+12. TTFT·TPOT·Throughput 정의를 식과 말로 쓸 수 있는가
+
+12개 중 10개 이상이면 4권 졸업 감각이다. 부족한 칸만 해당 강으로 되돌아간다.
+
+## 한 장 치트시트（인쇄용）
+
+```text
+선호: P(w≻l)=σ(rw−rl)
+RM:   L=−logσ(Δ)
+RLHF: max E[r]−β KL
+PPO:  min(ρA, clip(ρ)A)
+DPO:  −logσ(β( r̂w−r̂l ))
+Serve: T≈TTFT+(N−1)TPOT
+```
+
+이 여섯 줄이 손에서 먼저 나오고, 그다음 구현 디테일로 내려가면 된다.
+
 <!-- LECTURE_NAV -->
 
 ---

@@ -412,16 +412,65 @@ def approx_kl(logp_theta, logp_ref):
 3. prompt 길이·response 길이를 나눠 logprob 슬라이싱
 
 ## 수식 보강 — RLHF 파이프라인
+<!-- enrich-86-pipeline-math -->
+
+단계 표기:
 
 $$
 \pi_{\mathrm{SFT}}\to r_\phi\to \pi_{\mathrm{RL}}
 $$
 
-목표 스케치:
+KL-제약 목표:
 
 $$
 \max_\pi\ \mathbb{E}_{x,y\sim\pi}[r_\phi(x,y)]-\beta\mathrm{KL}(\pi\|\pi_{\mathrm{ref}})
 $$
+
+### 토큰 정책으로 풀기
+
+응답 $y=(y_1,\ldots,y_T)$이면
+
+$$
+\pi(y\mid x)=\prod_{t=1}^{T}\pi(y_t\mid x,y_{<t})
+$$
+
+롤아웃에서 보상은 대개 **시퀀스 단위** $r_\phi(x,y)$이고, 토큰 로그확률에 advantage를 방송한다.
+
+### 총보상（실무 스케치）
+
+$$
+R(x,y)=r_\phi(x,y)-\beta\,\widehat{\mathrm{KL}}\big(\pi_\theta(\cdot\mid x)\|\pi_{\mathrm{ref}}(\cdot\mid x)\big)
+$$
+
+추정 KL의 한 형태:
+
+$$
+\widehat{\mathrm{KL}}
+\approx
+\sum_t\big(\log\pi_\theta(y_t\mid\ldots)-\log\pi_{\mathrm{ref}}(y_t\mid\ldots)\big)
+$$
+
+（샘플 $y\sim\pi_\theta$ 기준. 구현·논문마다 배치 위치가 다를 수 있다.）
+
+### PPO로 넘기는 다리
+
+온정책 비율
+
+$$
+\rho_t=\frac{\pi_\theta(y_t\mid s_t)}{\pi_{\mathrm{old}}(y_t\mid s_t)}
+$$
+
+클립 목표（제87강）:
+
+$$
+L^{\mathrm{CLIP}}
+=
+\mathbb{E}\big[
+\min\big(\rho_t A_t,\ \mathrm{clip}(\rho_t,1-\epsilon,1+\epsilon)A_t\big)
+\big]
+$$
+
+RLHF 전체 구조의 핵은 “$r_\phi$로 $A$를 만들고, KL로 묶고, clip으로 한 걸음을 제한”이다.
 
 ## LLM에서는 어디에 사용될까?
 연구·제품에서 보이는 변형:

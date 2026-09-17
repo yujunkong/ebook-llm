@@ -318,6 +318,24 @@ $$
 \max_\pi\ \mathbb{E}[R]-\beta\mathrm{KL}(\pi\|\pi_{\mathrm{ref}})
 $$
 
+
+<!-- enrich-batch3-79 -->
+## 신호 종류 맵
+
+| 신호 | 예 |
+|---|---|
+| 다음 토큰 | PT/SFT CE |
+| 선호쌍 | BT, DPO |
+| 검증 가능 | RLVR, unit test |
+
+$$
+R(x)=
+\begin{cases}
+R_{\mathrm{pref}} & \text{human/AI preference}\\
+R_{\mathrm{ver}} & \text{checker/compiler}
+\end{cases}
+$$
+
 ## LLM에서는 어디에 사용될까?
 산업·오픈 모델 문서에서 자주 보이는 패턴:
 
@@ -458,6 +476,104 @@ Verifiable — 규칙·정답 등으로 **자동 검증 가능한** 보상. Pref
 
 제81~83강에서 Policy / Value / Policy Gradient / Advantage를 쌓은 뒤,  
 **제84강. Preference Dataset**에서 다시 데이터 층으로 돌아온다.
+
+<!-- enrich-79-map-depth -->
+## 지도 위를 한 번 더 걷기 — 선택 트리
+
+실무에서 팀이 자주 마주치는 **첫 분기**를 문장으로 고정한다.
+
+```text
+질문에 정답·단위테스트가 있는가?
+  YES → RLVR / verifiable reward 후보（제93강）
+  NO  → 사람/AI 선호가 필요한가?
+          YES → Preference 경로（RM+PPO 또는 DPO）
+          NO  → SFT·프롬프트·가드레일만으로 충분한지 재검토
+```
+
+각 가지의 비용을 정성적으로만 비교한다（숫자는 과제 의존）.
+
+| 경로 | 데이터가 비싼 곳 | 연산이 비싼 곳 | 실패 모드 감각 |
+|---|---|---|---|
+| SFT only | 고품질 단일 응답 | 상대적으로 낮음 | 분포 외·주관성 |
+| RM + PPO | 선호 라벨 + 롤아웃 | 정책·ref·RM 동시 | reward hacking |
+| DPO | 선호 쌍 | 오프라인 학습 | 쌍 품질·β |
+| RLVR | 검증기 설계 | 샘플·검증 루프 | 보상 구멍 |
+
+### “지도”를 체크리스트로
+
+4권을 읽기 전·후에 같은 표를 채운다.
+
+1. 우리 제품의 **진짜 목표** $U$는 무엇인가（한 문장）
+2. 지금 쓰는 **대리 신호** $r$는 무엇인가
+3. 참조 정책 $\pi_{\mathrm{ref}}$는 어느 체크포인트인가
+4. 평가 분포는 train과 같은가 / 다른가
+5. 서빙 시 출력 길이·지연 SLO는 있는가
+
+이 다섯 칸이 비어 있으면, 알고리즘 이름（PPO/DPO）만 바꿔도 품질이 안 오른다.
+
+## 파이프라인 기호를 코드 폴더에 대응시키기
+
+교육용 스케치:
+
+$$
+\pi_{\mathrm{base}}
+\xrightarrow{\mathrm{SFT}}
+\pi_{\mathrm{SFT}}
+\xrightarrow{\mathrm{pref}}
+\pi_{\mathrm{aligned}}
+$$
+
+폴더 감각（이름은 팀마다 다름）:
+
+```text
+checkpoints/
+  base/          # π_base
+  sft/           # π_SFT = π_ref 후보
+  rm/            # r_φ
+  rlhf_or_dpo/   # π_aligned
+evals/
+  pairwise/
+  verifiers/
+```
+
+**사실:** 위는 조직용 은유다.  
+**비주장:** 특정 회사의 디렉터리 구조.
+
+## SFT와 Preference의 역할 분담（복습）
+
+SFT는 “형식·톤·도구 호출 스키마”를 **모방**한다.  
+Preference/RL은 “둘 중 무엇을 더 좋아할지”를 **밀어** 올린다.
+
+같은 프롬프트 $x$에서:
+
+$$
+\mathcal{L}_{\mathrm{SFT}}
+=
+-\sum_t\log\pi_\theta(y_t^\star\mid x,y_{<t}^\star)
+$$
+
+선호 경로의 목표（개념）:
+
+$$
+\max_\theta\;
+\mathbb{E}_{x,y\sim\pi_\theta}[r(x,y)]
+-
+\beta\,\mathrm{KL}(\pi_\theta\|\pi_{\mathrm{ref}})
+$$
+
+두 식의 **데이터 계약**이 다르다. SFT는 $y^\star$ 한 줄, Preference는 $(y_w,y_l)$ 또는 롤아웃+$r$.
+
+## 4권 로드맵을 주별로 쪼개 읽기（제안）
+
+| 블록 | 강 | 손에 남을 것 |
+|---|---|---|
+| RL 기초 | 80~83 | $(s,a,r)$, $\pi$, $A$ |
+| 선호·RM | 84~85 | BT, $r_\phi$ |
+| RLHF·PPO | 86~89 | clip, KL |
+| DPO·GRPO·RLVR | 90~94 | 직접 선호 / 그룹 / 검증 |
+| 실습·한계·논문 | 95~98 | 파이프라인·부작용·읽기법 |
+
+한 블록을 끝낼 때마다 지도의 해당 노드에 **날짜와 한 줄 메모**를 남긴다. 이 습관이 제97강의 “논문→실무”와 연결된다.
 
 <!-- LECTURE_NAV -->
 
