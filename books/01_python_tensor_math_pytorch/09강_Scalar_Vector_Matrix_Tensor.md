@@ -445,6 +445,55 @@ Loss
 
 LLM의 “수십억 파라미터”란, 결국 이런 Tensor들 안의 Scalar를 모두 센 개수다.
 
+## 수식 보강 — 노름 · 외적 감각 · 텐서 축
+
+벡터의 **유클리드 노름(길이)**은 이후 Softmax 스케일·정규화에서 반복됩니다.
+
+$$
+\|\mathbf{x}\|_2 = \sqrt{x_1^2 + x_2^2 + \cdots + x_n^2} = \sqrt{\mathbf{x}\cdot\mathbf{x}}
+$$
+
+예: $\mathbf{x}=[3,\ 4]$이면 $\|\mathbf{x}\|_2=5$입니다.
+
+행렬 $A\in\mathbb{R}^{m\times n}$의 Frobenius 노름은 “모든 성분을 펼친 벡터”의 길이입니다.
+
+$$
+\|A\|_F = \sqrt{\sum_{i=1}^{m}\sum_{j=1}^{n} A_{ij}^2}
+$$
+
+> 💡 **팁**
+>
+> LLM 가중치 분석·클리핑에서 “행렬이 얼마나 큰가”를 말할 때 $\|W\|_F$를 자주 봅니다.
+
+배치가 있는 임베딩 텐서 $X\in\mathbb{R}^{B\times T\times d}$에서, 토큰 하나를 고르는 것은 축을 고정하는 일입니다.
+
+$$
+\mathbf{h}_{b,t} = X_{b,t,:}\ \in\ \mathbb{R}^{d}
+$$
+
+Multi-Head로 나누면
+
+$$
+X \in \mathbb{R}^{B\times T\times d}
+\quad\rightarrow\quad
+\mathbb{R}^{B\times T\times h\times d_h}
+\quad (d = h\cdot d_h)
+$$
+
+처럼 **축을 쪼개고 합치는 것**이 Tensor 조작의 핵심입니다.
+
+### 외적과 행렬 (맛보기)
+
+두 열벡터 $\mathbf{u}\in\mathbb{R}^{m}$, $\mathbf{v}\in\mathbb{R}^{n}$의 외적(outer product)은
+
+$$
+\mathbf{u}\mathbf{v}^{\top} \in \mathbb{R}^{m\times n},
+\quad
+(\mathbf{u}\mathbf{v}^{\top})_{ij} = u_i v_j
+$$
+
+입니다. LoRA의 $\Delta W = BA$도 “낮은 랭크 외적들의 합”으로 읽을 수 있습니다 (73강).
+
 ## Broadcasting과 Shape 사고
 딥러닝 코드는 크기가 다른 Tensor를 더하기도 한다.
 

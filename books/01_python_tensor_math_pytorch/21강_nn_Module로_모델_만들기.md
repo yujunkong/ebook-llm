@@ -320,6 +320,50 @@ print(layer(x))  # tensor([[1., 1.]])
 
 `torch.no_grad()` 안에서 가중치를 직접 고치면, 불필요한 그래프 추적을 피할 수 있다.
 
+## 수식 보강 — Linear · 파라미터 수 · 합성
+
+`nn.Linear(d_in, d_out)`는 기본적으로
+
+$$
+\mathbf{y} = \mathbf{x} W^{\top} + \mathbf{b},
+\quad
+W\in\mathbb{R}^{d_{\mathrm{out}}\times d_{\mathrm{in}}},
+\quad
+\mathbf{b}\in\mathbb{R}^{d_{\mathrm{out}}}
+$$
+
+입니다. 학습 파라미터 개수는
+
+$$
+\#\mathrm{params}(W,b) = d_{\mathrm{out}}\cdot d_{\mathrm{in}} + d_{\mathrm{out}}
+$$
+
+입니다. 은닉층 $h$인 2층 MLP($d\to h\to c$)면
+
+$$
+\#\mathrm{params}
+=
+(h\cdot d + h) + (c\cdot h + c)
+=
+h(d+1) + c(h+1)
+$$
+
+입니다.
+
+ReLU를 $\sigma(z)=\max(z,0)$라 하면 전체 forward는
+
+$$
+\mathbf{h} = \sigma(W_1\mathbf{x}+\mathbf{b}_1),
+\quad
+\mathbf{y} = W_2\mathbf{h}+\mathbf{b}_2
+$$
+
+입니다. Transformer 블록의 MLP도 같은 형태를 $d_{\mathrm{model}}\to d_{\mathrm{ff}}\to d_{\mathrm{model}}$로 두 번 쌓은 것입니다 (45강).
+
+> 📘 **심화**
+>
+> GPT의 파라미터 대부분은 `nn.Linear`(또는 Embedding)입니다. “모듈을 조립한다”는 말은 곧 이 아핀 변환을 반복 배치한다는 뜻입니다.
+
 ## LLM에서는 어디에 사용될까?
 LLM 코드베이스를 열어 보면 반복되는 패턴이 보인다.
 
