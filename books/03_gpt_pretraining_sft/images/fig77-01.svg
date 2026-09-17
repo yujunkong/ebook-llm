@@ -1,0 +1,19 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<svg xmlns="http://www.w3.org/2000/svg" width="1200" height="680" viewBox="0 0 1200 680" role="img">
+  <rect width="1200" height="680" fill="#f7f4ef"/>
+  <text x="60" y="56" font-family="Georgia, serif" font-size="28" fill="#1a1a1a">Fig 77-1. Pretraining → SFT 분포 이동</text>
+  <rect x="100" y="160" width="280" height="160" rx="8" fill="#fff" stroke="#1d4e89" stroke-width="2"/>
+  <text x="150" y="230" font-size="22" font-family="Georgia, serif">π_PT</text>
+  <text x="130" y="280" font-size="16" fill="#555">광역 다음토큰</text>
+  <text x="420" y="240" font-size="36" fill="#b35c00">→</text>
+  <rect x="480" y="160" width="280" height="160" rx="8" fill="#fff" stroke="#0b6e4f" stroke-width="2"/>
+  <text x="530" y="230" font-size="22" font-family="Georgia, serif">π_SFT</text>
+  <text x="500" y="280" font-size="16" fill="#555">지시·대화 형식</text>
+  <text x="800" y="240" font-size="36" fill="#b35c00">→</text>
+  <rect x="860" y="160" width="240" height="160" rx="8" fill="#fff" stroke="#b35c00" stroke-width="2"/>
+  <text x="900" y="230" font-size="20" font-family="Georgia, serif">aligned</text>
+  <text x="880" y="280" font-size="16" fill="#555">RLHF/DPO</text>
+  <rect x="80" y="400" width="1040" height="200" rx="8" fill="#fff" stroke="#d0cbc3"/>
+  <text x="110" y="460" font-size="20">같은 CE라도: PT는 x 전체, SFT는 보통 response 마스크 m_t</text>
+  <text x="110" y="520" font-size="20">예: prompt 20토큰 + answer 10토큰 → Loss는 answer 10칸만</text>
+</svg>

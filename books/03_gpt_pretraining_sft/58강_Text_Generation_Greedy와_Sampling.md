@@ -339,6 +339,20 @@ Greedy 열은 모두 1. Sample 열은 1이 많되 0/2가 간헐.
 `max_new_tokens=5`, EOS 없음 → 길이 정확히 +5.  
 EOS가 중간이 나오면 조기 종료 설계를 검증.
 
+<!-- visual-example-58 -->
+## 숫자로 따라가기 — Greedy vs Sampling
+
+![그림 58-1](images/fig58-01.png)
+
+다음 토큰 분포가 $p=[0.50,\,0.30,\,0.20]$ (토큰 A/B/C)라고 합시다.
+
+| 방식 | 선택 규칙 | 한 스텝 결과 |
+|---|---|---|
+| Greedy | $\arg\max_v p_v$ | 항상 A |
+| Sampling | $x\sim\mathrm{Categorical}(p)$ | A 50% / B 30% / C 20% |
+
+Greedy는 **같은 프롬프트면 항상 같은 다음 토큰**, Sampling은 **확률대로 흔들립니다**.
+
 ## LLM에서는 어디에 사용될까?
 제품 챗봇은 드물게 순수 greedy만 쓴다. 보통:
 

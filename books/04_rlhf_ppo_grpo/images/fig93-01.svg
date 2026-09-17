@@ -1,0 +1,15 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<svg xmlns="http://www.w3.org/2000/svg" width="1200" height="680" viewBox="0 0 1200 680" role="img">
+  <rect width="1200" height="680" fill="#f7f4ef"/>
+  <text x="60" y="56" font-family="Georgia, serif" font-size="28" fill="#1a1a1a">Fig 93-1. Verifiable Reward</text>
+  <text x="60" y="96" font-size="18" fill="#555">정답 42, 추출 결과 맞으면 r=1 아니면 0</text>
+  <rect x="100" y="180" width="400" height="160" rx="8" fill="#0b6e4f"/>
+  <text x="160" y="250" fill="#fff" font-size="22">extract(y)=42</text>
+  <text x="200" y="300" fill="#e8f5f0" font-size="20">r_ver = 1</text>
+  <rect x="620" y="180" width="400" height="160" rx="8" fill="#b35c00"/>
+  <text x="660" y="250" fill="#fff" font-size="22">extract(y)=41</text>
+  <text x="700" y="300" fill="#fff" font-size="20">r_ver = 0</text>
+  <rect x="80" y="400" width="1040" height="200" rx="8" fill="#fff" stroke="#d0cbc3"/>
+  <text x="110" y="460" font-size="20">r = 1[extract(y)=answer(x)]  — RM 없이도 채점 가능</text>
+  <text x="110" y="530" font-size="18" fill="#555">수학·코드처럼 “맞/틀림”이 분명한 과제에 특히 잘 맞음</text>
+</svg>

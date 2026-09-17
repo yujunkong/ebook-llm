@@ -1,0 +1,21 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<svg xmlns="http://www.w3.org/2000/svg" width="1200" height="680" viewBox="0 0 1200 680" role="img">
+  <rect width="1200" height="680" fill="#f7f4ef"/>
+  <text x="60" y="56" font-family="Georgia, serif" font-size="28" fill="#1a1a1a">Fig 73-1. LoRA: W' = W + (α/r) BA</text>
+  <text x="60" y="96" font-size="18" fill="#555">d=4, r=2, α=4 → α/r=2</text>
+  <rect x="100" y="180" width="200" height="120" rx="8" fill="#888"/>
+  <text x="150" y="250" font-size="22" fill="#fff">W (고정)</text>
+  <text x="330" y="250" font-size="36" fill="#b35c00">+</text>
+  <rect x="380" y="160" width="140" height="160" rx="8" fill="#1d4e89"/>
+  <text x="420" y="240" font-size="20" fill="#fff">B</text>
+  <text x="415" y="270" font-size="16" fill="#cde">d×r</text>
+  <text x="540" y="250" font-size="28">×</text>
+  <rect x="580" y="200" width="200" height="80" rx="8" fill="#0b6e4f"/>
+  <text x="640" y="250" font-size="20" fill="#fff">A (r×d)</text>
+  <text x="810" y="250" font-size="28">×</text>
+  <text x="860" y="250" font-size="22">α/r</text>
+  <rect x="80" y="400" width="1040" height="200" rx="8" fill="#fff" stroke="#d0cbc3"/>
+  <text x="110" y="460" font-size="20">전체 W는 d²=16 파라미터, LoRA는 B(8)+A(8)=16이지만</text>
+  <text x="110" y="510" font-size="20">실제 LLM에서는 d≅4096, r≅8 → 학습량 ≈ 2·d·r ≪ d²</text>
+  <text x="110" y="560" font-size="18" fill="#555">직관: 얇은 저랭크 보정만 학습해 파인튜닝 비용을 줄인다</text>
+</svg>

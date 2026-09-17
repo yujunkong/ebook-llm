@@ -1,0 +1,24 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<svg xmlns="http://www.w3.org/2000/svg" width="1200" height="720" viewBox="0 0 1200 720" role="img">
+  <title>Softmax attention</title>
+  <defs>
+    <marker id="arrow" markerWidth="10" markerHeight="10" refX="8" refY="3" orient="auto">
+      <path d="M0,0 L8,3 L0,6 Z" fill="#1a1a1a"/>
+    </marker>
+  </defs>
+  <rect width="1200" height="720" fill="#f7f4ef"/>
+
+  <text x="60" y="56" font-family="Georgia, serif" font-size="28" fill="#1a1a1a">Fig 38-1. Softmax Attention: S → α → αV</text>
+  <text x="60" y="96" font-size="18" fill="#555">한 행 점수 s=[2.0, 1.0, 0.1] → Softmax → Value 가중합</text>
+  <rect x="80" y="170" width="320" height="140" rx="8" fill="#fff" stroke="#1d4e89" stroke-width="2"/>
+  <text x="110" y="230" font-size="20">s = [2.0, 1.0, 0.1]</text>
+  <text x="110" y="280" font-size="16" fill="#555">e^s ≈ [7.39, 2.72, 1.11]</text>
+  <text x="430" y="240" font-size="28">→</text>
+  <rect x="480" y="170" width="320" height="140" rx="8" fill="#fff" stroke="#0b6e4f" stroke-width="2"/>
+  <text x="510" y="230" font-size="20">α ≈ [0.66, 0.24, 0.10]</text>
+  <text x="510" y="280" font-size="16" fill="#555">합=1 (어디에 주목할지)</text>
+  <rect x="200" y="380" width="800" height="200" rx="8" fill="#fff" stroke="#d0cbc3"/>
+  <text x="240" y="450" font-size="20">V 행이 v0,v1,v2 이면 출력 = 0.66 v0 + 0.24 v1 + 0.10 v2</text>
+  <text x="240" y="510" font-size="18" fill="#555">점수가 큰 키에 더 많은 Value 질량이 실림</text>
+
+</svg>

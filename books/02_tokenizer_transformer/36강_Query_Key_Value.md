@@ -448,6 +448,26 @@ $$
 
 $X\in\mathbb{R}^{T\times d}$, $W_Q\in\mathbb{R}^{d\times d_k}$ 등. 점수는 $QK^\top/\sqrt{d_k}$ (37강).
 
+
+<!-- visual-example-36 -->
+## 숫자로 따라가기 — Q, K, V가 하는 일
+
+같은 토큰 임베딩 $x=[1,\,2]$이고 (장난감) 가중치가
+
+$$
+W_Q=\begin{bmatrix}1&0\\0&1\end{bmatrix},\ 
+W_K=\begin{bmatrix}1&0\\0&1\end{bmatrix},\ 
+W_V=\begin{bmatrix}2&0\\0&2\end{bmatrix}
+$$
+
+이면 $q=xW_Q=[1,2]$, $k=[1,2]$, $v=[2,4]$입니다.
+
+- **Q**: “내가 무엇을 찾나”
+- **K**: “내가 무엇을 알려주나” (점수용)
+- **V**: “실제로 전달할 내용”
+
+점수는 $q\cdot k$ 하나로 시작해, Softmax 후 $v$를 섞습니다.
+
 ## LLM에서는 어디에 사용될까?
 ### 9.1 모든 Self-Attention 층의 입구
 

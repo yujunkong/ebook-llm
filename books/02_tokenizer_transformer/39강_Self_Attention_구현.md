@@ -427,6 +427,36 @@ if __name__ == "__main__":
 `nn.Linear`의 weight shape는 `(out, in)`이다.  
 `copy_(torch.eye)`는 `y = x @ W.T` 규약과 맞물려 identity 동작을 만든다.
 
+
+<!-- visual-example-39 -->
+## 숫자로 따라가기 — Self-Attention 모듈
+
+![그림 39-1](images/fig39-01.png)
+
+$B=1,T=2,d=2$, $W_Q=W_K=W_V=W_O=I$,
+
+$$
+X=\begin{bmatrix}1 & 0\\ 0 & 1\end{bmatrix}
+\Rightarrow
+S=\frac{I}{\sqrt{2}}
+$$
+
+행 0 점수 $[0.707,\ 0]$ → Softmax
+
+$$
+\alpha\approx[0.668,\ 0.332]
+$$
+
+| 기호 | Shape/값 | 의미 |
+|---|---|---|
+| $X$ | $(2,2)$ | 토큰 행렬 |
+| $Q,K,V$ | $=X$ (항등 투영) | Self |
+| $S$ | $I/\sqrt{2}$ | scaled scores |
+| $A$ | 행 Softmax | 주목 행렬 |
+| $O\approx AX$ | $(2,2)$ | 문맥 혼합 |
+
+같은 $X$에서 Q/K/V를 만들고 다시 $X$ 공간으로 돌려보내는 것이 Self-Attention입니다.
+
 ## LLM에서는 어디에 사용될까?
 ### 9.1 블록 안의 위치
 

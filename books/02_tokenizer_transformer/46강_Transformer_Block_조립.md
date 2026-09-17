@@ -508,6 +508,33 @@ $$
 
 (Pre-LN 관례. Post-LN은 LN 위치가 다릅니다.)
 
+
+<!-- visual-example-46 -->
+## 숫자로 따라가기 — Block 조립
+
+![그림 46-1](images/fig46-01.png)
+
+Pre-LN 한 블록 ($B=1,T=2,d=4$ 상징):
+
+$$
+\begin{aligned}
+a &= \mathrm{MHA}(\mathrm{LN}_1(x)) \\
+h &= x + a \\
+\phi &= \mathrm{FFN}(\mathrm{LN}_2(h)) \\
+y &= h + \phi
+\end{aligned}
+$$
+
+| 기호 | Shape | 역할 |
+|---|---|---|
+| $x$ | $(2,4)$ | 블록 입력 |
+| $a$ | $(2,4)$ | Attention 가지 |
+| $h$ | $(2,4)$ | 첫 Residual |
+| $\phi$ | $(2,4)$ | FFN 가지 |
+| $y$ | $(2,4)$ | 블록 출력 |
+
+이 블록을 $N$번 쌓으면 GPT류 backbone입니다. Causal mask는 MHA 안에 있습니다.
+
 ## LLM에서는 어디에 사용될까?
 사실:
 

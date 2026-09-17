@@ -1,0 +1,25 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<svg xmlns="http://www.w3.org/2000/svg" width="1200" height="720" viewBox="0 0 1200 720" role="img">
+  <title>Residual LN</title>
+  <defs>
+    <marker id="arrow" markerWidth="10" markerHeight="10" refX="8" refY="3" orient="auto">
+      <path d="M0,0 L8,3 L0,6 Z" fill="#1a1a1a"/>
+    </marker>
+  </defs>
+  <rect width="1200" height="720" fill="#f7f4ef"/>
+
+  <text x="60" y="56" font-family="Georgia, serif" font-size="28" fill="#1a1a1a">Fig 44-1. Residual: h′ = h + F(h)</text>
+  <text x="60" y="96" font-size="18" fill="#555">h=3, F(h)=1 → h′=4 · Gradient 고속도로(+1)</text>
+  <rect x="150" y="220" width="200" height="100" rx="8" fill="#fff" stroke="#1d4e89" stroke-width="2"/>
+  <text x="210" y="280" font-size="28">h=3</text>
+  <path d="M370 270 H480" stroke="#1a1a1a" stroke-width="3" marker-end="url(#arrow)"/>
+  <path d="M250 220 V160 H600 V270" stroke="#0b6e4f" stroke-width="3" fill="none" marker-end="url(#arrow)"/>
+  <text x="400" y="150" font-size="18" fill="#0b6e4f">skip (+1 path)</text>
+  <rect x="500" y="200" width="160" height="80" rx="8" fill="#fff" stroke="#b35c00" stroke-width="2"/>
+  <text x="530" y="250" font-size="20">F(h)=1</text>
+  <text x="690" y="270" font-size="28">+</text>
+  <rect x="740" y="220" width="200" height="100" rx="8" fill="#fff" stroke="#0b6e4f" stroke-width="3"/>
+  <text x="790" y="280" font-size="28">h′=4</text>
+  <text x="150" y="420" font-size="18" fill="#555">LayerNorm/RMSNorm은 스케일을 안정화. Residual은 깊은 망의 항등 경로.</text>
+
+</svg>

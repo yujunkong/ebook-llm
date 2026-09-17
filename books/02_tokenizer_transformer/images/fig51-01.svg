@@ -1,0 +1,43 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<svg xmlns="http://www.w3.org/2000/svg" width="1200" height="720" viewBox="0 0 1200 720" role="img">
+  <title>Attention viz</title>
+  <defs>
+    <marker id="arrow" markerWidth="10" markerHeight="10" refX="8" refY="3" orient="auto">
+      <path d="M0,0 L8,3 L0,6 Z" fill="#1a1a1a"/>
+    </marker>
+  </defs>
+  <rect width="1200" height="720" fill="#f7f4ef"/>
+
+  <text x="60" y="56" font-family="Georgia, serif" font-size="28" fill="#1a1a1a">Fig 51-1. Attention heatmap (causal 3×3)</text>
+  <text x="60" y="96" font-size="18" fill="#555">행=Query 위치, 열=Key 위치. 미래는 0</text>
+  <!-- heatmap -->
+  <text x="200" y="170" font-size="16">A</text>
+  <text x="320" y="170" font-size="16">B</text>
+  <text x="440" y="170" font-size="16">C</text>
+  <text x="140" y="240" font-size="16">A</text>
+  <rect x="180" y="200" width="100" height="80" fill="#0b6e4f"/>
+  <text x="210" y="250" font-size="18" fill="#fff">1.0</text>
+  <rect x="300" y="200" width="100" height="80" fill="#dce8e2"/>
+  <text x="330" y="250" font-size="18">0</text>
+  <rect x="420" y="200" width="100" height="80" fill="#dce8e2"/>
+  <text x="450" y="250" font-size="18">0</text>
+  <text x="140" y="330" font-size="16">B</text>
+  <rect x="180" y="290" width="100" height="80" fill="#3a8f6e"/>
+  <text x="210" y="340" font-size="18" fill="#fff">0.5</text>
+  <rect x="300" y="290" width="100" height="80" fill="#3a8f6e"/>
+  <text x="330" y="340" font-size="18" fill="#fff">0.5</text>
+  <rect x="420" y="290" width="100" height="80" fill="#dce8e2"/>
+  <text x="450" y="340" font-size="18">0</text>
+  <text x="140" y="420" font-size="16">C</text>
+  <rect x="180" y="380" width="100" height="80" fill="#6bb08c"/>
+  <text x="205" y="430" font-size="16" fill="#fff">0.33</text>
+  <rect x="300" y="380" width="100" height="80" fill="#6bb08c"/>
+  <text x="325" y="430" font-size="16" fill="#fff">0.33</text>
+  <rect x="420" y="380" width="100" height="80" fill="#6bb08c"/>
+  <text x="445" y="430" font-size="16" fill="#fff">0.33</text>
+  <rect x="600" y="220" width="480" height="220" rx="8" fill="#fff" stroke="#d0cbc3"/>
+  <text x="640" y="290" font-size="18">A는 자기만 봄 (causal)</text>
+  <text x="640" y="340" font-size="18">B는 A·B를 반반</text>
+  <text x="640" y="390" font-size="18">C는 과거+자기 균등</text>
+
+</svg>

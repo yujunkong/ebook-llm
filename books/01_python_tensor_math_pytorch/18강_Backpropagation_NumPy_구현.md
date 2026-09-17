@@ -563,6 +563,36 @@ if __name__ == "__main__":
 
 ---
 
+
+<!-- visual-example-18 -->
+## 숫자로 따라가기 — NumPy Backward API
+
+17강 숫자와 **같은 단샘플**을 함수 세 개로 나눕니다.
+
+```text
+Y_hat, loss, cache = forward(X, params, y)
+grads = backward(cache)
+params[k] -= eta * grads[k]
+```
+
+| 기호/키 | 기대값 | 의미 |
+|---|---|---|
+| `loss` | $0.31205$ | $\frac12(\hat{y}-y)^2$ |
+| `grads['W2']` | $[-0.237,\ -0.2765]$ | $\partial L/\partial W^{(2)}$ |
+| `grads['b2']` | $-0.79$ | $\partial L/\partial b^{(2)}$ |
+| `grads['W1']` | 위 17강 표와 동일 | $\delta^{(1)}\mathbf{x}^{\top}$ |
+| $\eta$ | $0.1$ | SGD step 크기 |
+
+배치 $B>1$이면 outer product 합이 행렬곱
+
+$$
+\frac{\partial L}{\partial W^{(2)}}
+=
+\frac{1}{B}\,(\hat{Y}-Y)^{\top} A^{(1)}
+$$
+
+으로 바뀝니다. 수치 미분으로 `grads`를 한 번 검증하면 “구현 = 손계산”이 고정됩니다.
+
 ## LLM에서는 어디에 사용될까?
 
 | 오늘 (NumPy) | LLM 학습 |

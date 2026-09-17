@@ -398,6 +398,25 @@ def est_speedup(gamma, alpha, c=0.2):
 print(est_speedup(5, 0.7))
 ```
 
+<!-- visual-example-110 -->
+## 숫자로 따라가기 — Speculative speedup
+
+![그림 110-1](images/fig110-01.png)
+
+초안 길이 $\gamma=5$, 수락률 $\alpha=0.7$, 검증 비용비 $c=0.2$.
+
+$$
+\mathrm{speedup}\approx\frac{1+\gamma\alpha}{1+c}=\frac{1+3.5}{1.2}\approx 3.75
+$$
+
+| 기호 | 값 | 의미 |
+|---|---|---|
+| $\gamma$ | 5 | draft 토큰 수 |
+| $\alpha$ | 0.7 | 평균 수락 비율 |
+| $1+\alpha\gamma$ | 4.5 | 라운드당 유효 토큰 |
+
+초안이 잘 맞을수록 **큰 모델 forward 한 번에 여러 토큰**을 확정합니다.
+
 ## 핵심 요약
 - Speculative decoding = **값싼 draft 제안 + target verify**로 스텝당 확정 토큰을 늘리려는 기법.
 - MTP는 **다중 토큰 예측** 쪽 훈련/헤드 변이이며, draft 구현의 한 갈래와 연결된다.

@@ -1,0 +1,29 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<svg xmlns="http://www.w3.org/2000/svg" width="1200" height="720" viewBox="0 0 1200 720" role="img">
+  <title>Chain rule multiply</title>
+  <defs>
+    <marker id="arrow" markerWidth="10" markerHeight="10" refX="8" refY="3" orient="auto">
+      <path d="M0,0 L8,3 L0,6 Z" fill="#1a1a1a"/>
+    </marker>
+  </defs>
+  <rect width="1200" height="720" fill="#f7f4ef"/>
+
+  <text x="60" y="56" font-family="Georgia, serif" font-size="28" fill="#1a1a1a">Fig 14-1. Chain Rule: dy/dx = f′(u)·g′(x)</text>
+  <text x="60" y="96" font-size="18" fill="#555">x=3 → u=2x−1=5 → y=u²=25 · local grads multiply</text>
+  <rect x="80" y="180" width="200" height="120" rx="8" fill="#fff" stroke="#1d4e89" stroke-width="2"/>
+  <text x="110" y="230" font-size="22" font-family="Georgia, serif">x = 3</text>
+  <text x="110" y="270" font-size="16" fill="#555">input</text>
+  <text x="300" y="250" font-size="32" fill="#1a1a1a">→</text>
+  <rect x="340" y="180" width="220" height="120" rx="8" fill="#fff" stroke="#b35c00" stroke-width="2"/>
+  <text x="360" y="230" font-size="22" font-family="Georgia, serif">u = 5</text>
+  <text x="360" y="270" font-size="16" fill="#555">g′(x)=2</text>
+  <text x="580" y="250" font-size="32" fill="#1a1a1a">→</text>
+  <rect x="620" y="180" width="220" height="120" rx="8" fill="#fff" stroke="#0b6e4f" stroke-width="2"/>
+  <text x="640" y="230" font-size="22" font-family="Georgia, serif">y = 25</text>
+  <text x="640" y="270" font-size="16" fill="#555">f′(u)=2u=10</text>
+  <rect x="200" y="380" width="800" height="200" rx="8" fill="#fff" stroke="#d0cbc3" stroke-width="2"/>
+  <text x="240" y="450" font-size="26" font-family="Georgia, serif" fill="#1a1a1a">Backward:  ∂y/∂x = 10 × 2 = 20</text>
+  <text x="240" y="510" font-size="20" fill="#555">바깥 미분 × 안쪽 미분 (곱의 사슬)</text>
+  <text x="240" y="560" font-size="18" fill="#0b6e4f">신경망: 층마다 local grad를 곱해 Loss까지 연결</text>
+
+</svg>

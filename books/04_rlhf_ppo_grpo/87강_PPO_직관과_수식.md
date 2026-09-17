@@ -446,6 +446,26 @@ $$
 
 clip_frac이  persistently 크면 $\varepsilon$·lr·롤아웃 freshness를 의심한다.
 
+
+<!-- visual-example-87 -->
+## 숫자로 따라가기 — PPO clip
+
+![그림 87-1](images/fig87-01.png)
+
+$$
+\rho = \frac{\pi_{\mathrm{new}}(a\mid s)}{\pi_{\mathrm{old}}(a\mid s)}
+$$
+
+$\varepsilon=0.2$이면 신뢰 구간은 대략 $[0.8,\,1.2]$입니다.
+
+| 상황 | $\rho$ | clip 후 느낌 |
+|---|---|---|
+| 살짝 증가 | 1.1 | 그대로 반영 |
+| 과하게 증가 | 1.5 | 1.2처럼만 반영 |
+| 과하게 감소 | 0.5 | 0.8처럼만 반영 |
+
+Advantage $\hat A>0$인 행동을 좋아하더라도, **한 업데이트에서 확률을 너무 올리지 못하게** 막아 학습을 안정화합니다.
+
 ## LLM에서는 어디에 사용될까?
 RLHF-PPO 스택에서의 위치:
 

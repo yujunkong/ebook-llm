@@ -1,0 +1,13 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<svg xmlns="http://www.w3.org/2000/svg" width="1200" height="680" viewBox="0 0 1200 680" role="img">
+  <rect width="1200" height="680" fill="#f7f4ef"/>
+  <text x="60" y="56" font-family="Georgia, serif" font-size="28" fill="#1a1a1a">Fig 113-1. Tensor Parallel 분할</text>
+  <text x="60" y="96" font-size="18" fill="#555">W=[W1|W2], GPU0: xW1 / GPU1: xW2 → concat</text>
+  <rect x="120" y="180" width="400" height="160" rx="8" fill="#1d4e89"/>
+  <text x="200" y="250" fill="#fff" font-size="22">GPU0: xW1</text>
+  <rect x="620" y="180" width="400" height="160" rx="8" fill="#0b6e4f"/>
+  <text x="700" y="250" fill="#fff" font-size="22">GPU1: xW2</text>
+  <rect x="80" y="400" width="1040" height="200" rx="8" fill="#fff" stroke="#d0cbc3"/>
+  <text x="110" y="460" font-size="20">연산은 반으로, 매 층 all-gather/all-reduce 통신 비용↑</text>
+  <text x="110" y="530" font-size="18" fill="#555">모델이 VRAM에 안 들어갈 때 층을 가로로 쪼개는 대표 기법</text>
+</svg>

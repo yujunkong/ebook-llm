@@ -1,0 +1,15 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<svg xmlns="http://www.w3.org/2000/svg" width="1200" height="680" viewBox="0 0 1200 680" role="img">
+  <rect width="1200" height="680" fill="#f7f4ef"/>
+  <text x="60" y="56" font-family="Georgia, serif" font-size="28" fill="#1a1a1a">Fig 104-1. vLLM 블록 풀 감각</text>
+  <text x="60" y="96" font-size="18" fill="#555">page=16 tokens, seq=2000 → pages=125</text>
+  <rect x="100" y="180" width="900" height="80" rx="8" fill="#1d4e89"/>
+  <text x="120" y="230" fill="#fff" font-size="20">BlockPool: 예) 최대 2048 pages</text>
+  <g>
+    <rect x="120" y="300" width="60" height="40" fill="#0b6e4f"/><rect x="190" y="300" width="60" height="40" fill="#0b6e4f"/>
+    <rect x="260" y="300" width="60" height="40" fill="#0b6e4f"/><text x="340" y="328" font-size="18">… req A: 125 pages</text>
+  </g>
+  <rect x="80" y="400" width="1040" height="200" rx="8" fill="#fff" stroke="#d0cbc3"/>
+  <text x="110" y="460" font-size="20">pages = ceil(2000/16) = 125</text>
+  <text x="110" y="520" font-size="18" fill="#555">Σ KVBlocks(r) ≤ BlockPool — 메모리 한도가 동시 요청 수를 제한</text>
+</svg>

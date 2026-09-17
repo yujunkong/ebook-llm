@@ -1,0 +1,12 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<svg xmlns="http://www.w3.org/2000/svg" width="1200" height="680" viewBox="0 0 1200 680" role="img">
+  <rect width="1200" height="680" fill="#f7f4ef"/>
+  <text x="60" y="56" font-family="Georgia, serif" font-size="28" fill="#1a1a1a">Fig 57-1. Next-token Cross Entropy</text>
+  <text x="60" y="96" font-size="18" fill="#555">정답 토큰 확률 p*=0.4 → CE = -log(0.4) ≈ 0.916</text>
+  <rect x="100" y="180" width="1000" height="160" rx="8" fill="#fff" stroke="#1d4e89" stroke-width="2"/>
+  <text x="140" y="250" font-size="22">L_t = -log p_θ(y_t | x_&lt;t)</text>
+  <text x="140" y="300" font-size="20">p*=0.4 → L ≈ 0.916 nats</text>
+  <rect x="80" y="400" width="1040" height="200" rx="8" fill="#fff" stroke="#d0cbc3"/>
+  <text x="110" y="460" font-size="20">p*↑ → Loss↓ — 매 칸에서 정답 토큰 확률을 키우는 학습</text>
+  <text x="110" y="530" font-size="18" fill="#555">시퀀스 Loss는 시점별 CE의 평균(패딩은 ignore)</text>
+</svg>

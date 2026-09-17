@@ -1,0 +1,28 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<svg xmlns="http://www.w3.org/2000/svg" width="1200" height="680" viewBox="0 0 1200 680" role="img">
+  <title>KV cache growth</title>
+  <defs>
+    <marker id="arrow" markerWidth="10" markerHeight="10" refX="8" refY="3" orient="auto">
+      <path d="M0,0 L8,3 L0,6 Z" fill="#1a1a1a"/>
+    </marker>
+  </defs>
+  <rect width="1200" height="680" fill="#f7f4ef"/>
+
+  <text x="60" y="56" font-family="Georgia, serif" font-size="28" fill="#1a1a1a">Fig 101-1. KV Cache: 과거 K/V를 저장해 재계산 생략</text>
+  <text x="60" y="96" font-size="18" fill="#555">Decode 한 토큰마다 캐시 길이 T가 1씩 증가</text>
+  <rect x="100" y="160" width="80" height="200" fill="#1d4e89" opacity="0.35" stroke="#1d4e89"/>
+  <rect x="190" y="160" width="80" height="200" fill="#1d4e89" opacity="0.5" stroke="#1d4e89"/>
+  <rect x="280" y="160" width="80" height="200" fill="#1d4e89" opacity="0.65" stroke="#1d4e89"/>
+  <rect x="370" y="160" width="80" height="200" fill="#0b6e4f" opacity="0.85" stroke="#0b6e4f"/>
+  <text x="115" y="390" font-size="16">t=1</text>
+  <text x="205" y="390" font-size="16">t=2</text>
+  <text x="295" y="390" font-size="16">t=3</text>
+  <text x="385" y="390" font-size="16">new</text>
+  <text x="120" y="270" font-size="18" fill="#1a1a1a">K,V</text>
+  <rect x="560" y="160" width="560" height="280" rx="8" fill="#fff" stroke="#d0cbc3"/>
+  <text x="590" y="220" font-size="20">메모리 감:</text>
+  <text x="590" y="270" font-size="18">Mem_KV ∝ L × T × (헤드 차원) × 배치</text>
+  <text x="590" y="320" font-size="18">예: T가 2배 → KV 메모리도 대략 2배</text>
+  <text x="590" y="380" font-size="16" fill="#555">긴 대화/긴 생성이 메모리를 잡아먹는 이유</text>
+
+</svg>

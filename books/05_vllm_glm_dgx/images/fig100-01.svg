@@ -1,0 +1,25 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<svg xmlns="http://www.w3.org/2000/svg" width="1200" height="640" viewBox="0 0 1200 640" role="img">
+  <title>Prefill vs Decode</title>
+  <defs>
+    <marker id="arrow" markerWidth="10" markerHeight="10" refX="8" refY="3" orient="auto">
+      <path d="M0,0 L8,3 L0,6 Z" fill="#1a1a1a"/>
+    </marker>
+  </defs>
+  <rect width="1200" height="640" fill="#f7f4ef"/>
+
+  <text x="60" y="56" font-family="Georgia, serif" font-size="28" fill="#1a1a1a">Fig 100-1. Prefill vs Decode</text>
+  <rect x="80" y="140" width="480" height="360" rx="8" fill="#fff" stroke="#1d4e89" stroke-width="3"/>
+  <text x="110" y="200" font-size="24" fill="#1d4e89">Prefill</text>
+  <text x="110" y="260" font-size="18">프롬프트 T_in 토큰을</text>
+  <text x="110" y="300" font-size="18">한 번에 병렬 처리</text>
+  <text x="110" y="360" font-size="18">→ TTFT에 큰 영향</text>
+  <text x="110" y="420" font-size="16" fill="#555">compute에 가까운 구간</text>
+  <rect x="640" y="140" width="480" height="360" rx="8" fill="#fff" stroke="#0b6e4f" stroke-width="3"/>
+  <text x="670" y="200" font-size="24" fill="#0b6e4f">Decode</text>
+  <text x="670" y="260" font-size="18">토큰을 하나씩 생성</text>
+  <text x="670" y="300" font-size="18">매 스텝 KV 읽고 씀</text>
+  <text x="670" y="360" font-size="18">→ TPOT / 체감 타자 속도</text>
+  <text x="670" y="420" font-size="16" fill="#555">종종 memory-bound</text>
+
+</svg>

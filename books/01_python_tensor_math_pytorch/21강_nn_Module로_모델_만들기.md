@@ -364,6 +364,36 @@ $$
 >
 > GPT의 파라미터 대부분은 `nn.Linear`(또는 Embedding)입니다. “모듈을 조립한다”는 말은 곧 이 아핀 변환을 반복 배치한다는 뜻입니다.
 
+
+<!-- visual-example-21 -->
+## 숫자로 따라가기 — nn.Module forward
+
+`nn.Linear` 두 개 + ReLU를 숫자로:
+
+$$
+\mathbf{x}=[1.0,\ 0.5],\quad
+W_1=\begin{bmatrix}1 & 0\\ 0 & 2\end{bmatrix}
+\quad(\text{bias 없음})
+$$
+
+$$
+\mathbf{z}_1=\mathbf{x}W_1^{\top}=[1.0,\ 1.0]
+\xrightarrow{\mathrm{ReLU}}[1.0,\ 1.0]
+$$
+
+$$
+W_2=[0.5,\ 0.5]\Rightarrow \hat{y}=1.0
+$$
+
+| 기호 | 값 | Module 대응 |
+|---|---|---|
+| $W_1$ | $I$식 스케일 | `self.fc1.weight` |
+| $\mathbf{z}_1$ | $[1,1]$ | 첫 Linear 출력 |
+| $W_2$ | $[0.5,0.5]$ | `self.fc2.weight` |
+| $\hat{y}$ | $1.0$ | `forward` 반환 |
+
+`parameters()`가 이 Weight들을 모아 optimizer에 넘깁니다. LLM의 Attention·FFN·LM Head도 전부 `nn.Module` 조각입니다.
+
 ## LLM에서는 어디에 사용될까?
 LLM 코드베이스를 열어 보면 반복되는 패턴이 보인다.
 

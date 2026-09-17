@@ -1,0 +1,30 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<svg xmlns="http://www.w3.org/2000/svg" width="1200" height="640" viewBox="0 0 1200 640" role="img">
+  <title>Gradient descent steps</title>
+  <defs>
+    <marker id="arrow" markerWidth="10" markerHeight="10" refX="8" refY="3" orient="auto">
+      <path d="M0,0 L8,3 L0,6 Z" fill="#1a1a1a"/>
+    </marker>
+  </defs>
+  <rect width="1200" height="640" fill="#f7f4ef"/>
+
+  <text x="60" y="56" font-family="Georgia, serif" font-size="28" fill="#1a1a1a">Fig 12-1. θ ← θ − η ∇L  (한 걸음씩 내려가기)</text>
+  <text x="60" y="96" font-family="Helvetica, Arial, sans-serif" font-size="18" fill="#555">기울기 방향의 반대로, 학습률 η만큼 이동</text>
+  <path d="M 120 480 Q 400 80 700 360 Q 900 520 1080 200" fill="none" stroke="#1d4e89" stroke-width="4"/>
+  <circle cx="280" cy="280" r="12" fill="#b35c00"/>
+  <circle cx="420" cy="200" r="12" fill="#b35c00"/>
+  <circle cx="560" cy="280" r="12" fill="#b35c00"/>
+  <circle cx="720" cy="380" r="12" fill="#0b6e4f"/>
+  <text x="250" y="250" font-size="18" fill="#b35c00">θ₀</text>
+  <text x="400" y="170" font-size="18" fill="#b35c00">θ₁</text>
+  <text x="540" y="250" font-size="18" fill="#b35c00">θ₂</text>
+  <text x="700" y="360" font-size="18" fill="#0b6e4f">θ*</text>
+  <line x1="280" y1="280" x2="400" y2="210" stroke="#1a1a1a" stroke-width="2" marker-end="url(#arrow)"/>
+  <rect x="780" y="140" width="360" height="280" rx="8" fill="#fff" stroke="#d0cbc3" stroke-width="2"/>
+  <text x="810" y="190" font-size="22" font-family="Georgia, serif">숫자 예</text>
+  <text x="810" y="240" font-size="18" fill="#1a1a1a">θ=2.0, ∇L=4.0, η=0.1</text>
+  <text x="810" y="280" font-size="18" fill="#1a1a1a">θ_new = 2.0 − 0.1×4.0</text>
+  <text x="810" y="320" font-size="22" fill="#0b6e4f" font-family="Georgia, serif">= 1.6</text>
+  <text x="810" y="380" font-size="16" fill="#555">η가 너무 크면 진동, 작으면 느림</text>
+
+</svg>

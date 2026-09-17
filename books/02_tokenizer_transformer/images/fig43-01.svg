@@ -1,0 +1,22 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<svg xmlns="http://www.w3.org/2000/svg" width="1200" height="720" viewBox="0 0 1200 720" role="img">
+  <title>RoPE</title>
+  <defs>
+    <marker id="arrow" markerWidth="10" markerHeight="10" refX="8" refY="3" orient="auto">
+      <path d="M0,0 L8,3 L0,6 Z" fill="#1a1a1a"/>
+    </marker>
+  </defs>
+  <rect width="1200" height="720" fill="#f7f4ef"/>
+
+  <text x="60" y="56" font-family="Georgia, serif" font-size="28" fill="#1a1a1a">Fig 43-1. RoPE: 위치각으로 Q,K 회전 → 상대 위치 내적</text>
+  <text x="60" y="96" font-size="18" fill="#555">2D: R(θ)로 회전 후 q′ᵀk′ 는 (m−n)에 의존</text>
+  <rect x="100" y="180" width="400" height="200" rx="8" fill="#fff" stroke="#1d4e89" stroke-width="2"/>
+  <text x="140" y="240" font-size="20">q at pos m → R(mθ) q</text>
+  <text x="140" y="300" font-size="20">k at pos n → R(nθ) k</text>
+  <text x="140" y="350" font-size="16" fill="#555">θ = 위치 각도 상수</text>
+  <rect x="560" y="180" width="520" height="200" rx="8" fill="#fff" stroke="#0b6e4f" stroke-width="2"/>
+  <text x="600" y="260" font-size="20" font-family="Georgia, serif">(R_m q)ᵀ (R_n k)</text>
+  <text x="600" y="320" font-size="18" fill="#555">= qᵀ R_(n−m) k  (상대 위치)</text>
+  <text x="100" y="460" font-size="18" fill="#555">절대 좌표표 대신, Attention 점수에 상대 거리를 심는 방식</text>
+
+</svg>

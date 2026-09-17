@@ -433,6 +433,33 @@ $$
 
 평균을 빼지 않았으므로 합이 0이 아니다. LayerNorm과 수치가 다르다.
 
+
+<!-- visual-example-44 -->
+## 숫자로 따라가기 — Residual + Norm
+
+![그림 44-1](images/fig44-01.png)
+
+Residual:
+
+$$
+h'=h+F(h)
+$$
+
+| 기호 | 값 | 의미 |
+|---|---|---|
+| $h$ | $3$ | 블록 입력 |
+| $F(h)$ | $1$ | Attention/FFN 결과 |
+| $h'$ | $4$ | 잔차 합 |
+| $\partial h'/\partial h$ | $1+\partial F/\partial h$ | **+1 고속도로** |
+
+LayerNorm 맛보기: $\mathbf{x}=[1,2,3]$이면 평균 $2$, 분산 $2/3$,
+
+$$
+\hat{x}\approx[-1.22,\ 0,\ 1.22]
+$$
+
+(표준화 후 $\gamma,\beta$ 스케일). Pre-LN은 “Norm → 연산 → Residual” 순서입니다.
+
 ## LLM에서는 어디에 사용될까?
 사실:
 

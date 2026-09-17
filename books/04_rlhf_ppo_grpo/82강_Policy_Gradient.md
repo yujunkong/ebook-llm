@@ -504,6 +504,21 @@ $\log\pi=(-0.2,-0.5,-1.0)$, $R=2$ → $\sum\log\pi\cdot R=-3.4$.
 손실로 $-\sum\log\pi\cdot R$를 쓰면 $+3.4$.
 
 
+
+<!-- visual-example-82 -->
+## 숫자로 따라가기 — Policy Gradient 한 줄
+
+![그림 82-1](images/fig82-01.png)
+
+행동 확률 $\pi(a)=0.2$인 행동을 했더니 보상 $r=+1$이면,  
+“이 행동 확률을 조금 키우자”가 기본 감입니다.
+
+$$
+\nabla_\theta J \propto \, r \, \nabla_\theta \log \pi_\theta(a)
+$$
+
+$r$가 음수면 그 행동을 줄이는 방향. PPO는 여기에 **비율 clip + Advantage**를 얹습니다.
+
 ## LLM에서는 어디에 사용될까?
 ### 10.1 RLHF
 

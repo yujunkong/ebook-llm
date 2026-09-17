@@ -344,6 +344,24 @@ Decode-heavy chunk → KV bandwidth·작은 GEMM
 | 동시성 $B$ | KV 메모리·스케줄 대기 |
 
 
+
+<!-- visual-example-100 -->
+## 숫자로 따라가기 — Prefill / Decode 시간
+
+![그림 100-1](images/fig100-01.png)
+
+$$
+t_{\mathrm{e2e}} \approx \mathrm{TTFT} + (N_{\mathrm{out}}-1)\cdot \mathrm{TPOT}
+$$
+
+예: TTFT=200ms, TPOT=30ms, 64토큰 생성
+
+$$
+t \approx 200 + 63\times 30 = 2090\ \mathrm{ms} \approx 2.1\mathrm{s}
+$$
+
+프롬프트가 길어지면 TTFT가, 답변이 길어지면 TPOT×길이가 지배합니다.
+
 ## LLM에서는 어디에 사용될까?
 ### 8.1 TTFT와 Prefill
 

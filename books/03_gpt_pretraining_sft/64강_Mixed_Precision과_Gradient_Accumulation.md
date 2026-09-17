@@ -517,6 +517,25 @@ $$
 
 입니다. 비교는 **동일 하드웨어·동일 시퀀스 길이**에서만 하세요. 숫자를 벤치 주장으로 쓰지 마세요.
 
+<!-- visual-example-64 -->
+## 숫자로 따라가기 — Accumulation
+
+![그림 64-1](images/fig64-01.png)
+
+마이크로 배치 $B_{\mathrm{micro}}=2$, 누적 횟수 $N_{\mathrm{accum}}=4$.
+
+$$
+B_{\mathrm{eff}} = B_{\mathrm{micro}}\times N_{\mathrm{accum}} = 2\times 4 = 8
+$$
+
+| 기호 | 값 | 의미 |
+|---|---|---|
+| $B_{\mathrm{micro}}$ | 2 | 한 forward에 GPU가 감당하는 배치 |
+| $N_{\mathrm{accum}}$ | 4 | optimizer 전 기울기 합산 횟수 |
+| $B_{\mathrm{eff}}$ | 8 | 실효 배치 |
+
+VRAM은 작게 쓰면서 **큰 배치처럼** 평균 기울기를 만듭니다. AMP는 같은 스텝을 FP16/BF16로 빠르게 돌리는 축입니다.
+
 ## LLM에서는 어디에 사용될까?
 
 이번 64강에서 배운 개념은 이후 Transformer · GPT · 서빙 강의에서 반복해서 등장합니다. 각 수식·코드 블록을 “실제 모델의 어느 단계인가”와 연결해 다시 읽어 보세요.

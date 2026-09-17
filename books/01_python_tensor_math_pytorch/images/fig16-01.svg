@@ -1,0 +1,32 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<svg xmlns="http://www.w3.org/2000/svg" width="1200" height="720" viewBox="0 0 1200 720" role="img">
+  <title>Forward cache</title>
+  <defs>
+    <marker id="arrow" markerWidth="10" markerHeight="10" refX="8" refY="3" orient="auto">
+      <path d="M0,0 L8,3 L0,6 Z" fill="#1a1a1a"/>
+    </marker>
+  </defs>
+  <rect width="1200" height="720" fill="#f7f4ef"/>
+
+  <text x="60" y="56" font-family="Georgia, serif" font-size="28" fill="#1a1a1a">Fig 16-1. Forward: x → z → a → ŷ → L</text>
+  <text x="60" y="96" font-size="18" fill="#555">2-2-1 미니망, x=[1.0, 0.5], y=1.0</text>
+  <rect x="60" y="180" width="180" height="90" rx="8" fill="#fff" stroke="#1d4e89" stroke-width="2"/>
+  <text x="90" y="235" font-size="20">x=[1, 0.5]</text>
+  <text x="255" y="230" font-size="24">→</text>
+  <rect x="290" y="180" width="180" height="90" rx="8" fill="#fff" stroke="#b35c00" stroke-width="2"/>
+  <text x="310" y="225" font-size="18">z¹=[0.30,0.35]</text>
+  <text x="310" y="250" font-size="14" fill="#555">W¹x+b¹</text>
+  <text x="485" y="230" font-size="24">→</text>
+  <rect x="520" y="180" width="180" height="90" rx="8" fill="#fff" stroke="#0b6e4f" stroke-width="2"/>
+  <text x="540" y="225" font-size="18">a¹=[0.30,0.35]</text>
+  <text x="540" y="250" font-size="14" fill="#555">ReLU</text>
+  <text x="715" y="230" font-size="24">→</text>
+  <rect x="750" y="180" width="160" height="90" rx="8" fill="#fff" stroke="#1a1a1a" stroke-width="2"/>
+  <text x="780" y="225" font-size="20">ŷ=0.21</text>
+  <text x="780" y="250" font-size="14" fill="#555">W²a+b²</text>
+  <rect x="200" y="360" width="800" height="220" rx="8" fill="#fff" stroke="#d0cbc3" stroke-width="2"/>
+  <text x="240" y="430" font-size="24" font-family="Georgia, serif">L = ½(0.21−1)² = 0.31205</text>
+  <text x="240" y="490" font-size="18" fill="#555">캐시: z¹, a¹ 를 저장 → 17강 Backward에서 재사용</text>
+  <text x="240" y="540" font-size="18" fill="#0b6e4f">LLM: token → blocks → logits → CE loss 도 같은 Forward</text>
+
+</svg>

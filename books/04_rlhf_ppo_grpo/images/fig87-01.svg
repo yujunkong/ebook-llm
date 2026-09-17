@@ -1,0 +1,28 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<svg xmlns="http://www.w3.org/2000/svg" width="1200" height="680" viewBox="0 0 1200 680" role="img">
+  <title>PPO clip intuition</title>
+  <defs>
+    <marker id="arrow" markerWidth="10" markerHeight="10" refX="8" refY="3" orient="auto">
+      <path d="M0,0 L8,3 L0,6 Z" fill="#1a1a1a"/>
+    </marker>
+  </defs>
+  <rect width="1200" height="680" fill="#f7f4ef"/>
+
+  <text x="60" y="56" font-family="Georgia, serif" font-size="28" fill="#1a1a1a">Fig 87-1. PPO clip: 비율 ρ가 너무 멀어지지 않게</text>
+  <text x="60" y="96" font-size="18" fill="#555">ρ = π_new / π_old ,  ε=0.2 이면 허용 구간 [0.8, 1.2]</text>
+  <line x1="120" y1="400" x2="1080" y2="400" stroke="#888" stroke-width="2"/>
+  <line x1="200" y1="160" x2="200" y2="520" stroke="#888" stroke-width="2"/>
+  <!-- unclipped -->
+  <path d="M 200 400 L 500 200 L 900 120" fill="none" stroke="#b35c00" stroke-width="3" stroke-dasharray="8 6"/>
+  <!-- clipped -->
+  <path d="M 200 400 L 450 250 L 600 250 L 900 250" fill="none" stroke="#0b6e4f" stroke-width="4"/>
+  <line x1="450" y1="150" x2="450" y2="500" stroke="#1d4e89" stroke-dasharray="4 4"/>
+  <line x1="650" y1="150" x2="650" y2="500" stroke="#1d4e89" stroke-dasharray="4 4"/>
+  <text x="430" y="140" font-size="16" fill="#1d4e89">0.8</text>
+  <text x="630" y="140" font-size="16" fill="#1d4e89">1.2</text>
+  <text x="860" y="140" font-size="16" fill="#b35c00">clip 없음</text>
+  <text x="860" y="240" font-size="16" fill="#0b6e4f">clip 적용</text>
+  <rect x="120" y="540" width="960" height="100" rx="8" fill="#fff" stroke="#d0cbc3"/>
+  <text x="150" y="585" font-size="18">예: Â&gt;0 이고 ρ=1.5 → clip되어 1.2처럼만 반영 → 한 번에 정책이 폭주하지 않음</text>
+
+</svg>

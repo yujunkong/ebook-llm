@@ -330,6 +330,25 @@ $$
 \mathrm{throughput}\uparrow \Leftarrow \eta_{\mathrm{idle}}\downarrow
 $$
 
+<!-- visual-example-102 -->
+## 숫자로 따라가기 — 슬롯 점유율
+
+![그림 102-1](images/fig102-01.png)
+
+배치 슬롯 $B=8$, 한 스텝 active 마스크 `[1,1,0,1,1,0,1,1]`.
+
+$$
+\eta_{\mathrm{idle}}=1-\frac{\sum_i n_{\mathrm{active},i}}{B}=1-\frac{6}{8}=0.25
+$$
+
+| 기호 | 값 | 의미 |
+|---|---|---|
+| 활성 슬롯 | 6 | 실제 decode 중인 요청 |
+| 유휴 슬롯 | 2 | 끝난 뒤 비어 있음 |
+| $\eta_{\mathrm{idle}}$ | 0.25 | 낭비 비율 |
+
+Continuous batching은 **끝난 자리를 바로 채워** idle을 줄입니다.
+
 ## LLM에서는 어디에 사용될까?
 ### 9.1 지표와의 관계（정의만）
 

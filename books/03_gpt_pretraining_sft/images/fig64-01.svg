@@ -1,0 +1,23 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<svg xmlns="http://www.w3.org/2000/svg" width="1200" height="680" viewBox="0 0 1200 680" role="img">
+  <rect width="1200" height="680" fill="#f7f4ef"/>
+  <text x="60" y="56" font-family="Georgia, serif" font-size="28" fill="#1a1a1a">Fig 64-1. Gradient Accumulation</text>
+  <text x="60" y="96" font-size="18" fill="#555">B_micro=2, N_accum=4 → B_eff=8</text>
+  <g font-size="18">
+    <rect x="100" y="180" width="140" height="70" rx="6" fill="#1d4e89"/><text x="130" y="222" fill="#fff">micro1</text>
+    <rect x="270" y="180" width="140" height="70" rx="6" fill="#1d4e89"/><text x="300" y="222" fill="#fff">micro2</text>
+    <rect x="440" y="180" width="140" height="70" rx="6" fill="#1d4e89"/><text x="470" y="222" fill="#fff">micro3</text>
+    <rect x="610" y="180" width="140" height="70" rx="6" fill="#1d4e89"/><text x="640" y="222" fill="#fff">micro4</text>
+  </g>
+  <text x="780" y="222" font-size="28" fill="#b35c00">→</text>
+  <rect x="840" y="180" width="220" height="70" rx="6" fill="#0b6e4f"/>
+  <text x="880" y="222" font-size="20" fill="#fff">optimizer</text>
+  <text x="150" y="300" font-size="18">∇1</text>
+  <text x="320" y="300" font-size="18">∇2</text>
+  <text x="490" y="300" font-size="18">∇3</text>
+  <text x="660" y="300" font-size="18">∇4</text>
+  <text x="400" y="360" font-size="22">g = (∇1+∇2+∇3+∇4)/4</text>
+  <rect x="80" y="420" width="1040" height="180" rx="8" fill="#fff" stroke="#d0cbc3"/>
+  <text x="110" y="480" font-size="20">B_eff = B_micro × N_accum = 2 × 4 = 8</text>
+  <text x="110" y="540" font-size="18" fill="#555">VRAM은 micro 배치만, 학습 신호는 큰 배치처럼</text>
+</svg>

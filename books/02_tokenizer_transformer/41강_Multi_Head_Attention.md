@@ -652,6 +652,28 @@ if __name__ == "__main__":
 `nn.MultiheadAttention`을 쓸 수도 있다.  
 다만 이 책은 **내부 reshape·mask·$W^O$**를 직접 보는 것이 목적이므로, 위 스케치를 먼저 이해한다.
 
+
+<!-- visual-example-41 -->
+## 숫자로 따라가기 — Multi-Head
+
+![그림 41-1](images/fig41-01.png)
+
+$d_{\mathrm{model}}=4$, $h=2$ → 헤드당 $d_h=2$.
+
+| 단계 | 하는 일 | Shape 감각 |
+|---|---|---|
+| split | $Q,K,V$를 헤드로 나눔 | 헤드당 $(T,2)$ |
+| attend | 헤드마다 Softmax Attention | 38~40강과 동일 |
+| concat | 헤드 출력을 이어 붙임 | $(T,4)$ |
+| $W_O$ | 선형으로 다시 혼합 | $(T,4)$ |
+
+| 헤드 | 직관 | 출력 조각 |
+|---|---|---|
+| 1 | 인접 패턴 | $d_h$ |
+| 2 | 먼 의존 | $d_h$ |
+
+“여러 돋보기” 후 $W_O$로 합칩니다. Causal mask는 헤드마다 같은 위치에 걸립니다.
+
 ## LLM에서는 어디에 사용될까?
 ### 9.1 GPT류 (Decoder-only)
 

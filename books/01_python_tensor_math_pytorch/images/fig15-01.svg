@@ -1,0 +1,29 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<svg xmlns="http://www.w3.org/2000/svg" width="1200" height="720" viewBox="0 0 1200 720" role="img">
+  <title>Affine ReLU</title>
+  <defs>
+    <marker id="arrow" markerWidth="10" markerHeight="10" refX="8" refY="3" orient="auto">
+      <path d="M0,0 L8,3 L0,6 Z" fill="#1a1a1a"/>
+    </marker>
+  </defs>
+  <rect width="1200" height="720" fill="#f7f4ef"/>
+
+  <text x="60" y="56" font-family="Georgia, serif" font-size="28" fill="#1a1a1a">Fig 15-1. Affine + ReLU (숫자 한 방)</text>
+  <text x="60" y="96" font-size="18" fill="#555">x=2, w=3, b=1 → z=wx+b=7 → h=ReLU(7)=7</text>
+  <rect x="100" y="200" width="160" height="100" rx="8" fill="#fff" stroke="#1d4e89" stroke-width="2"/>
+  <text x="145" y="260" font-size="28" font-family="Georgia, serif">x=2</text>
+  <text x="280" y="255" font-size="28">×</text>
+  <rect x="320" y="200" width="160" height="100" rx="8" fill="#fff" stroke="#b35c00" stroke-width="2"/>
+  <text x="355" y="260" font-size="28" font-family="Georgia, serif">w=3</text>
+  <text x="500" y="255" font-size="28">+</text>
+  <rect x="540" y="200" width="140" height="100" rx="8" fill="#fff" stroke="#b35c00" stroke-width="2"/>
+  <text x="575" y="260" font-size="28" font-family="Georgia, serif">b=1</text>
+  <text x="700" y="255" font-size="28">→</text>
+  <rect x="740" y="200" width="160" height="100" rx="8" fill="#fff" stroke="#0b6e4f" stroke-width="2"/>
+  <text x="775" y="260" font-size="28" font-family="Georgia, serif">z=7</text>
+  <text x="450" y="360" font-size="28">↓ ReLU</text>
+  <rect x="400" y="400" width="400" height="140" rx="8" fill="#fff" stroke="#0b6e4f" stroke-width="3"/>
+  <text x="460" y="460" font-size="24" font-family="Georgia, serif">h = max(0, 7) = 7</text>
+  <text x="460" y="510" font-size="18" fill="#555">w=−3이면 z=−5 → h=0 (차단)</text>
+
+</svg>

@@ -477,6 +477,24 @@ A. 보상이 노이즈가 되어 advantage 분산이 폭발한다. 비결정 테
 5. frac_mixed_groups, pass@1, format rate 로그
 6. 안전 필터가 필요한 과제인지 확인
 
+<!-- visual-example-93 -->
+## 숫자로 따라가기 — Verifiable Reward
+
+![그림 93-1](images/fig93-01.png)
+
+문제 정답이 $42$일 때.
+
+$$
+r=\mathbf{1}[\mathrm{extract}(y)=\mathrm{answer}(x)]
+$$
+
+| 생성 답 | 추출 | $r$ |
+|---|---|---|
+| `... 답은 42` | 42 | 1 |
+| `... 41` | 41 | 0 |
+| 파서 실패 | — | 0 (보통) |
+
+사람 RM 대신 **검증기로 0/1 보상**을 주는 것이 RLVR의 핵심입니다.
 
 ## LLM에서는 어디에 사용될까?
 

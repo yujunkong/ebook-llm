@@ -511,6 +511,25 @@ $$
 
  pairwise 데이터는 $K=2$인 특수한 경우다. RM/DPO의 출발점은 이 BT 핵이다.
 
+<!-- visual-example-84 -->
+## 숫자로 따라가기 — Bradley–Terry
+
+![그림 84-1](images/fig84-01.png)
+
+보상 점수 $r(y_w)=2.0$, $r(y_l)=0.5$.
+
+$$
+P(y_w\succ y_l\mid x)=\sigma\big(r_w-r_l\big)=\frac{1}{1+e^{-1.5}}\approx 0.82
+$$
+
+| 기호 | 값 |
+|---|---|
+| $\Delta=r_w-r_l$ | $1.5$ |
+| $\sigma(\Delta)$ | $\approx 0.82$ |
+| $-\log\sigma(\Delta)$ (RM loss 항) | $\approx 0.20$ |
+
+선호 데이터 한 줄은 **“chosen이 rejected보다 낫다”**는 확률 사건입니다.
+
 ## LLM에서는 어디에 사용될까?
 산업·연구 파이프라인에서의 위치:
 

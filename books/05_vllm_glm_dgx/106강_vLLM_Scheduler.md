@@ -313,6 +313,20 @@ $$
 c_{\mathrm{preempt}}=c_{\mathrm{recompute\ prefill}}+c_{\mathrm{queue}}
 $$
 
+<!-- visual-example-106 -->
+## 숫자로 따라가기 — Admit 판정
+
+![그림 106-1](images/fig106-01.png)
+
+$N_{\mathrm{seq}}=8$, 현재 running $3$, 여유 블록 $40$, 신규 요청 필요 $10$.
+
+| 조건 | 값 | 통과? |
+|---|---|---|
+| $|\mathrm{running}| < N_{\mathrm{seq}}$ | $3<8$ | Yes |
+| $\mathrm{blocks\_free}\ge \mathrm{need}$ | $40\ge 10$ | Yes |
+
+둘 다 만족 → **admit**. 블록이 부족하면 대기하거나 다른 요청을 preempt합니다.
+
 ## LLM에서는 어디에 사용될까?
 온콜에서 스케줄러 어휘가 바로 쓰인다.
 

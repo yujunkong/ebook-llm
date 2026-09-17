@@ -1,0 +1,17 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<svg xmlns="http://www.w3.org/2000/svg" width="1200" height="680" viewBox="0 0 1200 680" role="img">
+  <rect width="1200" height="680" fill="#f7f4ef"/>
+  <text x="60" y="56" font-family="Georgia, serif" font-size="28" fill="#1a1a1a">Fig 59-1. Temperature가 분포를 납작/뾰족하게</text>
+  <text x="60" y="96" font-size="18" fill="#555">z=[2.0, 1.0] → τ=1 vs τ=2</text>
+  <text x="120" y="180" font-size="20" font-family="Georgia, serif">τ=1</text>
+  <rect x="120" y="220" width="300" height="50" fill="#0b6e4f"/>
+  <rect x="120" y="290" width="110" height="50" fill="#0b6e4f" opacity="0.55"/>
+  <text x="440" y="255" font-size="18">p≈[0.73, 0.27]</text>
+  <text x="700" y="180" font-size="20" font-family="Georgia, serif">τ=2</text>
+  <rect x="700" y="220" width="220" height="50" fill="#1d4e89"/>
+  <rect x="700" y="290" width="130" height="50" fill="#1d4e89" opacity="0.55"/>
+  <text x="960" y="255" font-size="18">p≈[0.62, 0.38]</text>
+  <rect x="80" y="420" width="1040" height="180" rx="8" fill="#fff" stroke="#d0cbc3"/>
+  <text x="110" y="480" font-size="20">p_i = exp(z_i/τ) / Σ exp(z_j/τ)</text>
+  <text x="110" y="540" font-size="18" fill="#555">τ↑ → 더 고르게 샘플, τ→0 → 사실상 greedy</text>
+</svg>

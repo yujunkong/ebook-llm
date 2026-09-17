@@ -1,0 +1,28 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<svg xmlns="http://www.w3.org/2000/svg" width="1200" height="720" viewBox="0 0 1200 720" role="img">
+  <title>Multi head</title>
+  <defs>
+    <marker id="arrow" markerWidth="10" markerHeight="10" refX="8" refY="3" orient="auto">
+      <path d="M0,0 L8,3 L0,6 Z" fill="#1a1a1a"/>
+    </marker>
+  </defs>
+  <rect width="1200" height="720" fill="#f7f4ef"/>
+
+  <text x="60" y="56" font-family="Georgia, serif" font-size="28" fill="#1a1a1a">Fig 41-1. Multi-Head: split → attend → concat → W_O</text>
+  <text x="60" y="96" font-size="18" fill="#555">d=4, h=2 → 각 헤드 d_h=2</text>
+  <rect x="80" y="180" width="160" height="100" rx="8" fill="#fff" stroke="#1d4e89" stroke-width="2"/>
+  <text x="120" y="240" font-size="22">X (T×4)</text>
+  <text x="270" y="230" font-size="24">→</text>
+  <rect x="320" y="150" width="200" height="70" rx="8" fill="#fff" stroke="#b35c00" stroke-width="2"/>
+  <text x="350" y="195" font-size="18">Head1: d_h=2</text>
+  <rect x="320" y="250" width="200" height="70" rx="8" fill="#fff" stroke="#b35c00" stroke-width="2"/>
+  <text x="350" y="295" font-size="18">Head2: d_h=2</text>
+  <text x="550" y="230" font-size="24">→</text>
+  <rect x="600" y="180" width="200" height="100" rx="8" fill="#fff" stroke="#0b6e4f" stroke-width="2"/>
+  <text x="640" y="240" font-size="20">concat (T×4)</text>
+  <text x="830" y="230" font-size="24">→</text>
+  <rect x="880" y="180" width="200" height="100" rx="8" fill="#fff" stroke="#1a1a1a" stroke-width="2"/>
+  <text x="920" y="240" font-size="20">× W_O</text>
+  <text x="200" y="420" font-size="18" fill="#555">헤드마다 다른 각도로 Softmax Attention → 여러 돋보기</text>
+
+</svg>
