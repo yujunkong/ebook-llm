@@ -5,8 +5,12 @@
   python3 scripts/build_epub.py --book 1
   python3 scripts/build_epub.py --book all
 
-주의: 원고의 `---` 구분선은 Pandoc이 YAML로 오인할 수 있어
-빌드 직전에 `* * *` thematic break로 치환한다.
+주의:
+- 원고의 `---` 구분선은 Pandoc이 YAML로 오인할 수 있어
+  빌드 직전에 `* * *` thematic break로 치환한다.
+- Apple Books는 Pandoc이 넣는 `.svgz`(실제로는 비압축 SVG)를
+  깨뜨리는 경우가 많아, 가능하면 PNG를 쓰고 EPUB 사후처리로
+  `.svgz` → `.svg` 이름도 교정한다.
 """
 
 from __future__ import annotations
@@ -16,6 +20,7 @@ import re
 import subprocess
 import sys
 import tempfile
+import zipfile
 from pathlib import Path
 
 ROOT = Path(__file__).resolve().parents[1]
@@ -35,9 +40,8 @@ def lecture_sort_key(path: Path) -> int:
     return int(m.group(1)) if m else 0
 
 
-def preprocess_markdown(text: str) -> str:
-    """Pandoc 호환을 위한 전처리."""
-    # 코드 펜스 보호
+def preprocess_markdown(text: str, book_dir: Path) -> str:
+    """Pandoc/Apple Books 호환을 위한 전처리."""
     fences: list[str] = []
 
     def save_fence(m: re.Match[str]) -> str:
@@ -49,11 +53,72 @@ def preprocess_markdown(text: str) -> str:
     # YAML로 오인되는 --- 구분선 → thematic break
     text = re.sub(r"(?m)^---\s*$", "* * *", text)
 
-    # HTML 주석은 유지(네비 마커). Pandoc이 그대로 둘 수 있음.
+    # Apple Books: SVG보다 PNG가 안정적. 동일 stem PNG가 있으면 교체
+    def prefer_png(m: re.Match[str]) -> str:
+        rel = m.group(1)
+        png = book_dir / Path(rel).with_suffix(".png")
+        if png.is_file():
+            return f"]({Path(rel).with_suffix('.png').as_posix()})"
+        return m.group(0)
+
+    text = re.sub(r"\]\((images/[^)]+\.svg)\)", prefer_png, text)
 
     for i, fence in enumerate(fences):
         text = text.replace(f"@@@FENCE{i}@@@", fence)
     return text
+
+
+def fix_epub_media(epub_path: Path) -> None:
+    """Pandoc `.svgz` 확장자를 Apple Books가 읽는 `.svg`로 고친다.
+
+    Pandoc 3.x는 비압축 SVG를 `.svgz` 이름으로 넣는 경우가 있다.
+    """
+    with tempfile.TemporaryDirectory() as tmp:
+        tmp_path = Path(tmp)
+        with zipfile.ZipFile(epub_path, "r") as zin:
+            zin.extractall(tmp_path)
+
+        renamed: dict[str, str] = {}
+        media_dir = tmp_path / "EPUB" / "media"
+        if media_dir.is_dir():
+            for path in list(media_dir.iterdir()):
+                if path.suffix.lower() == ".svgz":
+                    new_path = path.with_suffix(".svg")
+                    # 이미 비압축 SVG인 경우 그대로 이름만 변경
+                    path.rename(new_path)
+                    renamed[path.name] = new_path.name
+
+        if renamed:
+            for path in tmp_path.rglob("*"):
+                if not path.is_file():
+                    continue
+                if path.suffix.lower() not in {".xhtml", ".html", ".opf", ".ncx", ".css", ".xml"}:
+                    continue
+                raw = path.read_bytes()
+                try:
+                    text = raw.decode("utf-8")
+                except UnicodeDecodeError:
+                    continue
+                original = text
+                for old, new in renamed.items():
+                    text = text.replace(old, new)
+                if text != original:
+                    path.write_text(text, encoding="utf-8")
+
+        # EPUB은 mimetype이 첫 엔트리·무압축이어야 함
+        out_tmp = tmp_path / "out.epub"
+        with zipfile.ZipFile(out_tmp, "w") as zout:
+            mimetype = tmp_path / "mimetype"
+            if mimetype.is_file():
+                zout.write(mimetype, "mimetype", compress_type=zipfile.ZIP_STORED)
+            for path in sorted(tmp_path.rglob("*")):
+                if not path.is_file() or path.name == "out.epub":
+                    continue
+                arc = path.relative_to(tmp_path).as_posix()
+                if arc == "mimetype":
+                    continue
+                zout.write(path, arc, compress_type=zipfile.ZIP_DEFLATED)
+        out_tmp.replace(epub_path)
 
 
 def build_book(book_num: int) -> Path:
@@ -70,12 +135,10 @@ def build_book(book_num: int) -> Path:
         combined = tmp_path / "combined.md"
         parts: list[str] = []
         for lec in lectures:
-            body = preprocess_markdown(lec.read_text(encoding="utf-8"))
+            body = preprocess_markdown(lec.read_text(encoding="utf-8"), book_dir)
             parts.append(body.rstrip() + "\n\n")
         combined.write_text("".join(parts), encoding="utf-8")
 
-        # yaml_metadata_block 비활성: 본문 --- 잔여 오인 방지
-        # smart typography는 수식/코드에 영향 줄 수 있어 기본만 사용
         cmd = [
             "pandoc",
             str(combined),
@@ -87,7 +150,7 @@ def build_book(book_num: int) -> Path:
             "--toc",
             "--toc-depth=2",
             "--split-level=1",
-            f"--resource-path={book_dir}",  # images/ 상대경로 해석
+            f"--resource-path={book_dir}",
             "-o",
             str(out_path),
             "--metadata",
@@ -95,17 +158,18 @@ def build_book(book_num: int) -> Path:
             "--metadata",
             "author=밑바닥부터 LLM",
             "--metadata",
-            "lang=ko",  # ko-KR은 pandoc translations/ko.yaml 파싱 경고 유발
+            "lang=ko",
         ]
         proc = subprocess.run(cmd, capture_output=True, text=True)
         if proc.returncode != 0:
             sys.stderr.write(proc.stderr)
             raise SystemExit(f"pandoc failed for book {book_num} (exit {proc.returncode})")
         if proc.stderr.strip():
-            # warnings only
             for line in proc.stderr.splitlines():
                 if line.strip():
                     print(f"  [warn] {line}")
+
+    fix_epub_media(out_path)
 
     size_kb = out_path.stat().st_size / 1024
     print(f"[OK] {out_path.relative_to(ROOT)}  ({len(lectures)} lectures, {size_kb:.0f} KB)")

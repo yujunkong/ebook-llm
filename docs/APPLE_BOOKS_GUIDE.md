@@ -166,9 +166,12 @@ x = torch.tensor([1.0, 2.0, 3.0])
 
 | 종류 | 권장 |
 |---|---|
-| 도식 | 폭 약 1200px 상당 / SVG 우선 |
-| 그래프 | 폭 약 1600px / SVG 또는 PNG |
-| 수학 도식 | **SVG 우선** (확대 선명 · 용량↓) |
+| 도식 | 폭 약 1200px · **Apple Books용 PNG 권장** (원본 SVG 병행 가능) |
+| 그래프 | 폭 약 1600px · PNG |
+| 수학 도식 | 원고 원본은 SVG 가능, **EPUB 배포는 PNG** |
+
+> Apple Books는 Pandoc이 넣는 `.svgz`/일부 SVG를 깨뜨리는 경우가 있다.
+> `scripts/build_epub.py`는 PNG를 우선 포함하고 `.svgz` 확장자를 교정한다.
 
 이미지는 개념 설명 **직후**에 배치한다.
 
