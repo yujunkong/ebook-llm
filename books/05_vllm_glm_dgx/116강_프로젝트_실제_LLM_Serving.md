@@ -621,8 +621,8 @@ $$
 $$
 
 ```python
-kpi = {"tps": 900, "ttft_p99_ms": 250, "error_rate": 0.01}
-assert kpi["error_rate"] < 0.02
+kpi = {"tps": None, "ttft_p99_ms": None, "error_rate": None}  # 측정 후 기입
+# assert kpi["error_rate"] < team_slo_epsilon
 print(kpi)
 ```
 

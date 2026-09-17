@@ -427,6 +427,19 @@ $$
 Waiting은 입장 대기, Running은 실행 배치 후보다. Admission은 블록·시퀀스·토큰 예산 아래서만 일어난다. Prefill을 한꺼번에 넣으면 TTFT가, 선점이 잦으면 유효 처리량이 먼저 아프다. 외부 증상은 TTFT·TPOT·Throughput으로 읽고, 내부 상태는 큐 길이와 free blocks로 읽는다.
 
 
+## 스케줄러 건강 한 줄
+외부:
+
+$$
+
+\mathrm{Throughput}\approx\frac{N_{\mathrm{tokens}}}{\Delta t},\quad
+\mathrm{TTFT}=t_{\mathrm{first}}-t_{\mathrm{req}}
+$$
+
+내부: `waiting_len`, `running_len`, `free_blocks`, `preempt_count`.  
+둘을 같은 티켓에 붙이지 않으면 튜닝이 감이 된다.
+
+
 ## 핵심 요약
 - vLLM류 스케줄러는 **waiting/running**을 중심으로 매 스텝 배치를 재구성한다.
 - Admission은 **KV 블록·시퀀스·토큰 예산** 제약 하에 이뤄진다.
