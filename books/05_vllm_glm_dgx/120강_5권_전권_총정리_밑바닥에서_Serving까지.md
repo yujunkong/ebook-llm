@@ -269,6 +269,54 @@ $$
 
 밑바닥 연산(내적·미분)이 서빙 지표까지 이어집니다.
 
+
+<!-- enrich-block-120 -->
+## 전권 수식 한 장
+
+토큰화 → 임베딩 → Attention → CE → (SFT/RL) → 서빙:
+
+$$
+x=\mathrm{tok}(\cdot),\ 
+e=E_x,\ 
+A=\mathrm{softmax}(QK^\top/\sqrt{d}),\ 
+L=-\log p(x_t\mid x_{<t})
+$$
+
+정렬:
+
+$$
+L_{\mathrm{align}}\in\{L_{\mathrm{SFT}},L_{\mathrm{PPO}},L_{\mathrm{DPO}}\}
+$$
+
+서빙 제약:
+
+$$
+\max \mathrm{TPS}\ \mathrm{s.t.}\ \mathrm{Mem}_{KV}+\mathrm{Mem}_W\le M,\ \mathrm{P99}\le\tau
+$$
+
+밑바닥 수식과 운영 지표가 같은 모델의 양면입니다.
+
+
+<!-- enrich-extra-120 -->
+## 전권 로드맵 한 장
+
+| 권 | 핵심 식 |
+|---|---|
+| 1 | $y=xW+b$, $\nabla L$ |
+| 2 | $A=\mathrm{softmax}(QK^\top/\sqrt{d})$ |
+| 3 | $L_{\mathrm{CLM}}$, LoRA $BA$ |
+| 4 | BT / PPO / DPO |
+| 5 | KV mem, TPS, P99 |
+
+```python
+# 여정 체크: 로짓→샘플 한 줄
+import torch
+logits = torch.randn(5)
+p = torch.softmax(logits, dim=-1)
+idx = torch.multinomial(p, 1)
+print(int(idx), float(p[idx]))
+```
+
 ## LLM에서는 어디에 사용될까?
 
 전권의 개념은 결국 **학습된 모델을 안정적으로 서빙**하는 일로 모입니다.

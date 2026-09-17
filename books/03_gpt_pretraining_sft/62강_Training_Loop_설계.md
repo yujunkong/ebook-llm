@@ -372,6 +372,120 @@ $$
 
 학습률 스케줄 $\eta_t$는 보통 warmup 후 cosine 감쇠입니다.
 
+
+## 수학적으로 이해하기 — 스텝과 토큰 예산
+
+전역 스텝 $t$와 마이크로배치 토큰 수 $N_{\mathrm{tok}}$에 대해
+
+$$
+
+\text{tokens\_seen}
+\leftarrow
+\text{tokens\_seen} + N_{\mathrm{tok}}
+$$
+
+Gradient accumulation 스텝 $K$이면 옵티마이저 갱신 1회당
+
+$$
+
+N_{\mathrm{eff}} \approx K\cdot B\cdot T
+$$
+
+（패딩 제외 시 더 정교한 카운트가 필요）. Learning rate schedule $\eta(t)$는 **옵티마이저 스텝**에 묶는 것이 보통입니다.
+
+### 안정성 스케치
+
+손실이 한 스텝에 급증하면 skip 규칙을 둘 수 있습니다.
+
+$$
+
+\text{if } L_t > \gamma \tilde L \text{ then skip update}
+$$
+
+（$\tilde L$은 최근 평균, $\gamma$는 임계 배수）. 과도한 skip은 학습을 멈추게 하니 로깅이 필수입니다.
+
+## 작은 숫자 예 — Accumulation
+
+$B=2$, $T=128$, $K=4$이면 대략
+
+$$
+
+N_{\mathrm{eff}} \approx 4\cdot 2\cdot 128 = 1024
+$$
+
+토큰/갱신입니다. VRAM이 안 되면 $B$를 줄이고 $K$를 늘려 $N_{\mathrm{eff}}$를 유지하는 패턴이 제64강과 맞닿습니다.
+
+## 직관적으로 이해하기 — 비행 체크리스트
+
+```text
+1) zero_grad
+2) forward / loss
+3) backward（accum 중이면 스케일）
+4) （accum 끝）clip / step / sched
+5) 로그 / 가끔 val / 가끔 save / 가끔 generate
+```
+
+순서가 바뀌면 “학습이 안 되는” 유령이 나타납니다.
+
+## 디버깅과 학습 불안정（요약 맵）
+
+이 책 시리즈에 별도 “디버깅 전용 강”이 없다면, **루프 설계 강이 1차 관제탑**입니다.
+
+| 증상 | 점검 순서 |
+|---|---|
+| Loss 변하지 않음 | lr=0, freeze, step 미호출, accum 카운터 |
+| Loss NaN | 입력 NaK, lr과대, FP16 overflow, bad mask |
+| 스텝당 시간 폭증 | 동기화·생성·val 빈도, DataLoader |
+| 재현 실패 | seed, cudnn, 데이터 순서 |
+| OOM | B, T, activation, AMP |
+
+## 부록 A. 최소 train_step
+
+```python
+def train_step(model, batch, optimizer, scaler=None, accum=1):
+    x, y = batch
+    with torch.cuda.amp.autocast(enabled=scaler is not None):
+        loss = model(x, y) / accum
+    if scaler is None:
+        loss.backward()
+    else:
+        scaler.scale(loss).backward()
+    return loss.detach() * accum
+```
+
+## 부록 B. 수식 카드
+
+$$
+
+\theta\leftarrow\theta-\eta(t)\hat g,
+\quad
+\hat g=\mathrm{clip}\Big(\frac{1}{K}\sum_{k=1}^{K}g^{(k)},\ c\Big)
+$$
+
+
+<!-- enrich-batch2-62 -->
+## Training Loop 골격 수식
+
+$$
+\theta_{t+1}=\mathrm{Opt}(\theta_t,\nabla L_t,\eta_t)
+$$
+
+```python
+# 의사코드성 루프
+for step in range(1, 101):
+    # batch = next(loader)
+    # loss = model(batch)
+    # loss.backward(); opt.step(); opt.zero_grad()
+    if step % 50 == 0:
+        print("ckpt", step)
+```
+
+로그에 남길 최소 지표: $L$, $\eta$, tokens/s, grad norm.
+
+$$
+\|g\|_2=\bigl(\sum_i g_i^2\bigr)^{1/2}
+$$
+
 ## LLM에서는 어디에 사용될까?
 
 이번 62강에서 배운 개념은 이후 Transformer · GPT · 서빙 강의에서 반복해서 등장합니다. 각 수식·코드 블록을 “실제 모델의 어느 단계인가”와 연결해 다시 읽어 보세요.

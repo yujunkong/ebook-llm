@@ -71,9 +71,9 @@ instruction → output    prompt → (yw, yl)
 
 한 샘플의 의미는 “$y_w$가 정답이다”가 아니라:
 
-\[
+$$
 y_w \succ y_l \mid x
-\]
+$$
 
 즉, **조건 $x$에서 $y_w$가 $y_l$보다 선호된다**.
 
@@ -256,13 +256,13 @@ Preference를 확률 모델로 쓰는 가장 흔한 출발점은 **Bradley-Terry
 
 응답에 스칼라 점수 $r(x,y)$가 있다고 가정하면:
 
-\[
+$$
 P(y_w \succ y_l \mid x)
 =
 \sigma\big(r(x,y_w) - r(x,y_l)\big)
 =
 \frac{1}{1+e^{-(r_w - r_l)}}
-\]
+$$
 
 여기서 $\sigma$는 sigmoid다.
 
@@ -276,9 +276,9 @@ RM 학습은 “관측된 승패를 잘 설명하는 $r$”를 찾는 일이다.
 
 이 강의에서 기억할 최소 수학:
 
-\[
+$$
 \text{데이터 한 줄} \;\equiv\; \text{사건 }\{y_w \succ y_l \mid x\}
-\]
+$$
 
 절대 점수 라벨이 없어도, 상대 비교만으로 $r$의 **차이**를 학습할 수 있다. 절대 스케일은 나중에 KL·정규화로 묶는다(제89강).
 
@@ -450,13 +450,66 @@ def collate_preference(batch, pad_id=0):
 
 ## 수식 보강 — 선호 확률 모델
 
-Bradley-Terry:
+Bradley-Terry는 “응답에 숨은 점수 $r$가 있고, 사람이 점수가 더 큰 쪽을 고른다”는 최소 모델이다.
 
 $$
 P(y_w\succ y_l\mid x)=\sigma\bigl(r(x,y_w)-r(x,y_l)\bigr)
 $$
 
-RM/DPO의 출발점입니다.
+$$
+\sigma(z)=\frac{1}{1+e^{-z}}
+$$
+
+점수 차이 $\Delta=r_w-r_l$만 관측 가능하므로, $r$에 상수 $c$를 더해도 같은 선호 확률이다.
+
+$$
+P(y_w\succ y_l\mid x)=\sigma\big((r_w+c)-(r_l+c)\big)=\sigma(\Delta)
+$$
+
+### 우도·손실로 쓰기
+
+데이터 $\mathcal{D}=\{(x_i,y_w^{(i)},y_l^{(i)})\}$에 대한 음의 로그우도:
+
+$$
+\mathcal{L}_{\mathrm{BT}}
+=
+-\sum_i\log\sigma\big(r(x_i,y_w^{(i)})-r(x_i,y_l^{(i)})\big)
+$$
+
+동치 형태:
+
+$$
+\mathcal{L}_{\mathrm{BT}}
+=
+\sum_i\log\big(1+e^{-\Delta_i}\big)
+=
+\sum_i\mathrm{softplus}(-\Delta_i)
+$$
+
+### 길이·위치 편향을 수식에 넣기（개념）
+
+주석이 “긴 응답을 선호”하는 편향 $b(\ell)$이 섞이면 관측은
+
+$$
+P_{\mathrm{obs}}(y_w\succ y_l)
+\approx
+\sigma\big(\Delta + b(\ell_w)-b(\ell_l)\big)
+$$
+
+가 된다. 데이터셋 품질 점검에서 길이 차를 통제하는 이유다.
+
+### Plackett–Luce로의 한 걸음
+
+$K$개 응답 순서가 있으면 Plackett–Luce:
+
+$$
+P(y_{(1)}\succ\cdots\succ y_{(K)})
+=
+\prod_{k=1}^{K-1}
+\frac{e^{r(y_{(k)})}}{\sum_{j=k}^{K}e^{r(y_{(j)})}}
+$$
+
+ pairwise 데이터는 $K=2$인 특수한 경우다. RM/DPO의 출발점은 이 BT 핵이다.
 
 ## LLM에서는 어디에 사용될까?
 산업·연구 파이프라인에서의 위치:
@@ -515,9 +568,9 @@ SFT 정책 π_SFT
 
 작성한 10쌍에서
 
-\[
+$$
 \Delta_{\text{len}} = \mathrm{len}(chosen) - \mathrm{len}(rejected)
-\]
+$$
 
 의 부호가 +인 비율을 세라. 80% 이상이면 의도적으로 짧은 chosen 쌍을 추가해 재균형하라.
 

@@ -709,6 +709,25 @@ $$
 
 모델은 Embedding+ $N$ Blocks+LM Head입니다.
 
+
+<!-- enrich-batch2-68 -->
+## Mini-GPT Pretraining 목표
+
+$$
+L=-\mathbb{E}\sum_t\log p_\theta(x_t\mid x_{<t})
+$$
+
+```python
+# 토큰 처리량 로그
+import time
+n_tok, t0 = 0, time.time()
+n_tok += 64*256  # B*T
+tps = n_tok / max(time.time()-t0, 1e-6)
+print("tokens/s", tps)
+```
+
+체크: loss↓, PPL↓, 샘플 문장 가독성.
+
 ## LLM에서는 어디에 사용될까?
 
 이번 68강에서 배운 개념은 이후 Transformer · GPT · 서빙 강의에서 반복해서 등장합니다. 각 수식·코드 블록을 “실제 모델의 어느 단계인가”와 연결해 다시 읽어 보세요.

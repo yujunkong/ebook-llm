@@ -413,6 +413,91 @@ $$
 L=-\frac{1}{|\mathcal{T}|}\sum_{t\in\mathcal{T}}\log p(x_t\mid x_{<t})
 $$
 
+
+## 수학적으로 이해하기 — Mini GPT Shape
+
+$$
+
+\begin{aligned}
+x&\in\mathbb{Z}^{B\times T}\\
+E&=\mathrm{tok}(x)+\mathrm{pos}\in\mathbb{R}^{B\times T\times C}\\
+H&=\mathrm{Blocks}(E)\\
+Z&=H W_{\mathrm{lm}}\in\mathbb{R}^{B\times T\times V}
+\end{aligned}
+
+$$
+
+Causal self-attention:
+
+$$
+
+A=\mathrm{softmax}\big(\mathrm{mask}(QK^\top/\sqrt{d_k})\big),\quad
+O=AV
+$$
+
+`last_attn` 훅이 있으면 제51강 시각화로 바로 연결됩니다.
+
+## 작은 숫자 — Config 여권
+
+| 키 | 예제 값 | 의미 |
+|---|---|---|
+| vocab_size | 65 | $V$ |
+| block_size | 64 | $T_{\max}$ |
+| n_embd | 128 | $C$ |
+| n_head | 4 | $H$（$C\%H=0$） |
+| n_layer | 4 | $N$ |
+
+$d_k=C/H=32$입니다.
+
+## 부록 A. 모듈 책임
+
+```text
+config.py    하이퍼파라미터
+tokenizer.py 텍스트↔id
+model.py     Blocks + lm_head
+data.py      (x,y) 배치
+train.py     루프（50강）
+```
+
+## 부록 B. Forward sanity
+
+```python
+logits = model(torch.zeros(2, 16, dtype=torch.long))
+assert logits.shape == (2, 16, config.vocab_size)
+```
+
+
+<!-- enrich-batch2-49 -->
+## Mini-Transformer 구현 체크 (1)
+
+블록:
+
+$$
+h \leftarrow h + \mathrm{Attn}(\mathrm{LN}(h))
+$$
+
+$$
+h \leftarrow h + \mathrm{MLP}(\mathrm{LN}(h))
+$$
+
+```python
+import torch.nn as nn
+class Block(nn.Module):
+    def __init__(self, d, n_head):
+        super().__init__()
+        # 교육용: 내장 MultiheadAttention 사용
+        self.ln1 = nn.LayerNorm(d)
+        self.attn = nn.MultiheadAttention(d, n_head, batch_first=True)
+        self.ln2 = nn.LayerNorm(d)
+        self.mlp = nn.Sequential(nn.Linear(d, 4*d), nn.GELU(), nn.Linear(4*d, d))
+    def forward(self, x):
+        h = self.ln1(x)
+        a, _ = self.attn(h, h, h, need_weights=False)
+        x = x + a
+        x = x + self.mlp(self.ln2(x))
+        return x
+```
+
 ## LLM에서는 어디에 사용될까?
 
 이번 49강에서 배운 개념은 이후 Transformer · GPT · 서빙 강의에서 반복해서 등장합니다. 각 수식·코드 블록을 “실제 모델의 어느 단계인가”와 연결해 다시 읽어 보세요.

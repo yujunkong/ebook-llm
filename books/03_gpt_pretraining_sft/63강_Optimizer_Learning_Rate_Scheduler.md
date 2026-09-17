@@ -370,6 +370,38 @@ $$
 
 형태의 가중치 감쇠를 적용합니다($\lambda$: weight decay). L2를 loss에 더하는 것과 최적화가 미묘하게 다릅니다.
 
+
+<!-- enrich-batch2-63 -->
+## AdamW · LR 스케줄
+
+Adam 모멘트:
+
+$$
+m_t=\beta_1 m_{t-1}+(1-\beta_1)g_t
+$$
+
+$$
+v_t=\beta_2 v_{t-1}+(1-\beta_2)g_t^2
+$$
+
+$$
+\theta\leftarrow\theta-\eta\,\hat{m}/(\sqrt{\hat{v}}+\varepsilon)
+$$
+
+Warmup:
+
+$$
+\eta_t=\eta_{\mathrm{peak}}\cdot\frac{t}{t_{\mathrm{wu}}}\quad(t\le t_{\mathrm{wu}})
+$$
+
+```python
+import math
+def cosine_lr(t, T, peak=1e-3, floor=1e-5):
+    # t in [0,T]
+    return floor + 0.5*(peak-floor)*(1+math.cos(math.pi*t/T))
+print(cosine_lr(0,1000), cosine_lr(500,1000))
+```
+
 ## LLM에서는 어디에 사용될까?
 
 이번 63강에서 배운 개념은 이후 Transformer · GPT · 서빙 강의에서 반복해서 등장합니다. 각 수식·코드 블록을 “실제 모델의 어느 단계인가”와 연결해 다시 읽어 보세요.

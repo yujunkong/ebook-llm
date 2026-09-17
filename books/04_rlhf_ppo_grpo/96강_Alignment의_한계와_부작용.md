@@ -231,9 +231,216 @@ $$
 
 가 될 수 있습니다(reward hacking). KL 제약·다양성·인간 평가가 완충입니다.
 
-## LLM에서는 어디에 사용될까?
+## 수식으로 보는 대리 목표와 Goodhart
+### 12.1 진짜 목표 vs 측정
 
-이번 96강에서 배운 개념은 이후 Transformer · GPT · 서빙 강의에서 반복해서 등장합니다. 각 수식·코드 블록을 “실제 모델의 어느 단계인가”와 연결해 다시 읽어 보세요.
+설계자가 원하는 품질을 $U(x,y)$라 하고, 최적화에 넣는 신호를 $r(x,y)$라 하자.
+
+$$
+
+r(x,y) = \widehat{U}(x,y)
+\quad\text{（근사·대리）}
+
+$$
+
+정책 최적화는 대략
+
+$$
+
+\max_\theta\;
+\mathbb{E}_{x,\,y\sim\pi_\theta}\big[r(x,y)\big]
+-
+\beta\,\mathrm{KL}(\pi_\theta\|\pi_{\mathrm{ref}})
+
+$$
+
+을 追한다. $r$의 기댓이 올라도 $U$의 기댓이 같이 오른다는 **보장는 없다**.
+
+$$
+
+\mathbb{E}[r]\uparrow
+\quad\not\!\!\!\implies\quad
+\mathbb{E}[U]\uparrow
+
+$$
+
+이것이 reward hacking을 한 줄로 쓴 형태다.
+
+### 12.2 KL이 부작용을 “옮기는” 방식
+
+$\beta$를 키우면 정책이 $\pi_{\mathrm{ref}}$에 붙는다. 해킹성 이동은 줄 수 있지만,
+
+- 유용한 탐색도 줄고
+- 참조가 이미 가진 거부·동의 편향은 **그대로 고정**될 수 있다
+
+즉 KL은 만능 해독제가 아니라 **이동 예산**이다. 예산 안에서 어느 허점을 공략할지는 데이터·$r$가 정한다.
+
+### 12.3 Over-refusal를 스칼라로 쓰면
+
+안전 점수 $s_{\mathrm{safe}}$와 유용 점수 $s_{\mathrm{useful}}$을 하나의
+
+$$
+
+r=\alpha s_{\mathrm{safe}}+(1-\alpha)s_{\mathrm{useful}}
+
+$$
+
+로 합치면, $\alpha$ 선택에 따라 거부율과 과제가 트레이드오프된다. **한 숫자로 “정렬 완료”를 선언할 수 없는** 이유가 여기 있다.
+
+## 다축 회귀 게이트（운영 스케치）
+배포 전 최소 게이트（임계값은 팀 정책 — 숫자를 날조하지 않음）:
+
+| 축 | 게이트 질문 | 실패 시 |
+|---|---|---|
+| Proxy reward | RM/선호 지표만 올랐나? | 인간·검증 축 확인 |
+| Truth | 검증 가능 세트 회귀? | 롤백 후보 |
+| Safety | 유해 준수↓ 없이 허용 거부↑? | 정책·데이터 재검토 |
+| Sycophancy | 틀린 전제 추종률↑? | 교정 데이터 보강 |
+| Shift | OOD 세트에서도 동방행? | 재라벨·제약 |
+| Serving | 평균 출력 길이 폭증? | 5권 비용·SLO 검토 |
+
+```text
+학습 스텝 N → 게이트 통과? 
+  ├─ yes → 카나리 배포
+  └─ no  → 체크포인트 폐기/롤백 + 원인 축 기록
+```
+
+제95강 챌린지의 “라벨 뒤집기”는 이 게이트의 장난감 버전이다.
+
+## 사례 카드 — 증상에서 축으로
+| 사용자 신고 | 1차 의심 축 | 4권 좌표 |
+|---|---|---|
+| “무조건 맞다고 해요” | Sycophancy | 선호 라벨·거부 데이터 |
+| “정상 질문도 거절” | Over-refusal | 안전 보상·정책 문서 |
+| “점수는 올랐는데 이상함” | Reward hacking | RM/judge 감사 |
+| “데모에선 좋은데 현장에선…” | Distribution shift | OOD·온라인 피드백 |
+| “벤치만 잘 나와요” | Eval Goodhart | 다축·인간 표본 |
+
+
+<!-- enrich-block-96 -->
+## Alignment 부작용을 수식으로 보기
+
+보상 해킹의 스케치:
+
+$$
+\pi^* = \arg\max_\pi\; \mathbb{E}_{x\sim\pi}[R_\phi(x)]
+$$
+
+$R_\phi$가 진짜 인간 가치 $R^*$의 대리(proxy)이면:
+
+$$
+R_\phi \approx R^* + \varepsilon_{\mathrm{proxy}}
+$$
+
+최적화 압력이 커질수록 $\varepsilon$를 파고듭니다.
+
+### KL 정규화의 역할
+
+$$
+\max_\pi\; \mathbb{E}[R] - \beta\,\mathrm{KL}(\pi\|\pi_{\mathrm{ref}})
+$$
+
+$\beta$가 작으면 보상 추종↑·분포 이탈↑, 크면 보수적입니다.
+
+### Goodhart 한 줄
+
+$$
+\text{measure} \neq \text{target}
+$$
+
+평가 지표를 직접 최적화하면 지표는 오르고 체감 품질은 떨어질 수 있습니다.
+
+
+<!-- enrich-extra-96 -->
+## 사례 — 보상은 올랐는데 품질은?
+
+```python
+# proxy reward가 길이만 보면 길이 해킹
+def proxy_reward(text: str) -> float:
+    # 나쁜 예: 길이 = 보상
+    return float(len(text.split()))
+
+samples = ["짧음", "아주 긴 답 " * 20]
+print(sorted(samples, key=proxy_reward, reverse=True)[0][:40])
+```
+
+### 완화 패턴
+
+1. 길이 정규화 보상
+2. KL to reference
+3. 다양한 평가(자동+샘플 리뷰)
+
+$$
+r'\;=\;r - \lambda\,|y|
+$$
+
+## LLM에서는 어디에 사용될까?
+정렬 한계는 “연구 논문 주제”만이 아니라 **제품 온콜**이다.
+
+1. 고객 성공팀이 보는 “갑자기 거절↑” → over-refusal 회귀
+2. 레드팀이 보는 “동의형 환각” → sycophancy 세트
+3. 성장팀이 보는 “길이만 긴 답” → length hacking
+4. 서빙팀이 보는 “토큰 폭탄” → 정렬이 바꾼 길이 분포（제98·107강）
+
+4권에서 실패 이름을 붙이는 이유는, 5권 장애 트리（제119강）에 **품질 붕괴** 가지를 남기기 위해서다. 느린 것과 잘못된 것은 다른 티켓이다.
+
+## 보상 해킹을 수식으로 탐지하는 습관（완벽 탐지 아님）
+모니터 후보:
+
+$$
+
+\begin{aligned}
+\Delta r &= \bar{r}_{\mathrm{new}}-\bar{r}_{\mathrm{old}} \\
+\Delta U &= \widehat{U}_{\mathrm{human/new}}-\widehat{U}_{\mathrm{human/old}} \\
+\Delta L &= \bar{|y|}_{\mathrm{new}}-\bar{|y|}_{\mathrm{old}}
+\end{aligned}
+
+$$
+
+$\Delta r\gg0$ 인데 $\Delta U\le0$ 이면 hacking 후보.  
+$\Delta r\gg0$ 이고 $\Delta L\gg0$ 이면 길이 대리 의심.  
+확정이 아니라 **감사 트리거**다.
+
+길이 정규화 보상의 한 예（교육용）:
+
+$$
+
+\tilde{r}(x,y)=\frac{r_\phi(x,y)}{|y|^\alpha},\quad \alpha\in[0,1]
+
+$$
+
+$\alpha$를 키우면 길이 hacking은 줄 수 있으나 필요한 장문 답도 불리해진다. 은탄환이 아니다.
+
+## 실습
+### 실습 A — 대리 목표 분해
+
+팀（또는 가상 제품）의 “좋은 답”을 $U$의 하위 축 4개로 쪼개고, 각각을 재는 신호 후보를 쓰시오.
+
+### 실습 B — β 트레이드오프
+
+KL $\beta$를 극단적으로 키우면 hacking과 개선이 어떻게 같이 죽는지 문장으로 쓰시오.
+
+### 실습 C — 게이트 설계
+
+위 다축 표에서 축 3개를 골라, “측정 방법 / 실패 시 행동”을 runbook 형식으로 적으시오.
+
+### 실습 D — DPO에도 남는 것
+
+RM이 없는 직접 선호 손실에서, specification gaming이 어디에 남는지 한 단락으로 설명하시오.
+
+### 실습 E — $\Delta r$ vs $\Delta U$
+
+가상 로그에서 $\Delta r=+0.4$, $\Delta U=-0.1$, $\Delta L=+120$토큰이면 어떤 가설을 먼저 적겠는가?
+
+## 자주 하는 실수
+1. RM score↑만으로 출시 결정  
+2. 안전↑를 거부율↑와 동일시  
+3. sycophancy를 “톤 문제”로만 치부  
+4. train=eval 복사로 shift를 숨김  
+5. 자동 judge와 학습 신호를 동일 모델로 공유  
+6. 부작용을 “모델 인격”으로 의인화해 데이터·보상을 안 고침  
+7. 한 축 개선 PR에 다른 축 회귀를 첨부하지 않음  
+8. 길이 정규화만으로 hacking이 끝났다고 선언  
 
 ## 핵심 요약
 - 정렬 최적화는 대리 목표를 밀어 올리며, 허점은 탐색과 함께 드러난다.

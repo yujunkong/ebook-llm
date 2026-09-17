@@ -263,9 +263,110 @@ $$
 
 차수입니다. 대역폭·지연이 TP 스케일을 제한합니다.
 
-## LLM에서는 어디에 사용될까?
 
-이번 114강에서 배운 개념은 이후 Transformer · GPT · 서빙 강의에서 반복해서 등장합니다. 각 수식·코드 블록을 “실제 모델의 어느 단계인가”와 연결해 다시 읽어 보세요.
+<!-- enrich-block-114 -->
+## 통신 비용 스케치
+
+올리듀스 볼륨(대략):
+
+$$
+V_{\mathrm{allreduce}}\approx 2\cdot\frac{P-1}{P}\cdot |g|
+$$
+
+대역폭 한계 시간:
+
+$$
+t_{\mathrm{comm}}\approx\frac{V}{B_{\mathrm{eff}}}
+$$
+
+RoCE/NCCL에서 $B_{\mathrm{eff}}$는 이론 PCIe/IB보다 낮게 잡는 것이 안전합니다.
+
+### 텐서 병렬 통신
+
+$$
+t_{\mathrm{step}}\approx t_{\mathrm{compute}}+t_{\mathrm{allreduce}}+t_{\mathrm{sync}}
+$$
+
+
+<!-- enrich-extra-114 -->
+## 실습 — all-reduce 시간 추정
+
+```python
+def t_allreduce_sec(bytes_msg: float, gbps_eff: float, P: int) -> float:
+    # 대략 ring: 2*(P-1)/P * size / bandwidth
+    vol = 2 * (P - 1) / P * bytes_msg
+    return vol / (gbps_eff * 1e9 / 8)
+
+print("ms", 1e3 * t_allreduce_sec(2e8, gbps_eff=50, P=8))
+```
+
+$$
+t\approx \frac{2(P-1)}{P}\cdot\frac{|g|}{B_{\mathrm{eff}}}
+$$
+
+## All-reduce 부피·시간 스케치
+메시지（환원할 텐서）바이트를 $M$, 참여 GPU 수를 $P$, 실효 대역폭을 $B_{\mathrm{eff}}$라 하자.  
+Ring all-reduce의 교육용 근사（상수·구현 세부 무시）:
+
+$$
+
+T_{\mathrm{AR}} \;\gtrsim\;
+\frac{2(P-1)}{P}\cdot\frac{M}{B_{\mathrm{eff}}}
+\;+\;
+T_{\mathrm{latency}}
+
+$$
+
+해석:
+
+- $M$↑ → 통신 시간↑（큰 activation/부분합）
+- $B_{\mathrm{eff}}$↓（잘못된 NIC, TCP 폴백）→ 같은 $M$도 느림
+- Decode처럼 **자주·작은** collective는 latency 항이 두드러질 수 있음
+
+**사실:** 실제 NCCL은 알고리즘·토폴로지를 고른다. 위 식은 직관용.  
+**비주장:** 특정 GB/s 실측치.
+
+### 링크 스펙 vs 실효
+
+$$
+
+B_{\mathrm{eff}} \le B_{\mathrm{link}}
+$$
+
+등호는 거의 성립하지 않는다. 프로토콜·동기화·메시지 크기·혼잡이 깎는다.
+
+```text
+B_link (예: 200GbE급 상한)
+  → RDMA 점대점
+    → NCCL collective 실효
+      → 엔진 토큰 속도
+```
+
+층마다 따로 측정한다（제115·118강）.
+
+### TP와 통신 빈도（정성）
+
+레이어마다 all-reduce/all-gather가 붙으면, 출력 토큰 하나당
+
+$$
+
+T_{\mathrm{token}} \approx T_{\mathrm{compute}} + \sum_{\ell} T_{\mathrm{collective}}^{(\ell)}
+$$
+
+잘못된 수송 경로는 $\sum T_{\mathrm{collective}}$를 키워 TPOT를 망가뜨린다.
+
+## LLM에서는 어디에 사용될까?
+- `tensor-parallel-size>1` 서빙의 침묵 hang
+- 듀얼 노드가 단일보다 느린 역설
+- 컨테이너에서 RDMA 디바이스 누락
+- 온콜 티켓에 `NCCL_DEBUG` 로그 첨부 규율
+
+## 실습 C — 부피 사고실험
+$M$이 2배가 되면 ring 근사에서 통신 시간이 대략 어떻게 되는지 쓰시오（$B_{\mathrm{eff}}$ 고정）.
+
+## 실습 D — 폴백 탐지
+TCP 폴백을 의심할 때 확인할 로그·장치 증거 세 가지를 쓰시오.
+
 
 ## 핵심 요약
 - NCCL은 멀티 GPU 집합 통신의 사실상 표준 경로다.

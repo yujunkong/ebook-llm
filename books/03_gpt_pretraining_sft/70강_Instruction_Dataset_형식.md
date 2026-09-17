@@ -283,6 +283,120 @@ $$
 L=-\sum_{t\in y}\log p_\theta(y_t\mid c,y_{<t})
 $$
 
+
+## 수학적으로 이해하기 — 스키마에서 마스크까지
+
+샘플 $(c,y)$를 토큰열 $x_{1:T}$로 렌더링할 때, 응답 구간 지시함수 $m_t$가 필요합니다.
+
+$$
+
+L = -\sum_{t=1}^{T} m_t \log p_\theta(x_t\mid x_{<t}),
+\qquad
+m_t=\begin{cases}
+1 & t\in\mathcal{R}\\
+0 & t\notin\mathcal{R}
+\end{cases}
+
+$$
+
+Alpaca 템플릿이면 $\mathcal{R}$은 `### Response:` 이후（보통 EOS 포함 여부는 규약）입니다.  
+Messages면 $\mathcal{R}=\bigcup\{\text{assistant spans}\}$입니다.
+
+### 필드 길이 스케치
+
+미니 JSONL $N$개에 대해 평균 토큰 길이를 $\bar T_{\mathrm{prompt}},\bar T_{\mathrm{resp}}$라 하면
+
+$$
+
+\rho=\frac{\bar T_{\mathrm{resp}}}{\bar T_{\mathrm{prompt}}+\bar T_{\mathrm{resp}}}
+$$
+
+가 응답 비율입니다. $\rho$가 너무 작으면 학습 신호가 희박하고, 너무 크면（프롬프트가 극단적으로 짧으면）조건 다양성이 부족할 수 있습니다. **정답 비율은 없으며**, 로깅 대상입니다.
+
+## 작은 숫자 예 — 한 샘플 토큰 경계
+
+렌더 결과（특수 토큰을 한 글자로 대체한 설명용）:
+
+```text
+chars:  <u> 2 + 2 ? <a> 4 <e>
+index:   0  1 2 3 4  5  6  7
+mask m:  0  0 0 0 0  0  1  1
+```
+
+`4`와 `<e>`만 타깃이라고 합시다. 손실에 기여하는 위치 수는 $2$입니다.  
+실전에서는 서브워드 때문에 `Response:` 구분자가 여러 토큰일 수 있으므로, **문자열 경계 → 토큰 경계 매핑 테스트**가 필요합니다（제71~72강）.
+
+## 직관적으로 이해하기 — 계약서 세 장
+
+```text
+1) JSON 스키마 계약: 필드가 있는가
+2) 템플릿 계약: 문자열로 어떻게 붙이는가
+3) 마스크 계약: 어디에 loss를 주는가
+```
+
+한 장이라도 어긋나면 “모델이 지시를 못한다”로 오진하기 쉽습니다.
+
+## 품질 수식 없이 하는 중복 검사
+
+정규화 문자열 $u(x)$의 해시 집합 크기
+
+$$
+
+\frac{|\{h(u(x)):x\in\mathcal{D}\}|}{|\mathcal{D}|}
+$$
+
+가 1에서 멀수록 중복이 많습니다. 임계값을 업계 표준처럼 단정하지 말고, 미니셋에서 **중복 비율을 보고** 정제하세요.
+
+## 부록 A. Alpaca↔Messages 왕복 시 깨지는 지점
+
+1. Input 절 생략 규약이 왕복 중 바뀜
+2. system 메시지를 Alpaca에 넣을 곳이 없음 → 소실
+3. 멀티턴 messages를 단일 instruction으로 무리하게 평탄화
+
+멀티턴이 필요하면 **messages를 원본**으로 두는 편이 안전합니다.
+
+## 부록 B. JSONL 로더 실패 체크
+
+| 증상 | 원인 후보 |
+|---|---|
+| `JSONDecodeError` | 배열을 JSONL로 착각, 트레일링 콤마 |
+| `missing output` | 필드명 `response`로 표기 |
+| 빈 학습 | assistant 없음 / mask 전부 0 |
+| 길이 폭주 | system에 장문 정책 반복 |
+
+## 부록 C. 실습 확장 — $\rho$ 로깅
+
+```python
+def response_ratio(mask):
+    m = mask.float()
+    return (m.sum() / m.numel()).item()
+```
+
+배치 평균 $\rho$를 학습 로그에 남겨 제71강과 연결하세요.
+
+
+<!-- enrich-batch2-70 -->
+## Instruction 포맷
+
+샘플 $(q,a)$:
+
+$$
+x=\mathrm{tmpl}(q)\,+\,a
+$$
+
+손실은 $a$ 구간에만.
+
+$$
+L=-\sum_{t\in a}\log p(x_t\mid x_{<t})
+$$
+
+```python
+def render(q, a):
+    # 단순 템플릿
+    return f"### Q:\n{q}\n### A:\n{a}"
+print(render("1+1?", "2"))
+```
+
 ## LLM에서는 어디에 사용될까?
 - 공개 SFT 데이터는 Alpaca-like와 ShareGPT/messages 계열이 공존한다.
 - 많은 학습 프레임워크가 messages를 받아 내부에서 chat template을 적용한다.

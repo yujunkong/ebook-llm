@@ -374,6 +374,28 @@ $$
 
 보상 모델을 따로 두지 않고, 선호 데이터로 정책을 직접 업데이트합니다.
 
+### 암묵 보상과 마진
+
+$$
+\hat{r}_\theta(x,y)=\beta\log\frac{\pi_\theta(y\mid x)}{\pi_{\mathrm{ref}}(y\mid x)}
+$$
+
+$$
+m_\theta(x)=\hat{r}_\theta(x,y_w)-\hat{r}_\theta(x,y_l)
+$$
+
+$$
+L_{\mathrm{DPO}}=-\log\sigma\big(m_\theta(x)\big)=\mathrm{softplus}\big(-m_\theta(x)\big)
+$$
+
+로그확률을 시퀀스 합으로 두면
+
+$$
+\log\pi(y\mid x)=\sum_{t=1}^{|y|}\log\pi(y_t\mid x,y_{<t})
+$$
+
+구현에서는 네 항 $\log\pi_\theta(y_w),\log\pi_\theta(y_l),\log\pi_{\mathrm{ref}}(y_w),\log\pi_{\mathrm{ref}}(y_l)$의 **마스킹·길이 정규화 계약**이 손실 부호를 가른다.
+
 ## 정량 스케치 — DPO 손실 곡면
 
 $$

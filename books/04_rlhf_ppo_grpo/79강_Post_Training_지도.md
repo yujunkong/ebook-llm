@@ -304,6 +304,20 @@ $$
 
 를 추구합니다. DPO는 이 목표의 특정 재매개화입니다.
 
+
+<!-- enrich-batch2-79 -->
+## Post-Training 지도 수식
+
+$$
+\theta_{\mathrm{PT}}\xrightarrow{\mathrm{SFT}}\theta_{\mathrm{SFT}}\xrightarrow{\mathrm{Pref}}\theta_{\mathrm{align}}
+$$
+
+선호 단계 후보: RM+PPO, DPO, GRPO, …
+
+$$
+\max_\pi\ \mathbb{E}[R]-\beta\mathrm{KL}(\pi\|\pi_{\mathrm{ref}})
+$$
+
 ## LLM에서는 어디에 사용될까?
 산업·오픈 모델 문서에서 자주 보이는 패턴:
 

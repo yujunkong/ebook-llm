@@ -368,6 +368,19 @@ $$
 
 마스킹 손실에서는 pad 위치를 $\mathcal{T}$에서 제외합니다.
 
+
+## 수식 보강 — Vocab와 파라미터
+
+임베딩·헤드（공유 없으면）
+
+$$
+
+\#\theta_{\mathrm{emb+head}} \approx 2\,V\,C
+$$
+
+Weight tying이면 약 $V C$입니다. Special tokens $k$개를 추가하면 $V\leftarrow V+k$이므로 행이 $k$줄 늘어납니다.  
+PAD는 loss에서 `ignore_index`로 제외하는 것이 보통입니다.
+
 ## LLM에서는 어디에 사용될까?
 Hugging Face식 속성 예:
 

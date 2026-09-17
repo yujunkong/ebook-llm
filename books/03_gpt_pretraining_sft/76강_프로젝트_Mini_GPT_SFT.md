@@ -415,6 +415,68 @@ $$
 
 작은 학습률로 짧은 에폭이 흔합니다(과적합·지식 망각 완화).
 
+
+## 수학적으로 이해하기 — Mini SFT 목표
+
+$$
+
+L_{\mathrm{SFT}}=-\sum_{t\in\mathcal{R}}\log p_\theta(y_t\mid c,y_{<t})
+$$
+
+코드에서는 `ignore_index=-100`으로 $t\notin\mathcal{R}$을 제외합니다.  
+성공은 $L$만이 아니라 **동일 프롬프트 before/after**와 초미니 harness로 정의합니다（제75강）.
+
+### 마스크 비율
+
+$$
+
+\rho=\frac{|\mathcal{R}|}{T}
+$$
+
+를 배치마다 로깅하세요. $\rho=1$이면 마스크가 빠진 것과 같습니다.
+
+## 작은 숫자 스케치 — Before/After 채점
+
+문항 10개, rule score 평균:
+
+```text
+before: 0.20
+after:  0.70
+```
+
+허구 예시입니다. 절대 숫자를 자랑하지 말고, **같은 suite에서 상대 개선**만 기록하세요.
+
+## 부록 A. 프로젝트 산출물 체크
+
+- [ ] `tiny_sft.jsonl`
+- [ ] mask 단위 테스트 통과
+- [ ] before/after 텍스트 저장
+- [ ] （선택）LoRA adapter
+- [ ] harness json 리포트
+
+## 부록 B. 수식 카드
+
+$$
+
+\mathcal{T}(c)\ \text{동일},\quad
+m_t=\mathbf{1}[t\in\mathcal{R}],\quad
+\hat S=\frac1M\sum_m s_m
+$$
+
+
+<!-- enrich-batch2-76 -->
+## Mini SFT 프로젝트 점검
+
+$$
+L\downarrow,\ \mathrm{win\ rate}\uparrow,\ \mathrm{format\ ok}\uparrow
+$$
+
+```python
+metrics = {"loss": 1.2, "format_ok": 0.91, "toy_acc": 0.7}
+assert metrics["format_ok"] > 0.8
+print(metrics)
+```
+
 ## LLM에서는 어디에 사용될까?
 
 이번 76강에서 배운 개념은 이후 Transformer · GPT · 서빙 강의에서 반복해서 등장합니다. 각 수식·코드 블록을 “실제 모델의 어느 단계인가”와 연결해 다시 읽어 보세요.

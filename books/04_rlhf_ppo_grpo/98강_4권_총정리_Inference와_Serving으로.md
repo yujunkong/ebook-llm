@@ -133,6 +133,20 @@ $$
 
 제99강은 이 표를 본문으로 펼친다. Prefill/Decode（100）, KV Cache（101）, Continuous Batching（102）이 바로 이어진다.
 
+## 한 페이지 구두 시험（자가）
+제한 시간 10분. 메모 없이 답한다.
+
+1. RLHF 3단계 상자  
+2. $\rho$와 clip이 막는 것  
+3. KL $\beta$를 키우면  
+4. DPO가 접는 상자 / 못 접는 것  
+5. Outcome vs Process  
+6. Reward hacking 한 줄 정의  
+7. TTFT와 TPOT 정의（기호）  
+8. 왜 긴 CoT가 서빙 비용을 올리나  
+
+틀리면 해당 강으로 돌아간다. 통과 기준은 “완벽 암기”가 아니라 **좌표를 잃지 않는 것**이다.
+
 ## 추천 재학습 경로（막힐 때）
 | 증상 | 돌아갈 강 |
 |---|---|
@@ -155,9 +169,165 @@ $$
 
 5권은 이 지연·메모리를 줄이는 장치(KV, batching, quant)를 다룹니다.
 
-## LLM에서는 어디에 사용될까?
+## 수식 카드 — 4권을 한 장에
+손에 남는 최소 세트:
 
-이번 98강에서 배운 개념은 이후 Transformer · GPT · 서빙 강의에서 반복해서 등장합니다. 각 수식·코드 블록을 “실제 모델의 어느 단계인가”와 연결해 다시 읽어 보세요.
+$$
+
+\begin{aligned}
+\rho_t(\theta)
+&=
+\frac{\pi_\theta(a_t\mid s_t)}{\pi_{\theta_{\mathrm{old}}}(a_t\mid s_t)}
+\\[0.5em]
+L^{\mathrm{CLIP}}
+&=
+\mathbb{E}\big[
+\min\big(\rho A,\;\mathrm{clip}(\rho,1-\epsilon,1+\epsilon)A\big)
+\big]
+\\[0.5em]
+\mathrm{KL}(\pi\|\pi_{\mathrm{ref}})
+&=
+\mathbb{E}_{y\sim\pi}\Big[\log\frac{\pi(y\mid x)}{\pi_{\mathrm{ref}}(y\mid x)}\Big]
+\\[0.5em]
+R
+&=
+r-\beta\,\widehat{\mathrm{KL}}
+\\[0.5em]
+L_{\mathrm{DPO}}
+&=
+-\log\sigma\big(\beta(\Delta\log\pi_\theta-\Delta\log\pi_{\mathrm{ref}})\big)
+\end{aligned}
+
+$$
+
+여기서 $\Delta\log\pi=\log\pi(y_w\mid x)-\log\pi(y_l\mid x)$ 형태（제90강）.  
+**암기 팁:** clip은 “한 걸음”, KL/$\beta$는 “집에서 얼마나 멀어질지”, DPO는 “선호 쌍으로 그 거리를 직접 학습”.
+
+## 제95강 미니 파이프라인 ↔ 이론 기호
+| 코드/로그 | 기호 | 강의 |
+|---|---|---|
+| `margin` before/after | $\log\pi(y_w)-\log\pi(y_l)$ 감각 | 90~91, 95 |
+| `beta` | $\beta$ | 89~91 |
+| RM logit / score | $r_\phi$ | 85 |
+| REINFORCE `(r-b)*logp` | $(r-b)\nabla\log\pi$ | 82, 95 |
+| label flip 실험 | misspecification | 96 |
+
+미니 실험이 “작은 절대 성능”을 준 것이 아니라, **기호↔코드 대응**을 몸에 심은 것이 성과다.
+
+## 정렬 성공이 서빙 부하가 되는 경로（정성）
+```text
+reasoning RL → 평균 출력 토큰 L_out ↑
+            → decode step ≈ L_out
+            → 요청당 GPU-시간 ↑
+            → 동일 GPU에서 Throughput ↓ 가능
+            → TTFT는 prefill·큐, TPOT는 decode에 민감
+```
+
+정의만（제107강에서 본격）:
+
+$$
+
+\begin{aligned}
+\mathrm{TTFT} &= t_{\mathrm{first}}-t_{\mathrm{req}} \\
+\mathrm{TPOT} &\approx \frac{t_{\mathrm{last}}-t_{\mathrm{first}}}{n_{\mathrm{out}}-1} \\
+\mathrm{Throughput} &\approx \frac{N_{\mathrm{tokens}}}{\Delta t_{\mathrm{wall}}}
+\end{aligned}
+
+$$
+
+**사실:** 위는 정의·근사다.  
+**비주장:** 특정 모델의 ms·tok/s 숫자.
+
+
+<!-- enrich-block-98 -->
+## 4권 → 5권 다리 수식
+
+정렬된 정책 $\pi_\theta$를 서빙할 때 비용은 대략:
+
+$$
+\mathrm{Cost} \propto \underbrace{T_{\mathrm{prefill}}}_{\mathrm{prompt}} + \underbrace{T_{\mathrm{decode}}\cdot N_{\mathrm{gen}}}_{\mathrm{생성}}
+$$
+
+KV 캐시 메모리:
+
+$$
+\mathrm{Mem}_{\mathrm{KV}} \approx 2\cdot L\cdot H\cdot d_h\cdot T\cdot B\cdot b_{\mathrm{bytes}}
+$$
+
+다음 권은 throughput·latency·스케줄러로 이 식을 엔지니어링합니다.
+
+
+<!-- enrich-extra-98 -->
+## 서빙 입구 체크리스트
+
+| 항목 | 식/질문 |
+|---|---|
+| 가중치 메모리 | $N\cdot b$ |
+| KV | $2LHd_h T B b$ |
+| 동시 요청 | continuous batching? |
+| SLA | TTFT / TPOT P99 |
+
+```python
+# 대략 KV 바이트 추정
+def kv_bytes(L, H, dh, T, B, nbytes=2):
+    # nbytes=2 → fp16
+    return 2 * L * H * dh * T * B * nbytes
+
+print(kv_bytes(L=32, H=32, dh=128, T=2048, B=8) / 1e9, "GB")
+```
+
+
+<!-- enrich-batch2-98 -->
+## Prefill / Decode 분해
+
+$$
+t_{e2e}\approx t_{\mathrm{prefill}}(T_{\mathrm{in}})+N_{\mathrm{out}}\cdot t_{\mathrm{decode}}
+$$
+
+```python
+def e2e_ms(ttft, tpot, n_out):
+    return ttft + max(n_out-1,0)*tpot
+print(e2e_ms(200, 30, 64))
+```
+
+## LLM에서는 어디에 사용될까?
+4권 끝에서 팀이 실제로 들고 가는 산출물:
+
+1. **정렬된 가중치** $\pi_\theta$ — 챗·코딩·거부 정책이 심긴 분포  
+2. **평가 습관** — win-rate만이 아닌 다축·해킹 감사  
+3. **실패 어휘** — hacking, sycophancy, over-refusal, shift  
+4. **다음 질문** — 이 가중치를 어떤 엔진·배치·양자화로 서빙할까?
+
+사용자에게 보이는 것은 (1)의 샘플링 결과이고, SRE에게 보이는 것은 (4)의 지연·오류다. 둘을 잇는 다리가 5권이다.
+
+## 실습
+### 실습 A — 빈 지도
+
+제3절 다이어그램을 보지 말고 SFT 이후 상자를 다시 그리시오.
+
+### 실습 B — 수식 카드
+
+위 수식 카드에서 $\rho$, $L^{\mathrm{CLIP}}$, KL, $L_{\mathrm{DPO}}$ 각각을 한 문장 직관으로 옮기시오.
+
+### 실습 C — 서빙 매핑
+
+긴 CoT 체크포인트에 대해, TTFT/TPOT/Throughput 중 어떤 지표가 먼저 악화되기 쉬운지 가설을 쓰시오（숫자 없이）.
+
+### 실습 D — 체크리스트 감사
+
+제4절 체크리스트에서 비어 있는 항목 3개를 고르고, 해당 강으로 돌아가 한 단락 요약을 쓰시오.
+
+### 실습 E — 구두 시험
+
+위 한 페이지 구두 시험 8문항을 타이머로 풀고, 틀린 문항의 강 번호를 적으시오.
+
+## 자주 하는 실수
+1. 4권을 “PPO 튜닝 가이드”로만 축소  
+2. DPO=정렬 완료로 선언  
+3. 미니 프로젝트 숫자를 실LLM 성능처럼 인용  
+4. 정렬 품질과 서빙 SLO를 한 지표로 섞음  
+5. 5권을 건너뛰고 API 래퍼만 붙임  
+6. KL·clip·β를 구분하지 못함  
 
 ## 핵심 요약
 - 4권의 핵심은 SFT 이후 **선호·보상·검증 신호로 정책을 갱신**하는 것이다.

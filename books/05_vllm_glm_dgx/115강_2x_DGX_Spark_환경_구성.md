@@ -302,6 +302,45 @@ Smoke test 결과:
 
 모델 병렬로 샤딩하면 랭크당 가중치 메모리는 대략 $1/N$이 됩니다. KV는 요청 길이·동시성에 따라 따로 늘어납니다.
 
+
+<!-- enrich-block-115 -->
+## 멀티 노드 메모리·배치
+
+모델 파라미터 메모리:
+
+$$
+\mathrm{Mem}_W = N_{\mathrm{params}}\cdot b_{\mathrm{bytes}}\cdot f_{\mathrm{overhead}}
+$$
+
+데이터 병렬 시 글로벌 배치:
+
+$$
+B_{\mathrm{global}}=B_{\mathrm{local}}\cdot N_{\mathrm{gpu}}
+$$
+
+유효 학습률/노이즈는 $B_{\mathrm{global}}$에 따라 달라지므로 LR 재스케일을 검토합니다.
+
+
+<!-- enrich-extra-115 -->
+## 구성 체크 — 2노드
+
+```python
+# 환경 변수 스케치 (교육용)
+import os
+cfg = {
+    "NNODES": 2,
+    "NPROC_PER_NODE": 8,
+    "MASTER_ADDR": "10.0.0.1",
+    "MASTER_PORT": "29500",
+}
+world = int(cfg["NNODES"]) * int(cfg["NPROC_PER_NODE"])
+print("world_size", world)
+```
+
+$$
+B_{\mathrm{global}}=B_{\mathrm{micro}}\cdot N_{\mathrm{accum}}\cdot N_{\mathrm{gpu}}
+$$
+
 ## LLM에서는 어디에 사용될까?
 
 이번 115강에서 배운 개념은 이후 Transformer · GPT · 서빙 강의에서 반복해서 등장합니다. 각 수식·코드 블록을 “실제 모델의 어느 단계인가”와 연결해 다시 읽어 보세요.

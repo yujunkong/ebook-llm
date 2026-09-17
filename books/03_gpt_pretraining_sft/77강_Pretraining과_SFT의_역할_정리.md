@@ -361,6 +361,94 @@ mean_response_tokens / mean_seq_tokens
 
 를 남기는 습관을 권합니다.
 
+
+<!-- enrich-block-77 -->
+## Pretraining vs SFT — 목적함수 대비
+
+Pretraining (CLM):
+
+$$
+L_{\mathrm{PT}} = -\mathbb{E}_{x\sim\mathcal{D}_{\mathrm{web}}}\sum_t \log p_\theta(x_t\mid x_{<t})
+$$
+
+SFT:
+
+$$
+L_{\mathrm{SFT}} = -\mathbb{E}_{(q,a)}\sum_{t\in a}\log p_\theta(x_t\mid x_{<t})
+$$
+
+차이는 **데이터 분포**와 **손실을 주는 토큰 범위**(응답 구간 마스킹)입니다.
+
+### 분포 이동을 한 줄로
+
+$$
+p_{\mathrm{PT}}(x) \;\rightarrow\; p_{\mathrm{SFT}}(x\mid \text{instruction style})
+$$
+
+### 언제 어떤 손실인가?
+
+| 단계 | 목표 | 전형 손실 |
+|---|---|---|
+| PT | 언어 통계 | next-token CE |
+| SFT | 지시 따르기 | response-mask CE |
+| RM/RL | 선호 정렬 | BT / PPO / DPO |
+
+
+## 부록 D. 목적함수 차원 맞추기
+
+배치 안에서 샘플마다 응답 길이가 다르면, 샘플 평균과 토큰 평균이 어긋납니다.
+
+$$
+
+L_{\mathrm{sample}}=\frac{1}{B}\sum_{b=1}^{B} L^{(b)},
+\qquad
+L_{\mathrm{token}}=\frac{\sum_{b,t} m_{b,t}(-\log p_{b,t})}{\sum_{b,t} m_{b,t}}
+$$
+
+짧은 응답만 많은 데이터에서는 $L_{\mathrm{sample}}$이 낙관적으로 보일 수 있습니다. 로거에는 둘 다, 또는 토큰 평균+평균 응답 길이를 남깁니다.
+
+## 부록 E. “정렬” 단어 사용 규칙
+
+| 말 | 이 시리즈에서의 권장 의미 |
+|---|---|
+| SFT / Instruction Tuning | 지도식 지시 추종 |
+| Preference alignment | 선호 쌍 기반 정렬（4권） |
+| RLHF | 보상+RL 기반 정렬（4권） |
+| “정렬했다”（모호） | **금지에 가깝게 피하고** 단계를 명시 |
+
+혼동은 기술 문제가 아니라 **용어 위생** 문제입니다.
+
+
+<!-- enrich-extra-77 -->
+## 실습 — 응답 구간만 손실
+
+```python
+# SFT: prompt 토큰은 loss mask=0
+import torch
+import torch.nn.functional as F
+
+# labels: prompt=-100, response=token id
+logits = torch.randn(2, 8, 50)   # (B,T,V)
+labels = torch.tensor([
+    [-100, -100, -100, 3, 4, 5, 6, 7],
+    [-100, -100, 9, 10, 11, 12, 13, 14],
+])
+loss = F.cross_entropy(
+    logits.reshape(-1, 50),
+    labels.reshape(-1),
+    ignore_index=-100,
+)
+print(loss.item())
+```
+
+### 수식으로 쓰면
+
+$$
+L_{\mathrm{SFT}}=-\sum_{t:\,m_t=1}\log p_\theta(x_t\mid x_{<t})
+$$
+
+$m_t$가 응답 마스크입니다. Pretraining은 보통 $m_t=1$ for all $t$.
+
 ## LLM에서는 어디에 사용될까?
 
 이번 77강에서 배운 개념은 이후 Transformer · GPT · 서빙 강의에서 반복해서 등장합니다. 각 수식·코드 블록을 “실제 모델의 어느 단계인가”와 연결해 다시 읽어 보세요.

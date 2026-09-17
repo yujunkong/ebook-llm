@@ -100,17 +100,17 @@ for iter = 1..N:
 밴딧 버전은 “한 동작짜리 영상”, LM 버전은 “여러 토큰짜리 영상”이다. 편집 규칙은 같다.
 
 ## 수학적으로 이해하기 — 코드 대응
-\[
+$$
 \rho=\exp(\log\pi_\theta-\log\pi_{\mathrm{old}})
-\]
+$$
 
 ```python
 ratio = torch.exp(logp - logp_old)
 ```
 
-\[
+$$
 L=-\mathrm{mean}\min(\rho A,\mathrm{clip}(\rho)A)
-\]
+$$
 
 ```python
 loss = -torch.min(ratio * adv, clipped_ratio * adv).mean()
@@ -129,27 +129,27 @@ A        = +1.5
 eps      = 0.2
 ```
 
-\[
+$$
 \rho=e^{(-0.5)-(-1.0)}=e^{0.5}\approx 1.6487
-\]
+$$
 
-\[
+$$
 \mathrm{clip}(\rho)=1.2
-\]
+$$
 
-\[
+$$
 \min(1.6487\times1.5,\;1.2\times1.5)=\min(2.473,1.8)=1.8
-\]
+$$
 
-\[
+$$
 \mathcal{L}=-1.8
-\]
+$$
 
 같은 상황에서 `eps=0.5`면 clip 상한 1.5,
 
-\[
+$$
 \min(2.473,1.5\times1.5)=\min(2.473,2.25)=2.25
-\]
+$$
 
 → 더 큰 surrogate(덜 보수적).
 

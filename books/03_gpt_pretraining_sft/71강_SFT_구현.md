@@ -322,6 +322,22 @@ $$
 
 $\mathcal{P}$ 토큰은 loss에서 제외하는 것이 흔합니다.
 
+
+<!-- enrich-batch2-71 -->
+## SFT 손실 구현 포인트
+
+$$
+L_{\mathrm{SFT}}=\mathbb{E}\bigl[-\sum_t m_t\log p_t(x_t)\bigr]
+$$
+
+```python
+import torch
+m = torch.tensor([0,0,1,1,1.0])
+nll = torch.tensor([0.0,0.0,1.0,0.5,0.2])
+loss = (m*nll).sum() / m.sum()
+print(float(loss))
+```
+
 ## LLM에서는 어디에 사용될까?
 - Hugging Face `Trainer` / 각종 SFTTrainer가 `labels` 마스크를 자동·반자동으로 처리하는 경우가 많다.
 - 그래도 **템플릿·토크나이저·마스크**가 어긋나면 조용히 잘못된 학습이 된다. 자동을 믿기 전에 한 샘플의 `labels`를 decode해 보라.

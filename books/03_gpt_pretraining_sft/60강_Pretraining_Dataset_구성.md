@@ -401,6 +401,30 @@ $$
 
 패킹 효율 $\eta$면 실제 스텝당 유효 토큰은 $B\cdot T\cdot\eta$입니다.
 
+
+<!-- enrich-batch2-60 -->
+## Pretraining 데이터 구성 수식
+
+혼합 비율:
+
+$$
+\mathcal{D}=\sum_i \alpha_i \mathcal{D}_i,\quad \sum_i\alpha_i=1
+$$
+
+중복·품질 필터 후 유효 토큰 수 $N_{\mathrm{tok}}$.
+
+$$
+\text{epochs}\approx \frac{N_{\mathrm{steps}}\cdot B\cdot T}{N_{\mathrm{tok}}}
+$$
+
+```python
+def approx_epochs(steps, batch, seqlen, n_tok):
+    # 토큰 소비량 / 말뭉치 크기
+    return steps * batch * seqlen / max(n_tok, 1)
+
+print(approx_epochs(1000, 64, 1024, 1e8))
+```
+
 ## LLM에서는 어디에 사용될까?
 
 이번 60강에서 배운 개념은 이후 Transformer · GPT · 서빙 강의에서 반복해서 등장합니다. 각 수식·코드 블록을 “실제 모델의 어느 단계인가”와 연결해 다시 읽어 보세요.

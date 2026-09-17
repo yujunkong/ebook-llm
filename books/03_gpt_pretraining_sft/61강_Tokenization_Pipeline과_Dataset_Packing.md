@@ -403,6 +403,91 @@ $$
 
 을 높이면 스텝당 유효 토큰이 늘어납니다.
 
+
+## 수학적으로 이해하기 — Packing 효율
+
+문서 길이（토큰）$L_i$, 컨텍스트 $T$, 패딩만 쓰는 배치 효율은 대략
+
+$$
+
+\eta_{\mathrm{pad}}
+=
+\frac{\sum_i L_i}{B\cdot T}
+\le 1
+$$
+
+짧은 문서가 많으면 $\eta_{\mathrm{pad}}$가 작아집니다. Packing은 여러 문서를 이어
+
+$$
+
+[\;\mathrm{doc}_1\;\|\;\mathrm{doc}_2\;\|\;\cdots\;]
+$$
+
+형태로 $T$에 가깝게 채워 $\eta$를 올립니다.
+
+$$
+
+\eta_{\mathrm{pack}}
+\approx
+\frac{\text{실제 콘텐츠 토큰}}{B\cdot T}
+$$
+
+### 경계와 Attention
+
+문서를 이을 때 문서 경계를 넘나드는 Attention을 허용할지, 블록 대각 마스크로 막을지 선택합니다. 교육용 미니 구현은 **단순 연결+일반 causal**도 많지만, 경계 누수를 알고 있어야 합니다.
+
+## 작은 숫자 예
+
+문서 길이 $\{20, 30, 25\}$, $T=64$, $B=1$:
+
+- 패딩만: 한 배치에 하나 → 예: $20/64\approx0.31$
+- 패킹: $20+30+25=75$이나 $T=64$이므로 앞 $64$만 → $\eta=1$（나머지는 다음 배치）
+
+허구 예시이며, 실제 파이프라인은 잔여 토큰을 버퍼에 남깁니다.
+
+## 부록 A. 토크나이즈 파이프라인
+
+```text
+raw text → normalize → tokenize →（optional）pack → batch tensors
+```
+
+normalize（유니코드·공백）를 학습/추론에서 다르게 하면 분포가 어긋납니다.
+
+## 부록 B. 수식 카드
+
+$$
+
+\eta=\frac{\#\text{content tokens}}{\#\text{batch slots}},
+\quad
+\#\text{batch slots}=B\cdot T
+$$
+
+
+<!-- enrich-batch2-61 -->
+## Packing 효율
+
+패딩 낭비:
+
+$$
+\eta_{\mathrm{pad}}=1-\frac{\sum_i \ell_i}{B\cdot T_{\mathrm{max}}}
+$$
+
+문서 패킹은 여러 문서를 한 시퀀스에 이어 붙여 $\eta_{\mathrm{pad}}$를 줄입니다.
+
+```python
+def pack_lengths(lengths, T=1024):
+    # greedy packing
+    bins, cur = [], 0
+    for L in sorted(lengths, reverse=True):
+        if cur + L <= T:
+            cur += L
+        else:
+            bins.append(cur); cur = L
+    if cur: bins.append(cur)
+    return bins
+print(pack_lengths([200,300,500,800], 1024))
+```
+
 ## LLM에서는 어디에 사용될까?
 
 이번 61강에서 배운 개념은 이후 Transformer · GPT · 서빙 강의에서 반복해서 등장합니다. 각 수식·코드 블록을 “실제 모델의 어느 단계인가”와 연결해 다시 읽어 보세요.

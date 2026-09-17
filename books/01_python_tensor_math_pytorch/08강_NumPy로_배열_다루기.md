@@ -523,6 +523,30 @@ bias를 더할 때 앞 축 $B,T$가 자동으로 맞춰집니다.
 >
 > `(3,1) + (3,)` 와 `(3,1) + (3,1)`의 결과는 같을 수 있어도, Shape 실수는 조용히 잘못된 합을 만듭니다. 항상 `.shape`를 확인하세요.
 
+
+<!-- enrich-extra-8 -->
+## NumPy 브로드캐스팅과 배치
+
+```python
+import numpy as np
+X = np.random.randn(4, 3).astype(np.float32)  # (B,d)
+W = np.random.randn(3, 5).astype(np.float32)  # (d,C)
+b = np.random.randn(5).astype(np.float32)
+Y = X @ W + b  # (B,C)
+print(Y.shape, Y.mean())
+```
+
+$$
+Y=XW+b,\quad
+X\in\mathbb{R}^{B\times d},\ W\in\mathbb{R}^{d\times C}
+$$
+
+`*`는 요소곱, `@`/`matmul`이 행렬곱임을 구분하세요.
+
+$$
+(A\odot B)_{ij}=A_{ij}B_{ij}
+$$
+
 ## LLM에서는 어디에 사용될까?
 | NumPy 개념 | LLM/PyTorch에서의 대응 |
 |---|---|

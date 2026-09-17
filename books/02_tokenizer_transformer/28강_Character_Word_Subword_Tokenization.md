@@ -336,6 +336,83 @@ $$
 
 $\rho$가 클수록 토큰당 정보가 많습니다(언어·토크나이저 의존).
 
+
+## 수학적으로 이해하기 — 분할 비용
+
+텍스트를 토큰열로 바꿀 때 대략 두 비용을 봅니다.
+
+1. **서열 길이** $T$ — Attention $O(T^2)$에 직접 영향
+2. **어휘 크기** $V$ — 임베딩·lm_head 파라미터 $\propto V$
+
+Character: $V$ 작음, $T$ 큼.  
+Word: $V$ 폭증·OOV, $T$ 작음.  
+Subword: 둘 사이의 타협.
+
+평균 바이트/토큰을 $\beta$라 하면 같은 문자열이라도
+
+$$
+
+T \approx \frac{\#\text{bytes}}{\beta}
+$$
+
+감각이 달라집니다. $\beta$는 언어·도메인·토크나이저에 따라 다릅니다. **특정 공개 모델의 $\beta$를 단정하지 마세요.**
+
+## 작은 숫자 예 — 같은 문장, 다른 T
+
+문장 `hello world`（공백 포함 11자） 설명용:
+
+| 방식 | 토큰 예 | T |
+|---|---|---|
+| char | h e l l o _ w o r l d | 11 |
+| word | hello world | 2 |
+| subword | hell o _world （가명） | 3 |
+
+숫자는 교육용입니다. 실제 BPE 병합은 제29강에서 계산합니다.
+
+## 부록 A. OOV와 UNK
+
+Word tokenizer에서 미등재 단어는 UNK로 붕괴합니다. 정보손실을
+
+$$
+
+\text{UNK rate}=\frac{\#\text{UNK tokens}}{T}
+$$
+
+로 모니터링할 수 있습니다. Subword는 이 비율을 낮추려는 동기입니다.
+
+## 부록 B. 수식 카드
+
+$$
+
+\text{tradeoff:}\quad
+V\downarrow \Rightarrow T\uparrow,\quad
+V\uparrow \Rightarrow \#\theta_{\mathrm{emb}}\uparrow
+$$
+
+
+<!-- enrich-batch2-28 -->
+## Tokenization 계열 비교
+
+Character: $x_t\in\Sigma$
+
+Word: 사전 밖 → UNK
+
+Subword (BPE류): merge 규칙 $(a,b)\rightarrow ab$
+
+$$
+\text{compression}=\frac{\#\mathrm{chars}}{\#\mathrm{tokens}}
+$$
+
+```python
+def bpe_merge_count(tokens, pair):
+    # 인접 pair 등장 횟수
+    a, b = pair
+    return sum(1 for i in range(len(tokens)-1) if tokens[i]==a and tokens[i+1]==b)
+
+toks = list("low lower newest")
+print(bpe_merge_count(toks, ("e","w")))
+```
+
 ## LLM에서는 어디에 사용될까?
 대표적 선택:
 

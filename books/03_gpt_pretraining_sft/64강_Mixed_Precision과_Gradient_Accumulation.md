@@ -364,6 +364,33 @@ $$
 
 Adam 상태까지 두면 수 배로 늘어납니다. LoRA면 저장량이 크게 줄 수 있습니다.
 
+
+<!-- enrich-batch2-64 -->
+## AMP · Grad Accum
+
+손실 스케일:
+
+$$
+L' = s L,\quad
+\nabla L = \nabla L'/s
+$$
+
+Accum:
+
+$$
+g=\frac{1}{K}\sum_{k=1}^K \nabla L_k
+$$
+
+```python
+# K=4 accum 의사코드
+K=4
+for micro in range(K):
+    # (loss/K).backward()
+    pass
+# opt.step(); opt.zero_grad()
+print("effective batch x", K)
+```
+
 ## LLM에서는 어디에 사용될까?
 
 이번 64강에서 배운 개념은 이후 Transformer · GPT · 서빙 강의에서 반복해서 등장합니다. 각 수식·코드 블록을 “실제 모델의 어느 단계인가”와 연결해 다시 읽어 보세요.

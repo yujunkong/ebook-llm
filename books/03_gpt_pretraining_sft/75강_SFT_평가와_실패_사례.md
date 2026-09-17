@@ -244,6 +244,183 @@ $$
 
 실패 모드는 지시 무시·환각·형식 붕괴 등으로, 정량+정성 평가를 함께 봅니다.
 
+
+## 수학적으로 이해하기 — 점수는 기댓값의 추정
+
+Harness 문항 집합 $\mathcal{E}=\{e_1,\ldots,e_M\}$과 채점 $s(e,\hat y)\in[0,1]$가 있을 때
+
+$$
+
+\hat S = \frac{1}{M}\sum_{m=1}^{M} s(e_m,\hat y_m)
+
+$$
+
+는 **고정 시험에 대한 평균 점수**입니다. 모집단 일반화 점수가 아닙니다. $M$이 작으면 분산이 큽니다.
+
+이항 근사로 거친 불확실성 스케치（교육용）:
+
+$$
+
+\mathrm{SE} \approx \sqrt{\frac{\hat S(1-\hat S)}{M}}
+
+$$
+
+예: $\hat S=0.8$, $M=25$ → $\mathrm{SE}\approx\sqrt{0.8\cdot0.2/25}\approx0.08$.  
+**±0.08 정도면** 0.80 vs 0.84를 “확실한 개선”으로 단정하기 어렵습니다. 가짜 벤치 리더보드를 만들지 말고, **같은 suite를 반복**해 회귀를 보세요.
+
+### Overfitting을 CE로 보기
+
+$$
+
+\Delta = L_{\mathrm{train}}-L_{\mathrm{val}}
+$$
+
+가 크게 음으로 벌어지고 harness held-out가 안 오르면, instruction overfitting 후보입니다. $\Delta$만으로 유형을 확정하지는 않습니다.
+
+## 작은 숫자 스케치 — 세 실패의 가짜 점수
+
+설명용 표（허구 시나리오, 벤치 주장 아님）:
+
+| 설정 | Train CE | Held-out 형식 | Private 새 문항 |
+|---|---|---|---|
+| 정상 학습 | 1.2 | 0.70 | 0.65 |
+| Instruction overfitting | 0.4 | 0.35 | 0.30 |
+| Leakage | 0.5 | 0.95 | 0.40 |
+| Style collapse | 0.7 | 0.60 | 0.55（형식은 그럭저럭, 톤 지시는 실패） |
+
+읽는 법:
+
+- Train만 좋음 → 암기 의심
+- Held-out만 좋음·private 나쁨 → 누수/근접 복제 의심
+- 형식은 중간·시작 문구 단일 → style collapse 검사
+
+## 직관적으로 이해하기 — 채점 위원 역할극
+
+```text
+Rule scorer:   orth 검사관（JSON 키, 불릿 수）
+Overlap:      비슷한 단어 세는 조교
+LLM-judge:    주관식 채점 보조（편향 가능）
+Human:        기준 진실에 가까운 비평
+```
+
+초보 팀은 검사관을 먼저 고용합니다. 조교·보조 채점은 그 다음입니다.
+
+## 실패 진단 플로우차트
+
+```text
+Train CE ↓ ?
+  └─ No → 학습 버그·lr·mask（71, 62）
+  └─ Yes
+      Harness ↑ ?
+        └─ No → overfitting / collapse / 템플릿 불일치
+        └─ Yes
+            Private 재작성 문항도 ↑ ?
+              └─ No → leakage 의심
+              └─ Yes → 개선 후보（여전히 인간 샘플 확인）
+```
+
+## 수식 보강 — n-gram 중복으로 암기 탐지
+
+응답 $\hat y$와 학습 응답 풀 $\mathcal{Y}_{\mathrm{train}}$에 대해 단순 지표:
+
+$$
+
+\mathrm{dup}
+=
+\max_{y\in\mathcal{Y}_{\mathrm{train}}}
+\frac{|\mathrm{ngrams}_n(\hat y)\cap\mathrm{ngrams}_n(y)|}
+{|\mathrm{ngrams}_n(\hat y)|+\varepsilon}
+
+$$
+
+임계값은 데이터에 따라 다릅니다. **상대 비교**（학습 전후·모델 간）에 쓰세요. 절대 수치를 업계 표준처럼 인용하지 마세요.
+
+## 코드 스케치 — bullet_count scorer
+
+```python
+def score_bullet_count(text: str, expect: dict) -> tuple[float, dict]:
+    lines = [ln.strip() for ln in text.splitlines() if ln.strip()]
+    bullets = [ln for ln in lines if ln.startswith(("-", "*", "•"))]
+    n = len(bullets)
+    ok = expect["min_bullets"] <= n <= expect["max_bullets"]
+    return (1.0 if ok else 0.0, {"n_bullets": n})
+```
+
+규칙이 단순할수록 **회귀가 재현**됩니다.
+
+## 부록 A. Before/After 템플릿（복붙용）
+
+```text
+id: 
+prompt: 
+decode: temp=0, max_new_tokens=
+before: |
+  
+after: |
+  
+rule_score_before: 
+rule_score_after: 
+tags: []   # format_ok | ignore | verbose | leak_suspect
+note: 
+```
+
+## 부록 B. 스타일 붕괴 모니터
+
+```python
+from collections import Counter
+
+def opening_bigrams(texts):
+    c = Counter()
+    for t in texts:
+        toks = t.strip().split()
+        if len(toks) >= 2:
+            c[(toks[0], toks[1])] += 1
+    return c.most_common(5)
+```
+
+상위 1개가 전체의 대부분이면 style collapse를 의합니다.
+
+## 부록 C. 누수 검사 스케치
+
+```python
+import hashlib, re
+
+def norm(s: str) -> str:
+    s = s.lower().strip()
+    s = re.sub(r"\s+", " ", s)
+    return s
+
+def md5(s: str) -> str:
+    return hashlib.md5(norm(s).encode()).hexdigest()
+```
+
+exact leak은 해시로, near-duplicate는 정규화·숫자 마스킹 후 유사도로 봅니다（라이브러리 선택은 자유）.
+
+## 부록 D. 연습 확장
+
+$M=20$, $\hat S=0.9$일 때 $\mathrm{SE}$ 근사를 계산하고, “0.90 → 0.93”을 개선으로 단정할 수 있는지 한 문장으로 쓰세요.
+
+
+<!-- enrich-batch2-75 -->
+## SFT 실패 모드
+
+| 증상 | 가설 |
+|---|---|
+| 템플릿 누수 | special token 미학습 |
+| 거부 과다 | 안전 데이터 편향 |
+| 환각 | 지식 없는 지시 |
+
+```python
+def refusal_rate(samples):
+    keys = ("할 수 없", "죄송")
+    return sum(any(k in s for k in keys) for s in samples)/max(len(samples),1)
+print(refusal_rate(["네", "죄송하지만 할 수 없습니다"]))
+```
+
+$$
+\widehat{r}=\frac{1}{n}\sum_i \mathbf{1}[\mathrm{refuse}_i]
+$$
+
 ## LLM에서는 어디에 사용될까?
 
 이번 75강에서 배운 개념은 이후 Transformer · GPT · 서빙 강의에서 반복해서 등장합니다. 각 수식·코드 블록을 “실제 모델의 어느 단계인가”와 연결해 다시 읽어 보세요.

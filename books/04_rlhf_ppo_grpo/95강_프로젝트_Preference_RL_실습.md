@@ -356,7 +356,31 @@ L_{\mathrm{DPO}}
 
 $$
 
+**기호를 분해하면:**
+
+| 조각 | 의미 |
+|---|---|
+| $\log\pi_\theta(y\mid x)-\log\pi_{\mathrm{ref}}(y\mid x)$ | 정책이 참조 대비 그 응답을 얼마나 더/덜 좋아하는지 |
+| 괄호 안 큰 차이 | chosen을 올리고 rejected를 내린 **상대 마진** |
+| $\beta$ | 그 마진을 얼마나 공격적으로 키울지（클수록 이동↑, 불안정↑ 여지） |
+| $\sigma$·$-\log$ | “chosen이 rejected보다 높은 implicit reward” 확률을 높이는 NLL |
+
+암시적 보상 관점（제90강）:
+
+$$
+
+r_\theta(x,y)=\beta\log\frac{\pi_\theta(y\mid x)}{\pi_{\mathrm{ref}}(y\mid x)}
+
+$$
+
+이면 BT 모델 $\sigma\big(r(x,y_w)-r(x,y_l)\big)$ 와 DPO 손실이 맞물린다.
+
 여기서는 구현 편의를 위해 **평균 토큰 logprob**를 $\log\pi$ 자리에 넣는다. 논문의 토큰 합과 스케일이 다르므로, $\beta$는 toy에 맞게 다시 고른다.
+
+**작은 숫자 스케치（교육용）:**  
+$\beta=1$, 괄호 안 값이 $+2.0$이면 $\sigma(2)\approx0.88$, 손실 $-\log 0.88\approx0.13$.  
+괄호 안이 $0$이면 $\sigma(0)=0.5$, 손실 $-\log 0.5\approx0.69$.  
+마진이 열릴수록 손실이 줄어드는 방향이다.
 
 ### 10.2 `train_dpo.py`
 
@@ -564,13 +588,26 @@ python evaluate.py
 ## 경로 B — Reward Model + REINFORCE
 ### 12.1 RM
 
-프롬프트+응답을 이어 붙여 스칼라 점수를 낸다. BT 손실:
+프롬프트+응답을 이어 붙여 스칼라 점수를 낸다. Bradley-Terry:
+
+$$
+
+\mathbb{P}(y_w \succ y_l\mid x)
+=
+\sigma\big(r_\phi(x,y_w)-r_\phi(x,y_l)\big)
+
+$$
+
+최대우도（최소화 손실）:
 
 $$
 
 L_{\mathrm{RM}} = -\log\sigma\big(r_\phi(x,y_w)-r_\phi(x,y_l)\big)
 
 $$
+
+마진 $m=r_\phi(x,y_w)-r_\phi(x,y_l)$ 이 커질수록 손실이 줄어든다.  
+**주의:** $m\uparrow$ 는 “인간이 더 행복하다”가 아니라 “RM이 그렇게 점수 간격을 벌렸다”이다（제96강）.
 
 ```python
 # ch95_preference_rl/train_rm.py
@@ -664,6 +701,34 @@ if __name__ == "__main__":
 ### 12.2 REINFORCE（초미니）
 
 프롬프트에서 짧게 샘플링 → RM 점수 → $(r-b)\nabla\log\pi$.
+
+정책 경사（제82강）의 초미니 형태:
+
+$$
+
+\nabla_\theta J
+\;\approx\;
+\frac{1}{B}\sum_{i=1}^{B}
+(r_i-b)\,
+\nabla_\theta\log\pi_\theta(y^{(i)}\mid x^{(i)})
+
+$$
+
+| 기호 | toy에서의 역할 |
+|---|---|
+| $r_i$ | freeze된 RM 점수 $r_\phi(x,y)$ |
+| $b$ | 배치 평균 등 baseline（분산↓） |
+| $\log\pi_\theta(y\mid x)$ | 생성 토큰 로그확률 합/평균 |
+
+PPO clip（제87강）·가치함수 없이 돌리므로 **분산이 크다**. 출렁임은 버그라기보다 이 경로의 교육 포인트다. 손실로 구현할 때는 보통
+
+$$
+
+\mathcal{L}= -\mathbb{E}\big[(r-b)\log\pi_\theta(y\mid x)\big]
+
+$$
+
+를 최소화한다（부호 주의）.
 
 ```python
 # ch95_preference_rl/train_reinforce.py

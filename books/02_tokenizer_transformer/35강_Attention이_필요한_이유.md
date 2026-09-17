@@ -239,6 +239,32 @@ $$
 
 고정 윈도우 RNN/CNN과 달리, $\alpha_{ij}$가 입력에 따라 바뀌어 **가변적 장거리 의존**을 표현합니다.
 
+
+<!-- enrich-batch2-35 -->
+## RNN 병목과 Attention
+
+RNN 은닉:
+
+$$
+h_t = f(h_{t-1}, x_t)
+$$
+
+장기 의존은 $h$ 병목을 통과해야 합니다. Attention은 모든 위치에 직접 연결:
+
+$$
+c_i=\sum_j \alpha_{ij}v_j,\quad
+\alpha_{ij}=\frac{e^{s_{ij}}}{\sum_k e^{s_{ik}}}
+$$
+
+```python
+import torch, torch.nn.functional as F
+S = torch.randn(5, 5)  # scores
+A = F.softmax(S, dim=-1)
+print(A.sum(-1))
+```
+
+복잡도 스케치: Self-Attention은 $O(T^2 d)$ 항이 있습니다.
+
 ## LLM에서는 어디에 사용될까?
 ### 9.1 Transformer 블록의 중심
 

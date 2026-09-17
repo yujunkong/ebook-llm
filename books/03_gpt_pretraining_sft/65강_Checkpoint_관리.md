@@ -354,6 +354,131 @@ $$
 
 Early stopping은 $L_{\mathrm{val}}$이 개선되지 않으면 학습을 멈춥니다.
 
+
+## 수학적으로 이해하기 — 체크포인트 크기 스케치
+
+가중치만 float32로 저장하면
+
+$$
+
+\mathrm{Size}_{\mathrm{weights}}
+\approx
+4\cdot\#\theta
+\quad\text{bytes}
+
+$$
+
+입니다. AdamW를 함께 저장하면 1차·2차 모멘트가 가중치와 같은 형태의 텐서를 추가로 갖습니다（대략）.
+
+$$
+
+\mathrm{Size}_{\mathrm{resume}}
+\approx
+4\cdot\#\theta
+\;+\;
+4\cdot\#\theta
+\;+\;
+4\cdot\#\theta
+\;=\;
+12\cdot\#\theta
+
+$$
+
+（model + m + v, 매우 거친 상한 감각; bias·버퍼·scaler·RNG 제외）.  
+예: $\#\theta=50\times 10^6$ → weights ≈ 200MB, resume 상한 감각 ≈ 600MB.
+
+bf16/fp16 가중치만 저장하면 계수 4 대신 2에 가깝습니다. **정확한 MB를 벤치처럼 주장하지 말고**, “optim 포함 시 수 배” 감각만 잡습니다.
+
+### best vs last
+
+Validation 손실 $L_{\mathrm{val}}(t)$에 대해
+
+$$
+
+t_{\mathrm{best}} = \arg\min_{t\in\mathcal{S}} L_{\mathrm{val}}(t)
+$$
+
+（$\mathcal{S}$는 평가한 step 집합）.  
+`last`는 재개 편의, `best`는 일반화 후보입니다. 둘을 같은 파일로 덮어쓰지 마세요.
+
+## 작은 숫자 워크드 — 원자적 저장
+
+```text
+write  ckpt.pt.tmp   (완전 기록)
+fsync  （가능하면）
+rename ckpt.pt.tmp → ckpt.pt
+```
+
+중간에 죽으면 옛 `ckpt.pt`가 남거나, tmp만 남습니다. **반쯤 쓰인 ckpt.pt**를 읽어 생기는 오류를 줄이려는 패턴입니다.
+
+## 직관적으로 이해하기 — 세이브 포인트
+
+게임의 세이브와 같습니다.
+
+- `last`: 방금 그 자리로 복귀
+- `best`: 가장 높았던 스테이지 점수
+- export: 친구에게 캐릭터만 공유（장비=optim 제외）
+
+SFT 이관은 보통 export에 가깝습니다.
+
+## 부록 A. load 실패 체크리스트
+
+1. `config`와 현재 모델 폭/층 불일치
+2. `DataParallel`/`module.` prefix
+3. dtype/device map
+4. LoRA 키와 base 키 혼재
+5. PyTorch 버전 불일치로 scaler state 거부
+
+## 부록 B. 메타데이터 최소 필드
+
+```python
+meta = {
+  "global_step": int,
+  "tokens_seen": int,
+  "best_val_loss": float,
+  "git_commit": str,
+  "config": dict,
+}
+```
+
+숫자가 없어도 “어느 실험의 자식인지”를 잃습니다.
+
+## 부록 C. 수식 카드
+
+$$
+
+\begin{aligned}
+&\text{export}&& \theta\\
+&\text{resume}&& \theta,\ m,\ v,\ \eta(\cdot),\ t,\ \text{scaler}\\
+&\text{best}&& \theta(t_{\mathrm{best}})
+\end{aligned}
+
+$$
+
+
+<!-- enrich-batch2-65 -->
+## Checkpoint 내용
+
+저장 최소셋:
+
+$$
+\mathrm{ckpt}=(\theta,\omega_{\mathrm{opt}},t,\eta,\mathrm{rng})
+$$
+
+```python
+import torch
+def save_ckpt(path, model, opt, step):
+    # 재개에 필요한 상태만
+    torch.save({
+        "model": model.state_dict() if hasattr(model, "state_dict") else {},
+        "opt": opt.state_dict() if hasattr(opt, "state_dict") else {},
+        "step": step,
+    }, path)
+print("ok")
+```
+
+원자적 저장: `*.tmp` → rename.
+
 ## LLM에서는 어디에 사용될까?
 
 이번 65강에서 배운 개념은 이후 Transformer · GPT · 서빙 강의에서 반복해서 등장합니다. 각 수식·코드 블록을 “실제 모델의 어느 단계인가”와 연결해 다시 읽어 보세요.
