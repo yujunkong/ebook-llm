@@ -296,6 +296,18 @@ print("column-parallel match OK")
 4. 단일 요청 벤치만으로 TP 이득을 선언하고 동시성을 안 본다.  
 5. NCCL이 쓰는 NIC를 확인하지 않은 채 “TP는 원래 느리다”고 결론낸다.
 
+## 수식 보강 — Tensor Parallel 분할
+
+선형층 $Y=XW$에서 $W$를 열 방향으로 $N$개로 나누면
+
+$$
+W=[W_1\,|\,\cdots\,|\,W_N],\quad
+Y_i=X W_i,\quad
+Y=[Y_1\,|\,\cdots\,|\,Y_N]
+$$
+
+입니다. 행 분할이면 all-reduce가 필요합니다. Attention의 QKV/출력 투영도 같은 방식으로 샤딩합니다.
+
 ## LLM에서는 어디에 사용될까?
 
 이번 113강에서 배운 개념은 이후 Transformer · GPT · 서빙 강의에서 반복해서 등장합니다. 각 수식·코드 블록을 “실제 모델의 어느 단계인가”와 연결해 다시 읽어 보세요.

@@ -364,6 +364,16 @@ backward 후:
 - [ ] response mask에 프롬프트가 섞이지 않음
 - [ ] chat template이 SFT와 동일
 
+## 수식 보강 — DPO 손실
+
+선호 쌍 $(y_w,y_l)$ (win/lose)와 참조정책 $\pi_{\mathrm{ref}}$에 대해
+
+$$
+L_{\mathrm{DPO}}(\theta)= -\log\sigma\Big(\beta\log\frac{\pi_\theta(y_w\mid x)}{\pi_{\mathrm{ref}}(y_w\mid x)}-\beta\log\frac{\pi_\theta(y_l\mid x)}{\pi_{\mathrm{ref}}(y_l\mid x)}\Big)
+$$
+
+보상 모델을 따로 두지 않고, 선호 데이터로 정책을 직접 업데이트합니다.
+
 ## LLM에서는 어디에 사용될까?
 
 이번 91강에서 배운 개념은 이후 Transformer · GPT · 서빙 강의에서 반복해서 등장합니다. 각 수식·코드 블록을 “실제 모델의 어느 단계인가”와 연결해 다시 읽어 보세요.

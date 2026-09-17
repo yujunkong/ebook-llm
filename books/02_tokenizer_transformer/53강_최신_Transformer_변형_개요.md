@@ -133,15 +133,164 @@ Mixture of Experts(MoE)는 여러 **전문가(FFN)** 후보를 두고, 토큰(�
 
 미니로 원리를 익힌 뒤, 약어가 나와도 “어느 압력을 줄이려는가?”로 분류하면 길을 잃지 않는다.
 
+## GQA/MQA — KV 메모리 수식 스케치
+제52강의 KV 메모리:
+
+$$
+
+\mathrm{Mem}_{\mathrm{KV}}
+\propto
+N \cdot H_{\mathrm{kv}} \cdot T \cdot d
+
+$$
+
+표준 MHA에서는 $H_{\mathrm{kv}} = H_q = H$다.
+
+- **MQA:** $H_{\mathrm{kv}} = 1$ → 이상적으로 KV 메모리가 약 $H$배 축소(다른 항 무시).
+- **GQA:** $H_{\mathrm{kv}} = G$ (그룹 수), $1 \le G \le H$, 보통 $H$가 $G$의 배수.
+
+비율만 적으면:
+
+$$
+
+\frac{\mathrm{Mem}_{\mathrm{KV}}^{\mathrm{(GQA)}}}{\mathrm{Mem}_{\mathrm{KV}}^{\mathrm{(MHA)}}}
+=
+\frac{H_{\mathrm{kv}}}{H_q}
+
+$$
+
+**작은 예:** $H_q=32$, $H_{\mathrm{kv}}=4$ (GQA)이면 비율 $4/32 = 1/8$.  
+$H_{\mathrm{kv}}=1$ (MQA)이면 $1/32$.
+
+주의(설명):
+
+- Query 쪽 계산·표현력은 $H_q$를 유지한다.
+- 품질·학습 안정성은 $G$ 선택에 좌우되며, “항상 MQA가 최고”가 아니다.
+- 캐시 절감 ≠ 프롬프트 prefill 구간의 모든 FLOPs가 $1/H$로 줄어듦. Prefill은 여전히 $T^2$ 항이 있다.
+
+### Attention score shape
+
+한 스텝 생성에서 새 query 길이 1, 과거 키 길이 $t$:
+
+| | score shape (개념) |
+|---|---|
+| MHA | `[H_q, 1, t]` — 헤드마다 다른 $K$ |
+| GQA | `[H_q, 1, t]` — 그룹 내 Q가 같은 $K$를 공유 |
+| MQA | `[H_q, 1, t]` — 모든 Q가 하나의 $K$ |
+
+출력 가중합도 같은 패턴으로 $V$를 공유한다. **수학적 Softmax Attention 식은 동일**하고, $K/V$ 텐서의 **복제·공유 구조**만 다르다.
+
+## FlashAttention — IO 관점의 정량 스케치
+순진한 Attention은 대략 다음을 HBM(대규모 GPU 메모리)에 쓴다.
+
+1. $S = QK^\top$ 를 $T\times T$로 **명시 저장**
+2. Softmax로 $A$를 만들어 또 저장
+3. $AV$ 계산
+
+$T$가 크면 이 행렬들의 **읽기/쓰기 대역폭**이 FLOPs보다 먼저 한계가 된다.
+
+설명용 비교(정확한 배수 단정 금지):
+
+- 연산량(대략): $O(T^2 d)$ — 줄이기 어렵다(exact 유지 시).
+- 명시적 $T\times T$ 저장: $O(T^2)$ 원소 — **타일링으로 working set를 SRAM에 유지**하면 HBM 왕복을 줄일 수 있다.
+
+FlashAttention류의 핵심 문장:
+
+> Exact softmax attention을 유지하면서, 큰 $S,A$를 통째로 HBM에 materialize하지 않도록 **블록 단위로** 계산한다.
+
+온라인 Softmax(블록 최댓값·합 재조정) 아이디어가 들어가면, 타일만 보고도 최종 Softmax와 같은 결과를 만들 수 있다. 이 강의에서는 알고리즘 세부 증명 대신 **“$T^2$ IO 통증에 대한 exact 구현 응답”**으로 고정한다.
+
+근사 Attention과의 구분:
+
+| | Exact (FlashAttention류) | Approximate (희소·선형 등) |
+|---|---|---|
+| Softmax attention 값 | 수학적으로 동일(가정 충족 시) | 다름(근사) |
+| 복잡도 | 보통 여전히 $O(T^2 d)$ 연산 | $O(T)$~$O(T\log T)$ 등을 노리기도 |
+| 동기 | IO·실측 속도 | 점근 복잡도 자체 |
+
+## MoE — 용량과 토큰당 연산
+표준 FFN: 모든 토큰이 동일 MLP를 통과 → 토큰당 비용 $O(C\cdot C_{\mathrm{ff}})$.
+
+MoE(개요): 전문가 $E$개 중 토큰마다 top-$k$만 실행.
+
+$$
+
+\mathrm{Cost}_{\mathrm{token}}
+\approx
+O\!\big(k\cdot C\cdot C_{\mathrm{ff}}^{\mathrm{(expert)}}\big)
+\;+\;
+O(\text{router})
+
+$$
+
+파라미터(용량)는 대략:
+
+$$
+
+\#\mathrm{params}_{\mathrm{FFN-MoE}}
+\approx
+E \cdot \#\mathrm{params}_{\mathrm{(one\ expert)}}
+
+$$
+
+**사실:** 활성화되는 전문가 수 $k$와 전체 전문가 수 $E$를 분리할 수 있다.  
+**설명:** “파라미터는 큰데 토큰당 FLOPs는 상대적으로 작게” 가져가려는 설계 동기.  
+**변동:** 라우팅 손실, 부하 균형, 올-투-올 통신은 구현 난이도의 핵심이며 여기선 티저만.
+
+작은 숫자 스케치: $E=8$, $k=2$이면 토큰당 전문가 계산은 8개 전부가 아니라 2개분.  
+용량(저장)은 8개분을 가질 수 있다(공유 임베딩 등은 별도).
+
+## 압력 → 변형 매핑표
+| 압력 (제52강) | 응답 변형 | 건드리는 항 |
+|---|---|---|
+| KV cache $\propto H_{\mathrm{kv}} T$ | MQA / GQA | $H_{\mathrm{kv}}$ |
+| $T\times T$ HBM IO | FlashAttention류 | materialize·대역폭 |
+| FFN 파라미터·FLOPs | MoE | 토큰당 활성 전문가 |
+| 긴 $T$의 $T^2$ | Sliding window / 희소 등 | score 연결성 |
+| 길이 확장 | RoPE scaling / YaRN 등 | 위치 주파수 |
+
+새 약어를 만나면 표를 채워 “어느 열인가?”만 물어보면 길을 잃지 않는다.
+
+## 작은 설계 퀴즈 (손계산)
+설정: $H_q=16$, $d=64$, $N=24$, $T=8192$, FP16.
+
+1. MHA($H_{\mathrm{kv}}=16$)의 KV 바이트 비례값: $2\cdot24\cdot16\cdot8192\cdot64\cdot2$
+2. GQA($H_{\mathrm{kv}}=4$)로 바꾸면 비율은?
+3. Prefill 한 번의 Attention $T^2 C$ 항이 GQA로 **연산량이 $1/4$이 되나?**
+
+힌트:
+
+1. 약 $1.03\times 10^{9}$ bytes $\approx 1\,\mathrm{GB}$ 수준(설명용).
+2. $4/16 = 1/4$로 KV 메모리 항만 축소.
+3. **아니요.** Prefill의 $QK^\top$는 여전히 모든 query 위치×key 위치. GQA는 주로 **저장·대역폭(캐시)** 쪽 이득이 분명하고, prefill FLOPs 이야기는 더 미묘하다(공유여도 score는 $H_q$개).
+
+## 수식 보강 — Attention 복잡도 · 근사
+
+표준 self-attention의 점수 계산은 시퀀스 길이 $T$에 대해
+
+$$
+\mathrm{FLOPs}\sim O(T^2 d)
+$$
+
+입니다. KV cache 메모리(대략)는
+
+$$
+\mathrm{Mem}_{\mathrm{KV}} \approx 2 \cdot L \cdot T \cdot d \cdot b
+$$
+
+($L$층, $b$는 바이트/원소, multi-head면 $d$ 대신 $h\cdot d_h$).
+
+선형 Attention·SSM 계열은 점수 $T^2$를 $O(T)$에 가깝게 줄이는 것이 목표입니다. 정확한 상수는 구현·하드웨어에 따라 달라 **임의 벤치마크 숫자는 적지 않습니다**.
+
 ## LLM에서는 어디에 사용될까?
 
 이번 53강에서 배운 개념은 이후 Transformer · GPT · 서빙 강의에서 반복해서 등장합니다. 각 수식·코드 블록을 “실제 모델의 어느 단계인가”와 연결해 다시 읽어 보세요.
 
 ## 핵심 요약
 - 최신 변형은 대개 $T^2$·KV 메모리·규모 비용에 대한 응답이다.
-- MQA/GQA는 K/V 공유로 캐시 쪽 부담을 줄이려는 구조 변형이다.
+- MQA/GQA는 K/V 공유로 캐시 쪽 부담을 줄이려는 구조 변형이다. $\mathrm{Mem}_{\mathrm{KV}}$ 비율은 $H_{\mathrm{kv}}/H_q$.
 - FlashAttention류는 exact attention의 IO-aware 구현 방향이다(세부 변동).
-- MoE는 FFN 용량과 토큰당 연산의 트레이드오프를 여는 티저다.
+- MoE는 전문가 $E$개·활성 $k$개로 **용량과 토큰당 연산**을 분리하는 티저다.
 - 벤치 수치·채택 현황은 시점에 따라 변하므로 개요 이상으로 단정하지 않는다.
 
 ## 용어 사전

@@ -219,6 +219,22 @@ model.print_trainable_parameters()
 | QLoRA 학습 후 추론도 반드시 4-bit여야 한다 | **거짓** |
 | VRAM이 항상 정확히 N GB로 줄어든다 | **단정 금지** — 예시 스케일만 |
 
+## 수식 보강 — QLoRA와 양자화 오차 감각
+
+QLoRA는 기본 가중치를 저비트(예: 4-bit)로 두고 LoRA만 고정밀로 학습합니다.
+
+$$
+W \approx \mathrm{Dequant}(W_{\mathrm{NF4}}) + BA
+$$
+
+양자화 오차를 $\mathcal{E}=W_0-\mathrm{Dequant}(W_{\mathrm{NF4}})$라 하면 실효 변환은
+
+$$
+h = W_0 x - \mathcal{E}x + BAx
+$$
+
+에 가깝습니다. LoRA가 $\mathcal{E}x$의 일부를 보상하도록 학습되는 셈입니다.
+
 ## LLM에서는 어디에 사용될까?
 
 이번 74강에서 배운 개념은 이후 Transformer · GPT · 서빙 강의에서 반복해서 등장합니다. 각 수식·코드 블록을 “실제 모델의 어느 단계인가”와 연결해 다시 읽어 보세요.

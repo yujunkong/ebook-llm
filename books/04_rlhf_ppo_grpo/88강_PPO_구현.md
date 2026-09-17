@@ -407,6 +407,16 @@ def demo():
 
 실행 결과는 시드·환경에 따라 달라진다. **특정 숫자를 SOTA처럼 인용하지 말 것.**
 
+## 수식 보강 — PPO clip 목적
+
+확률비 $r_t(\theta)=\pi_\theta(a_t\mid s_t)/\pi_{\theta_{\mathrm{old}}}(a_t\mid s_t)$에 대해
+
+$$
+L^{\mathrm{CLIP}}(\theta)=\mathbb{E}_t\Big[\min\big(r_t(\theta)A_t,\ \mathrm{clip}(r_t(\theta),1-\varepsilon,1+\varepsilon)A_t\big)\Big]
+$$
+
+$A_t$는 advantage, $\varepsilon$는 클립 폭입니다. 정책이 한 번에 너무 크게 바뀌지 않게 막는 장치입니다.
+
 ## LLM에서는 어디에 사용될까?
 Full stack 대응표:
 

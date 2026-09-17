@@ -221,6 +221,24 @@ class EncoderDecoderLayer(nn.Module):
 
 완전한 구현은 제49~50강 프로젝트에서, Causal Decoder-only를 우선한다.
 
+## 수식 보강 — Cross-Attention
+
+Decoder cross-attention에서 Query는 decoder 상태, Key/Value는 encoder 출력입니다.
+
+$$
+Q = X_{\mathrm{dec}} W_Q,\quad
+K = X_{\mathrm{enc}} W_K,\quad
+V = X_{\mathrm{enc}} W_V
+$$
+
+$$
+\mathrm{Attn}(Q,K,V)=\mathrm{softmax}\left(\frac{QK^\top}{\sqrt{d_k}}\right)V
+$$
+
+Shape 감각: $X_{\mathrm{dec}}\in\mathbb{R}^{T_\mathrm{dec}\times d}$, $X_{\mathrm{enc}}\in\mathbb{R}^{T_\mathrm{enc}\times d}$이면 점수 행렬은 $(T_\mathrm{dec}\times T_\mathrm{enc})$입니다.
+
+GPT처럼 decoder-only면 cross-attention이 없고 causal self-attention만 남습니다.
+
 ## LLM에서는 어디에 사용될까?
 사실:
 

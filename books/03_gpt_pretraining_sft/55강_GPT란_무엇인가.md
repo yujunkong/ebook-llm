@@ -307,6 +307,22 @@ Weight tying, dropout 위치, bias 유무 같은 세부 선택은 제56강에서
 5. **규모 숫자를 사실처럼 암기**  
    토큰 수·파라미터 수는 출처·시점에 따라 다르다. 이 책은 원리를 우선한다.
 
+## 수식 보강 — GPT의 확률 모델
+
+GPT는 decoder-only Transformer로 next-token 분포를 냅니다.
+
+$$
+p_\theta(x_t\mid x_{<t}) = \mathrm{softmax}\bigl(W_U\, h_t\bigr)_{x_t}
+$$
+
+$h_t\in\mathbb{R}^{d}$는 $t$번째 위치의 은닉상태, $W_U\in\mathbb{R}^{V\times d}$는 LM Head입니다. 학습 목표는
+
+$$
+\min_\theta\;\mathbb{E}_{\mathbf{x}\sim\mathcal{D}}\Bigl[-\sum_t \log p_\theta(x_t\mid x_{<t})\Bigr]
+$$
+
+입니다.
+
 ## LLM에서는 어디에 사용될까?
 
 이번 55강에서 배운 개념은 이후 Transformer · GPT · 서빙 강의에서 반복해서 등장합니다. 각 수식·코드 블록을 “실제 모델의 어느 단계인가”와 연결해 다시 읽어 보세요.

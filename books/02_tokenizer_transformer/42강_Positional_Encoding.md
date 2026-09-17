@@ -9,18 +9,23 @@
 - 현대 LLM에서 absolute PE가 차지하던 위치(사실과 해석을 구분)
 
 ## 왜 중요한가?
-언어에서 순서는 의미다.
+언어에서 순서는 의미입니다.
 
 ```text
 "개가 사람을 물었다"
 "사람이 개를 물었다"
 ```
 
-토큰 집합은 비슷해도 순서가 다르면 문장이 달라진다.  
-RNN은 시간 순서대로 읽으므로 위치가 암묵적으로 들어간다.  
-Self-Attention은 모든 토큰을 한꺼번에 보므로, **위치를 명시적으로 넣지 않으면** 모델이 “몇 번째 토큰인지”를 알기 어렵다.
+토큰 집합은 비슷해도 순서가 다르면 문장이 달라집니다.  
+RNN은 시간 순서대로 읽으므로 위치가 암묵적으로 들어갑니다.  
+Self-Attention은 모든 토큰을 한꺼번에 보므로, **위치를 명시적으로 넣지 않으면** 모델이 “몇 번째 토큰인지”를 알기 어렵습니다.
 
-Positional Encoding은 그 명시적 신호다.
+Positional Encoding은 그 명시적 신호입니다.
+
+> **핵심**
+>
+> Attention이 “무엇을 볼지”를 정한다면, Positional Encoding은 “그것이 어디에 있는지”를 심습니다.  
+> 둘 중 하나만으로는 언어 모델이 완성되지 않습니다.
 
 LLM 연결:
 
@@ -444,8 +449,261 @@ Sinusoidal/Learned absolute PE는 강력하지만 한계가 있다.
 오늘은 “위치를 더한다”.  
 다음은 “Query/Key를 위치만큼 회전한다”.
 
-제43강 **RoPE**는 현대 LLM의 위치 인코딩을 이해하는 핵심이다.  
-사실(어떤 모델이 쓰는지)과 설명(왜 상대 위치에 유리한지)을 분명히 구분하며 진행한다.
+제43강 **RoPE**는 현대 LLM의 위치 인코딩을 이해하는 핵심입니다.  
+사실(어떤 모델이 쓰는지)과 설명(왜 상대 위치에 유리한지)을 분명히 구분하며 진행합니다.
+
+---
+
+## 부록 A. $t=2$까지 손계산을 이어가기
+
+$d_{\text{model}}=4$, $\omega_0=1$, $\omega_1=0.01$일 때 $t=2$:
+
+$$
+
+\begin{aligned}
+PE_{(2,0)} &= \sin(2) \approx 0.9093 \\
+PE_{(2,1)} &= \cos(2) \approx -0.4161 \\
+PE_{(2,2)} &= \sin(0.02) \approx 0.0200 \\
+PE_{(2,3)} &= \cos(0.02) \approx 0.9998
+\end{aligned}
+
+$$
+
+$$
+
+PE_2 \approx [0.9093,\ -0.4161,\ 0.0200,\ 0.9998]
+
+$$
+
+$t=0,1,2$를 행으로 쌓으면:
+
+$$
+
+PE =
+\begin{bmatrix}
+0 & 1 & 0 & 1 \\
+0.8415 & 0.5403 & 0.0100 & 0.99995 \\
+0.9093 & -0.4161 & 0.0200 & 0.9998
+\end{bmatrix}
+
+$$
+
+> ⚠️ **주의**
+>
+> 첫 두 차원은 빠르게 진동하고, 뒤 두 차원은 거의 선형에 가깝게 천천히 변합니다.  
+> 이것이 “다중 해상도 위치 지문”의 정체입니다.
+
+## 부록 B. 인접 위치 차이 벡터
+
+$$
+
+\Delta_t = PE_{t+1} - PE_t
+
+$$
+
+$t=0$이면
+
+$$
+
+\Delta_0 \approx
+\begin{bmatrix}
+0.8415 & -0.4597 & 0.0100 & -0.00005
+\end{bmatrix}
+
+$$
+
+고주파 성분(앞쪽)의 변화가 저주파(뒤쪽)보다 큽니다.  
+Attention이 가까운 위치를 구분할 때 앞쪽 차원이 더 민감하게 기여할 여지가 있습니다.
+
+## 부록 C. 배치 Shape와 브로드캐스트
+
+LLM 입력 텐서:
+
+$$
+
+E \in \mathbb{R}^{B \times T \times d},\qquad
+PE \in \mathbb{R}^{1 \times T \times d}\ \text{또는}\ \mathbb{R}^{T \times d}
+
+$$
+
+$$
+
+X = E + PE
+
+$$
+
+예: $B=2$, $T=3$, $d=4$이면 $E$는 `(2,3,4)`, $PE`는 `(3,4)`를 `(1,3,4)`로 올려 더합니다.  
+배치마다 같은 절대 위치를 공유하는 것이 기본입니다.
+
+## 부록 D. Learned PE 파라미터 수
+
+$$
+
+|\theta|_{\mathrm{learned\ PE}} = L_{\max} \cdot d_{\mathrm{model}}
+
+$$
+
+예: $L_{\max}=1024$, $d=768$이면 약 $1024\times 768 = 786{,}432$개입니다.  
+임베딩 테이블($V\times d$)보다는 작지만, **길이 한도**가 파라미터에 묶입니다.
+
+Sinusoidal은 $|\theta|=0$이고 공식만으로 $t$를 확장합니다(품질 보장은 별개).
+
+## 부록 E. 각주파수 표 ($d=8$ 스케치)
+
+$d_{\text{model}}=8$이면 $i=0,1,2,3$:
+
+$$
+
+\omega_i = 10000^{-2i/8} = 10000^{-i/4}
+
+$$
+
+| $i$ | $2i/d$ | $10000^{2i/d}$ | $\omega_i$ |
+|---|---|---|---|
+| 0 | 0 | 1 | 1 |
+| 1 | 0.25 | $10$ | 0.1 |
+| 2 | 0.5 | $100$ | 0.01 |
+| 3 | 0.75 | $1000$ | 0.001 |
+
+한 위치 $t$의 PE는 네 쌍의 $(\sin t\omega_i,\ \cos t\omega_i)$입니다.
+
+$$
+
+PE_t =
+\big[
+\sin(t\omega_0),\ \cos(t\omega_0),\ 
+\sin(t\omega_1),\ \cos(t\omega_1),\ 
+\sin(t\omega_2),\ \cos(t\omega_2),\ 
+\sin(t\omega_3),\ \cos(t\omega_3)
+\big]
+
+$$
+
+## 부록 F. 상대 오프셋 행렬 형태 (2D 회전)
+
+한 주파수 $\omega$에 대해
+
+$$
+
+\begin{bmatrix}
+PE_{(t+k,2i)} \\
+PE_{(t+k,2i+1)}
+\end{bmatrix}
+=
+\begin{bmatrix}
+\cos(k\omega) & \sin(k\omega) \\
+-\sin(k\omega) & \cos(k\omega)
+\end{bmatrix}
+\begin{bmatrix}
+PE_{(t,2i)} \\
+PE_{(t,2i+1)}
+\end{bmatrix}
+
+$$
+
+(부호 규약은 $\sin/\cos$ 배치에 따라 동등한 회전·반사로 다시 쓸 수 있습니다.)  
+핵심은 **고정 $k$에 대한 선형 변환**이 존재한다는 점입니다.
+
+## 부록 G. PE를 뺀 순열 불변성 (사상 실험)
+
+마스크가 없고 PE도 없다면, 토큰 순열 $\pi$에 대해
+
+$$
+
+\mathrm{Attn}(P_\pi X) = P_\pi\,\mathrm{Attn}(X)
+
+$$
+
+형태의 **순열 동변(permutation equivariance)**이 (이상화된) Self-Attention에 성립합니다.  
+PE를 더하면 $X\mapsto E+PE$가 되어 순열 동변이 깨지고, 위치 의존이 생깁니다.
+
+> **핵심**
+>
+> Causal Mask도 순서를 강제하지만, “미래 차단”과 “위치 좌표”는 다릅니다.  
+> 마스크는 볼 수 있는 집합을, PE는 표현 공간의 좌표를 바꿉니다.
+
+## 부록 H. Embedding + PE 후 Q 형성
+
+$$
+
+z_t = e_t + p_t,\qquad
+\mathbf{q}_t = z_t W_Q
+
+$$
+
+작은 예: $e_0=[0.1,0.2]$, $p_0=[0,1]$, $W_Q=I$이면
+
+$$
+
+z_0=[0.1,1.2],\quad \mathbf{q}_0=[0.1,1.2]
+
+$$
+
+같은 $e_0$를 $t=1$에 두면 $p_1$이 달라 $\mathbf{q}$도 달라집니다.  
+**내용이 같아도 위치가 다르면 Query가 달라질 수 있습니다.**
+
+## 부록 I. 수치 안정·범위
+
+$\sin,\cos$ 출력은 $[-1,1]$입니다.  
+토큰 임베딩 스케일과 맞춰지지 않으면 초기 Attention이 위치 신호에 과도하게(또는 과소하게) 반응할 수 있습니다.  
+실무에서는 임베딩 초기화·학습률·(선택) PE 스케일 계수가 이 균형을 맞춥니다.
+
+## 부록 J. GPT-2식 Learned PE 스케치
+
+```python
+import torch
+import torch.nn as nn
+
+class LearnedPE(nn.Module):
+    def __init__(self, max_len: int, d_model: int):
+        super().__init__()
+        self.pe = nn.Embedding(max_len, d_model)
+
+    def forward(self, x, positions=None):
+        # x: (B, T, C)
+        B, T, _ = x.shape
+        if positions is None:
+            positions = torch.arange(T, device=x.device)
+        return x + self.pe(positions)[None, :, :]
+```
+
+Sinusoidal과 인터페이스를 같게 두면 42↔43 실험이 쉽습니다.
+
+## 부록 K. 연습 — $t=3$, $d=4$ 빈칸
+
+$\omega_0=1$, $\omega_1=0.01$일 때:
+
+$$
+
+\begin{aligned}
+PE_{(3,0)} &= \sin(3) \approx \_\_\_ \\
+PE_{(3,1)} &= \cos(3) \approx \_\_\_ \\
+PE_{(3,2)} &= \sin(0.03) \approx \_\_\_ \\
+PE_{(3,3)} &= \cos(0.03) \approx \_\_\_
+\end{aligned}
+
+$$
+
+참고값: $\sin 3\approx 0.1411$, $\cos 3\approx -0.98999$, $\sin 0.03\approx 0.0300$, $\cos 0.03\approx 0.9996$.
+
+## 부록 L. LLM Shape 체크리스트
+
+| 단계 | Shape |
+|---|---|
+| token id | `(B, T)` |
+| token emb $E$ | `(B, T, d)` |
+| PE | `(T, d)` 또는 `(1, T, d)` |
+| $X=E+PE$ | `(B, T, d)` |
+| MHA 입력 | `(B, T, d)` |
+| head 분할 | `(B, h, T, d_k)`, $d=h\cdot d_k$ |
+
+가짜 벤치마크 수치 없이, **차원만으로도** 파이프라인을 검증할 수 있습니다.
+
+## 부록 M. 한 줄 요약
+
+> Absolute PE는 “위치 $t$의 지문 벡터”를 만들어 임베딩에 더하고,  
+> Sinusoidal은 그 지문을 학습 없이 $\sin/\cos$ 다중 주파수로 생성합니다.  
+> 한계를 상대 회전으로 푸는 다음 장이 RoPE입니다.
 
 <!-- LECTURE_NAV -->
 

@@ -416,6 +416,22 @@ if __name__ == "__main__":
 
 이 강의의 `reward * sum logπ`는 (3)의 가장 거친 형태다.
 
+## 수식 보강 — REINFORCE
+
+정책 $\pi_\theta(a\mid s)$에 대한 기본 policy gradient:
+
+$$
+\nabla_\theta J(\theta)= \mathbb{E}_{\tau\sim\pi_\theta}\Bigl[\sum_t \nabla_\theta \log \pi_\theta(a_t\mid s_t)\, G_t\Bigr]
+$$
+
+$G_t$는 return입니다. 분산을 줄이기 위해 baseline $b(s_t)$를 빼 이점(advantage) 형태로 씁니다.
+
+$$
+\nabla_\theta J(\theta)= \mathbb{E}\bigl[\nabla_\theta \log \pi_\theta(a_t\mid s_t)\,(G_t-b(s_t))\bigr]
+$$
+
+LLM에서는 $a_t$가 토큰, $s_t$가 지금까지의 문맥입니다.
+
 ## LLM에서는 어디에 사용될까?
 ### 10.1 RLHF
 

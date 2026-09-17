@@ -272,6 +272,22 @@ context [1, t]
 5. **weight tying 후 한쪽만 초기화/재할당**  
    공유 참조가 깨지면 파라미터가 두 벌이 된다. `is`로 동일 객체인지 확인한다.
 
+## 수식 보강 — Next-token 분해
+
+시퀀스 $\mathbf{x}=(x_1,\ldots,x_T)$의 결합확률을 causal로 분해합니다.
+
+$$
+p(\mathbf{x})=\prod_{t=1}^{T} p(x_t\mid x_{<t})
+$$
+
+로그우도:
+
+$$
+\log p(\mathbf{x})=\sum_{t=1}^{T}\log p(x_t\mid x_{<t})
+$$
+
+모델은 각 $t$에서 logits $\mathbf{z}_t\in\mathbb{R}^{V}$를 내고 $p(\cdot\mid x_{<t})=\mathrm{softmax}(\mathbf{z}_t)$로 둡니다. 학습은 $-\log p$의 토큰 평균을 최소화합니다.
+
 ## LLM에서는 어디에 사용될까?
 
 이번 48강에서 배운 개념은 이후 Transformer · GPT · 서빙 강의에서 반복해서 등장합니다. 각 수식·코드 블록을 “실제 모델의 어느 단계인가”와 연결해 다시 읽어 보세요.

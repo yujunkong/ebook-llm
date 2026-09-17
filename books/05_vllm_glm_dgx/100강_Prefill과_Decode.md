@@ -285,6 +285,21 @@ def timed_generate(model, prompt_ids, max_new=16):
 
 **주의:** `time.perf_counter()` 결과는 머신·부하에 의존한다. 공유·비교용 벤치마크 숫자로 제시하지 말 것.
 
+## 수식 보강 — Prefill / Decode 비용 감각
+
+입력 길이 $T_{\mathrm{in}}$, 출력 길이 $T_{\mathrm{out}}$일 때
+
+- Prefill: 대략 $O(T_{\mathrm{in}}^2 d)$ 성격의 Attention + MLP (한 번에 병렬)
+- Decode: 스텝마다 $O(T_{\mathrm{ctx}} d)$ (KV cache 사용 시), $T_{\mathrm{out}}$번 반복
+
+총 decode 비용 스케치:
+
+$$
+\mathrm{Cost}_{\mathrm{decode}} \sim T_{\mathrm{out}}\cdot O(T_{\mathrm{ctx}} d)
+$$
+
+$T_{\mathrm{ctx}}$는 해당 스텝의 문맥 길이입니다.
+
 ## LLM에서는 어디에 사용될까?
 ### 8.1 TTFT와 Prefill
 

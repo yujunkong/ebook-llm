@@ -253,6 +253,24 @@ print(out_s)
 학습 전에는 출력이 의미 없다. 배선 확인용이다.  
 Mini Pretraining(제68강) 이후에는 같은 함수로 “흉내 문장”을 본다.
 
+## 수식 보강 — Greedy · Temperature · Top-k
+
+logits $\mathbf{z}\in\mathbb{R}^{V}$에서
+
+$$
+\text{Greedy: }\hat{y}=\arg\max_k z_k
+$$
+
+Temperature $\tau>0$:
+
+$$
+p_k = \frac{e^{z_k/\tau}}{\sum_j e^{z_j/\tau}}
+$$
+
+$\tau\to 0$이면 greedy에 가깝고, $\tau$가 크면 분포가 평평해집니다.
+
+Top-$k$는 확률 상위 $k$개만 남기고 재정규화합니다. Top-$p$(nucleus)는 누적확률 $\ge p$가 되는 최소 집합을 남깁니다.
+
 ## LLM에서는 어디에 사용될까?
 제품 챗봇은 드물게 순수 greedy만 쓴다. 보통:
 
