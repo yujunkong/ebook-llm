@@ -83,11 +83,11 @@ PPO·REINFORCE 계열은 궤적(또는 응답)에 대해 스칼라 보상을 가
 
 제84강에서 예고한 대로, 점수 차이가 승 확률을 결정한다고 본다.
 
-\[
+$$
 P_\phi(y_w \succ y_l \mid x)
 =
 \sigma\big(r_\phi(x,y_w)-r_\phi(x,y_l)\big)
-\]
+$$
 
 $\sigma(z)=1/(1+e^{-z})$.
 
@@ -101,23 +101,23 @@ $\sigma(z)=1/(1+e^{-z})$.
 
 데이터 $\mathcal{D}$에 대해 음의 로그우도:
 
-\[
+$$
 \mathcal{L}_{\mathrm{RM}}(\phi)
 =
 -\mathbb{E}_{(x,y_w,y_l)\sim\mathcal{D}}
 \big[
 \log \sigma\big(r_\phi(x,y_w)-r_\phi(x,y_l)\big)
 \big]
-\]
+$$
 
 이것은 라벨 1에 대한 **binary logistic loss**와 동일하다.  
 $\Delta = r_w - r_l$로 두면 $\mathcal{L}=-\log\sigma(\Delta)$.
 
 동치 형태:
 
-\[
+$$
 -\log\sigma(\Delta)=\log(1+e^{-\Delta})
-\]
+$$
 
 직관:
 
@@ -150,9 +150,9 @@ $\Delta = r_w - r_l$로 두면 $\mathcal{L}=-\log\sigma(\Delta)$.
 
 $r$에 상수 $c$를 더해도 차이 $\Delta$는 불변이다.
 
-\[
+$$
 r' = r + c \quad\Rightarrow\quad \Delta'=\Delta
-\]
+$$
 
 따라서 RM 점수의 **절대 영점**은 자유도가 있다. 이후 RL에서는 다음으로 스케일을 묶는다.
 
@@ -173,9 +173,9 @@ Accuracy만으로 충분치는 않다. 애매 데이터면 상한이 낮다(제8
 
 기본 BT 외에도:
 
-\[
+$$
 \log\sigma\big(r_w - r_l - m\big)
-\]
+$$
 
 처럼 margin $m>0$을 넣어 “조금만 이겨도 충분”을 막을 수 있다.  
 또는 listwise(여러 응답)로 Plackett-Luce를 쓰기도 한다. 이 강의 구현은 **기본 pairwise BT**에 고정한다.
@@ -209,22 +209,22 @@ $\ell=-\log\sigma(\Delta)$, $\Delta=r_w-r_l$.
 
 $\sigma'(\Delta)=\sigma(\Delta)(1-\sigma(\Delta))$이므로
 
-\[
+$$
 \frac{\partial\ell}{\partial\Delta}
 =
 \sigma(\Delta)-1
 =
 -\sigma(-\Delta)
-\]
+$$
 
 해석: 승 확률을 과소예측할수록 $\Delta$를 키우는 방향의 기울기가 나온다.
 
 연쇄법칙:
 
-\[
+$$
 \frac{\partial\ell}{\partial r_w}=\frac{\partial\ell}{\partial\Delta},\quad
 \frac{\partial\ell}{\partial r_l}=-\frac{\partial\ell}{\partial\Delta}
-\]
+$$
 
 즉 chosen 점수는 올리고 rejected 점수는 내린다(현재 $\Delta$가 작을 때).
 
@@ -232,19 +232,19 @@ $\sigma'(\Delta)=\sigma(\Delta)(1-\sigma(\Delta))$이므로
 
 미니배치 $B$개 쌍:
 
-\[
+$$
 \mathcal{L}
 =
 \frac{1}{|B|}\sum_{i\in B}\log\big(1+e^{-(r_w^{(i)}-r_l^{(i)})}\big)
-\]
+$$
 
 안정 구현에서는 `softplus(-Delta)` 또는 `logsigmoid`를 사용한다.
 
 ### 5.3 정확도와 손실의 관계
 
-\[
+$$
 \mathrm{Acc}=\frac{1}{|B|}\sum_i \mathbf{1}[r_w^{(i)}>r_l^{(i)}]
-\]
+$$
 
 Acc는 불연속이라 직접 미분이 안 된다. 손실은 Acc의 **부드러운 대리 목표**다.
 
@@ -259,9 +259,9 @@ Acc는 불연속이라 직접 미분이 안 된다. 손실은 Acc의 **부드러
 
 배치 평균 손실:
 
-\[
+$$
 \mathcal{L}\approx\frac{0.1269+0.6444+2.1269}{3}\approx 0.9661
-\]
+$$
 
 배치 정확도: 쌍1·2만 맞춤 → $2/3\approx0.667$.
 

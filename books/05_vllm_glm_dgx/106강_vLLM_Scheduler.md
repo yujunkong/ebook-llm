@@ -176,16 +176,269 @@ class Scheduler:
 
 제107강의 TTFT/TPOT/Throughput은 스케줄러 건강의 **외부 증상**이다. 원인 분석은 큐 길이·블록 사용률과 함께 본다.
 
+## 수식으로 보는 예산·입장
+### 12.1 토큰·블록 예산（개념）
+
+한 스케줄 스텝 $t$에서 처리할 토큰 상한을 $B_{\mathrm{tok}}$, 동시 시퀀스 상한을 $N_{\mathrm{seq}}$, free KV 블록을 $F$라 하자.
+
+$$
+
+\begin{aligned}
+\mathrm{admit}
+&\iff
+(|\mathrm{running}| < N_{\mathrm{seq}})
+\;\wedge\;
+(F \ge F_{\mathrm{need}})
+\;\wedge\;
+(T_{\mathrm{step}} \le B_{\mathrm{tok}})
+\end{aligned}
+
+$$
+
+$F_{\mathrm{need}}$는 새 요청의 프롬프트 길이·블록 크기에 비례한다（제105강）.  
+**사실:** 실제 엔진의 술어는 더 많다（LoRA, priority, prefix cache…）.  
+**해석:** 위 세 축만으로도 “왜 waiting만 쌓이는가”를 분류할 수 있다.
+
+### 12.2 Prefill vs Decode 비용 스케치
+
+시퀀스 $i$의 프롬프트 길이 $L_i$, 이미 생성한 길이 $\ell_i$일 때（아주 거친 모형）:
+
+$$
+
+\begin{aligned}
+C_{\mathrm{prefill}}(i) &\propto L_i \\
+C_{\mathrm{decode}}(i) &\propto 1 \quad\text{（토큰 1개; 스펙큘레이션 제외）}
+\end{aligned}
+
+$$
+
+배치 비용 근사:
+
+$$
+
+C_{\mathrm{batch}}
+\approx
+\sum_{i\in\mathrm{prefill}} C_{\mathrm{prefill}}(i)
++
+\sum_{j\in\mathrm{decode}} C_{\mathrm{decode}}(j)
+
+$$
+
+긴 prefill을 한 스텝에 많이 admit하면 $C_{\mathrm{batch}}$가 폭증 → TTFT 꼬리가 길어진다. Decode만 가득 채우면 처리량 효율은 좋아질 수 있으나 신규 요청 TTFT는 밀린다.
+
+### 12.3 Preemption과 thrashing
+
+선점 횟수를 $P$, 재개 시 재prefill 비용을 $C_{\mathrm{re}}$라 하면 thrashing 경고 신호（정성）:
+
+$$
+
+P \uparrow,\quad
+\frac{C_{\mathrm{re}}}{C_{\mathrm{useful}}} \uparrow
+\quad\Rightarrow\quad
+\text{유효 처리량 하락 후보}
+$$
+
+절대 임계값은 환경마다 다르다. 로그에 preempt 카운트를 남겨 추세를 본다.
+
+## 지표와 스케줄러 연결（제107강 예고）
+$$
+
+\begin{aligned}
+\mathrm{TTFT} &= t_{\mathrm{first}}-t_{\mathrm{req}} \\
+\mathrm{TPOT} &\approx \frac{t_{\mathrm{last}}-t_{\mathrm{first}}}{n_{\mathrm{out}}-1} \\
+\mathrm{Throughput} &\approx \frac{N_{\mathrm{tokens}}}{\Delta t}
+\end{aligned}
+
+$$
+
+| 증상 | 스케줄 쪽 레버 |
+|---|---|
+| TTFT↑ | admission 지연, prefill 버스트, waiting 길이 |
+| TPOT↑ | running 과밀, 선점, 메모리 압박 |
+| Throughput↓ | free blocks↓, thrashing, max_seqs 과소/과대 |
+
+**비주장:** 특정 기본 설정이 항상 최적.
+
+
+<!-- enrich-batch2-106 -->
+## 큐잉 이론 직관
+
+이용률 $\rho=\lambda/\mu$ 가 1에 가까우면 대기열 폭증.
+
+$$
+\mathbb{E}[W]\propto \frac{\rho}{1-\rho}
+$$
+
+(단순 M/M/1 스케치 — 실제 스케줄러는 KV 제약 포함)
+
+```python
+def mm1_wait(rho):
+    return rho/(1-rho) if rho < 1 else float("inf")
+print(mm1_wait(0.7), mm1_wait(0.95))
+```
+
+
+<!-- enrich-batch4-106 -->
+## 스케줄 스텝 의사코드
+
+```python
+waiting, running = [], []
+def schedule(free_blocks):
+    # 1) finished 제거 2) preempt 3) admit
+    admitted = []
+    for req in list(waiting):
+        need = (req["len"] + 15)//16
+        if need <= free_blocks:
+            free_blocks -= need
+            admitted.append(req)
+            waiting.remove(req)
+    running.extend(admitted)
+    return running, free_blocks
+print(schedule(10))
+```
+
+### 공정성 vs 처리량
+
+$$
+\max \mathrm{TPS}
+\quad\text{vs}\quad
+\min \mathrm{starve}(i)
+$$
+
+긴 요청만 우대하면 짧은 요청 P99가 나빠집니다.
+
+## 선점 비용
+
+$$
+c_{\mathrm{preempt}}=c_{\mathrm{recompute\ prefill}}+c_{\mathrm{queue}}
+$$
+
+## LLM에서는 어디에 사용될까?
+온콜에서 스케줄러 어휘가 바로 쓰인다.
+
+1. “GPU는 노는데 응답이 안 나와요” → waiting vs running, 블록 고갈  
+2. “짧은 질문이 굶어요” → 긴 요청 독점·우선순위  
+3. “가끔 한 요청만 재시작처럼 느려요” → preemption/recompute  
+4. “평균은 괜찮은데 p99 TTFT가…” → prefill 버스트·큐잉  
+
+제116~119강 프로젝트·운영에서 이 가설 트리를 메트릭에 연결한다.
+
+## 실습
+### 실습 A — 예산 부등식
+
+$N_{\mathrm{seq}}=4$, $F=10$, 새 요청이 블록 3을 필요로 하고 running이 이미 3개일 때 admit 여부를 판정하시오.
+
+### 실습 B — 타임라인
+
+제6절 그림에 요청4（짧은 프롬프트）가 t=3에 도착한다고 가정하고, 어느 열부터 배치에 들어갈지 가설을 쓰시오.
+
+### 실습 C — 의사코드 확장
+
+교육용 `Scheduler.step`에 “종료 시 블록 반납” 분기 2줄을 스케치하시오.
+
+### 실습 D — SLO 충돌
+
+TTFT SLO와 Throughput SLO가 충돌할 때, prefill admission을 조이는 정책의 득실을 문장으로 쓰시오.
+
 ## 자주 하는 실수
 1. Static batching과 Continuous Batching을 같은 “batch size”로만 비교
 2. Preemption을 장애로만 보고 로그를 무시
 3. Prefill 대량 입장을 허용해 TTFT SLO를 깨고도 평균 처리량만 자랑
 4. 엔진 버전 없이 “vLLM은 항상 X 정책”이라고 단정
 5. PagedAttention 없이 스케줄만 논해 OOM 원인을 놓침 — 둘은 한 쌍이다
+6. Throughput만 보고 p99 TTFT를 생략
 
-## LLM에서는 어디에 사용될까?
+## 스케줄 스텝 복잡도 감각（교육용）
+시퀀스 $n$개, 평균 프롬프트 $L$, 블록 크기 $S$일 때 admission 검사 비용은 대략 $O(n)$이고,  
+KV 블록 필요량은 대략
 
-이번 106강에서 배운 개념은 이후 Transformer · GPT · 서빙 강의에서 반복해서 등장합니다. 각 수식·코드 블록을 “실제 모델의 어느 단계인가”와 연결해 다시 읽어 보세요.
+$$
+
+F_{\mathrm{need}}(L) \approx \Big\lceil \frac{L}{S} \Big\rceil
+
+$$
+
+Decode 한 토큰이 새 블록을 여는 빈도는 $S$에 따라 달라진다. 스케줄러는 매 스텝 “지금 당장 부족한가”만 보지 말고 **앞으로 $\Delta$ 토큰 더 쓸 때**를 본다（lookahead는 구현·설정 의존）.
+
+### 공정성 스케치
+
+가중치 $w_i$（우선순위）가 있으면 선택 규칙 예:
+
+$$
+
+i^\star = \arg\max_{i\in\mathrm{waiting}} \frac{w_i}{a_i+\varepsilon}
+
+$$
+
+$a_i$는 이미 받은 서비스량. 구체 식은 엔진마다 다르다. **사실:** 공정성 정책은 제품 요구. **비주장:** 위 식이 vLLM 기본값.
+
+## 장애 로그에 남길 최소 필드
+```text
+waiting_len, running_len, free_blocks, preempt_count,
+prefill_tokens_this_step, decode_seqs_this_step,
+ttft_p50/p99 (외부), throughput (외부)
+```
+
+숫자 해석은 제107·118강. 여기서는 **스케줄 내부 상태와 외부 SLO를 같은 티켓에 붙인다**는 규율만 고정한다.
+
+
+## 워크드 예제 — 블록이 바닥날 때
+가정（교육용 숫자, 벤치 아님）: free blocks $F=4$, 블록당 토큰 $S=16$, running 시퀀스 2개가 각각 앞으로 40토큰을 더 쓸 예정.
+
+각 시퀀스의 추가 블록 수요 대략 $\lceil 40/16\rceil=3$ 이므로 합 6 > 4.  
+스케줄러 선택지:
+
+1. 신규 admission 중단  
+2. 한 시퀀스 preempt → 블록 회수  
+3. （지원 시）스왑  
+
+```text
+수요 합 > F  ⇒  선점·입장거절·스왑 중 하나
+수요 합 ≤ F  ⇒  decode 진행 가능（다른 예산 무시 시）
+```
+
+이 산수가 “정확한 엔진 내부”는 아니지만, **왜 preempt가 정상 경로인지**를 손으로 느끼게 한다.
+
+## 우선순위·SLA 메모
+실시간 챗은 TTFT에, 배치 요약은 Throughput에 가중치를 둔다. 같은 클러스터에 두 트래픽을 섞으면 스케줄러에 **클래스**가 필요해진다.
+
+$$
+
+\text{class} \in \{\mathrm{interactive}, \mathrm{batch}\}
+$$
+
+클래스별 $N_{\mathrm{seq}}$, prefill 예산 분리는 제품 정책이다. 구현 이름은 엔진 문서를 따른다.
+
+
+## 대기열과 TTFT（초간단 큐잉 직관）
+요청 도착률을 $\lambda$, 평균 서비스율（첫 토큰까지）을 $\mu$라 하면, 안정 조건 감각은 $\lambda < \mu$ 쪽이다.  
+waiting이 길게 쌓이면
+
+$$
+
+\mathrm{TTFT} \approx T_{\mathrm{queue}} + T_{\mathrm{prefill}}
+$$
+
+에서 $T_{\mathrm{queue}}$가 지배할 수 있다. 스케줄러 admission·prefill 예산은 $\mu$와 $T_{\mathrm{queue}}$에 동시에 손을 댄다.  
+**비주장:** M/M/1 공식을 프로덕션에 그대로 대입한다는 뜻은 아니다. 직관용 분해다.
+
+
+## 한 줄 복습
+Waiting은 입장 대기, Running은 실행 배치 후보다. Admission은 블록·시퀀스·토큰 예산 아래서만 일어난다. Prefill을 한꺼번에 넣으면 TTFT가, 선점이 잦으면 유효 처리량이 먼저 아프다. 외부 증상은 TTFT·TPOT·Throughput으로 읽고, 내부 상태는 큐 길이와 free blocks로 읽는다.
+
+
+## 스케줄러 건강 한 줄
+외부:
+
+$$
+
+\mathrm{Throughput}\approx\frac{N_{\mathrm{tokens}}}{\Delta t},\quad
+\mathrm{TTFT}=t_{\mathrm{first}}-t_{\mathrm{req}}
+$$
+
+내부: `waiting_len`, `running_len`, `free_blocks`, `preempt_count`.  
+둘을 같은 티켓에 붙이지 않으면 튜닝이 감이 된다.
+
 
 ## 핵심 요약
 - vLLM류 스케줄러는 **waiting/running**을 중심으로 매 스텝 배치를 재구성한다.
@@ -260,6 +513,51 @@ Admission 가능 여부와 preemption 필요 여부(메모리 예산).
 다음 **제107강. LLM Serving 성능 지표 — TTFT, TPOT, Throughput**에서 지연·처리량 지표를 정의하고, 섞어 쓰면 안 되는 함정을 정리한다.
 
 이전: 제105강 PagedAttention → 메모리 화폐. 이번: 그 화폐의 **배분 정책**.
+
+<!-- enrich-106-depth -->
+## 스케줄러 목적함수를 운영 지표로
+
+개념 목표:
+
+$$
+\max_{\mathcal{B}}\;\mathrm{tokens/s}
+\quad
+\mathrm{s.t.}\;
+\mathrm{Mem}(\mathcal{B})\le M,\;
+|\mathcal{B}|\le B_{\max},\;
+\mathrm{TTFT}_{P99}\le S
+$$
+
+세 번째 제약（SLO）이 빠지면 처리량만 좋은 “나쁜 스케줄”이 나온다.
+
+### Preemption 비용
+
+선점 후 재개 시 추가 비용（정성）:
+
+$$
+C_{\mathrm{preempt}}
+\approx
+C_{\mathrm{recompute\ prefill}}
++
+C_{\mathrm{queue\ wait}}
+$$
+
+블록 부족:
+
+$$
+\mathrm{free\_blocks} < \left\lceil\frac{\ell}{b}\right\rceil
+\;\Rightarrow\;
+\text{admit 거부 또는 preempt}
+$$
+
+### 로그에 남길 최소 필드
+
+- waiting/running 길이
+- admit/preempt 횟수
+- 스텝당 prefill 토큰 vs decode 토큰
+- KV 블록 사용률
+
+이 필드가 제118강 리포트의 “스케줄러 건강” 섹션이 된다.
 
 <!-- LECTURE_NAV -->
 

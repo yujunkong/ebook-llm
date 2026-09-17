@@ -218,6 +218,28 @@ jupyter notebook
 
 “도구를 전역으로 마구 쌓아 두는 사람”과 “프로젝트마다 작업대를 나누는 사람”은, 나중에 같은 코드를 돌려도 결과가 갈린다.
 
+### 재현성을 수식으로 감각하기
+
+실험 결과 $R$는 대략 코드·데이터·난수·환경의 함수입니다.
+
+$$
+R = f(\text{code},\ \text{data},\ \text{seed},\ \text{env})
+$$
+
+`env`가 바뀌면(패키지 버전, CUDA, OS) 같은 코드라도 $R$가 달라질 수 있습니다. venv·버전 고정·시드 고정은 $f$의 인자를 **의도적으로 고정**하는 일입니다.
+
+지금은 벤치마크 숫자를 주장하지 않습니다. 다만 “환경이 실험의 일부”라는 식을 마음에 둡니다.
+
+### 미니 예제 — print가 하는 일
+
+`print("Hello, LLM")`은 문자열 $s$를 표준 출력 스트림에 쓰는 부작용입니다. 반환값은 `None`입니다.
+
+$$
+\mathrm{print}:\ s \mapsto (\text{화면에 } s \text{ 표시}),\quad \text{return }=\varnothing
+$$
+
+학습 로그도 결국 “숫자를 문자열로 만들어 print(또는 로거)로 남긴다”는 같은 패턴입니다. 3강 f-string과 이어집니다.
+
 ## 숫자로 확인하기 — 환경 점검 체크리스트
 설치가 끝났다면 아래를 순서대로 확인한다. 숫자가 맞는지보다 **통과/실패**가 중요하다.
 
@@ -333,9 +355,148 @@ if __name__ == "__main__":
 NumPy는 8강에서 본격적으로 다룬다. PyTorch는 1권 후반이다.  
 지금 단계에서 torch 설치가 실패해도, Python·venv·pip만 되면 2~7강은 진행할 수 있다.
 
-## 수식 보강 — 프로그램과 함수
+## 프로그램을 함수로 보기
 
-프로그램을 입력 $x$에서 출력 $y$로의 함수 $y=f(x)$로 보면, LLM도 거대한 $f_\theta$입니다. 이후 강의의 모든 수식은 이 $f$의 내부를 분해한 것입니다.
+Python 스크립트도, LLM도, 크게 보면 **입력에서 출력으로 가는 함수**입니다.
+
+$$
+y = f(x)
+$$
+
+터미널에서 `python hello.py`를 실행하는 것은 “인자·환경이라는 입력”을 넣어 $f$를 평가하는 일에 가깝습니다. LLM에서는 $x$가 토큰 열, $y$가 다음 토큰 분포(또는 생성된 문장)가 됩니다.
+
+$$
+y = f_\theta(x),\qquad \theta\text{는 학습으로 정해지는 내부 상태}
+$$
+
+2강에서 venv·pip·스크립트를 익히는 이유는, 나중에 $f_\theta$를 **재현 가능한 환경**에서 돌리기 위해서입니다.
+
+### 버전·의존성을 좌표로
+
+실험 하나를 숫자처럼 적으면 대략 다음 튜플입니다.
+
+$$
+\mathrm{Env}
+=
+\bigl(\mathrm{Python},\ \mathrm{packages},\ \mathrm{CUDA},\ \mathrm{commit},\ \mathrm{seed}\bigr)
+$$
+
+같은 코드라도 Env가 바뀌면 결과가 달라질 수 있습니다. `pip freeze`는 packages 좌표를 고정하는 도구입니다.
+
+### 스크립트 실행을 식으로
+
+파일 `hello.py`가 문자열 $s$를 표준출력에 쓴다고 하면
+
+$$
+\mathrm{run}(\texttt{hello.py}) \mapsto s
+$$
+
+입니다. `print`는 $s$를 만드는 한 줄이고, `if __name__ == "__main__":`는 “직접 실행될 때만” 진입점을 여는 가드입니다.
+
+```python
+# 입력을 받는 최소 프로그램
+name = "LLM"
+msg = f"hello, {name}"
+print(msg)  # y = f(name)
+```
+
+### 연산 비용의 초보 감각
+
+아직 빅오는 필요 없지만, “한 줄 print”와 “모델 forward”의 스케일 차이는 수식적으로도 느낄 수 있습니다.
+
+$$
+C_{\mathrm{print}} \approx O(1),\qquad
+C_{\mathrm{LLM}}(T,d) \gg C_{\mathrm{print}}
+$$
+
+토큰 길이 $T$, 은닉 차원 $d$가 커질수록 $C_{\mathrm{LLM}}$이 커집니다. 그래서 **작은 예제로 파이프를 먼저 검증**하는 습관이 중요합니다.
+
+### 가상환경 = 격리된 $f$의 정의역
+
+시스템 Python에 패키지를 섞으면, 서로 다른 프로젝트가 같은 전역 상태를 오염시킵니다. venv는 프로젝트마다 별도의 site-packages를 둡니다.
+
+$$
+\mathrm{Env}_A \cap \mathrm{Env}_B = \emptyset
+\quad\text{(이상적으로)}
+$$
+
+실무에서는 Docker·conda도 쓰지만, 원리는 같습니다: **재현 가능한 닫힌 환경**.
+
+### 시드와 난수
+
+학습·샘플링에는 난수가 들어갑니다. 시드 $s$를 고정하면
+
+$$
+\xi = \mathrm{RNG}(s)
+$$
+
+라는 난수열이 정해지고, dropout·셔플·생성 샘플이 따라갑니다. 연구 노트에 seed를 적는 이유입니다.
+
+$$
+\mathrm{reproducible}
+\iff
+(\mathrm{code},\ \mathrm{Env},\ s)\ \text{가 기록됨}
+$$
+
+```python
+# 시드 고정 감각 (표준 라이브러리)
+import random
+random.seed(42)
+print(random.random())  # 같은 시드면 같은 첫 난수
+```
+
+### pip 설치를 “상태 전이”로
+
+패키지 집합을 $P$라 하면
+
+$$
+P \leftarrow P \cup \{\texttt{numpy}\}
+$$
+
+이 `pip install numpy`입니다. 버전 pin은
+
+$$
+P \ni (\texttt{numpy},\ 1.26.4)
+$$
+
+처럼 **이름과 버전을 함께** 고정하는 일입니다.
+
+### LLM 실험 체크리스트 (2강 버전)
+
+1. `python -V`가 기대한 버전인가?
+2. `which python`이 `.venv`를 가리키는가?
+3. `pip list`에 필요 패키지가 있는가?
+4. 스크립트가 프로젝트 폴더에서 실행되는가?
+
+> 💡 **팁**
+>
+> “모델이 안 돌아요”의 절반은 Env 문제입니다. 2강에서 환경을 분리하는 습관을 들이면, 이후 디버깅 시간이 크게 줄어듭니다.
+
+
+<!-- enrich-batch3-2 -->
+## 실습 — 첫 스크립트와 경로
+
+```python
+from pathlib import Path
+root = Path(".").resolve()
+print("cwd", root)
+# 패키지/데이터 경로는 Path로 다루면 OS 차이가 줄어든다
+assert root.exists()
+```
+
+의존성 고정 예시 개념:
+
+$$
+\mathrm{lock}=\{p_i==v_i\}_{i=1}^{M}
+$$
+
+가상환경 + requirements/lock이 재현성의 뼈대입니다.
+
+### 버전 확인 체크리스트
+
+1. `python --version`
+2. `pip freeze | rg torch`
+3. CUDA/`nvidia-smi` (해당 시)
 
 ## LLM에서는 어디에 사용될까?
 환경 준비는 “기초 교양”처럼 보이지만, 실제 LLM 실험에서도 같은 원리가 그대로 쓰인다.
@@ -402,6 +563,18 @@ GPU / CUDA 버전
 
 5. **에러 메시지를 읽지 않고 재설치만 반복한다**  
    `ModuleNotFoundError`, `PermissionError`, `command not found`는 각각 원인이 다르다. 메시지를 먼저 읽는다.
+
+## 수식·복잡도 보강 — 스크립트 실행
+
+스크립트 한 번 실행은 “위에서 아래로”의 순차 평가입니다. 줄 수가 $n$이고 각 줄이 $O(1)$이면 대략 $O(n)$입니다. 아직 루프·대용량 데이터를 다루지 않으므로, **환경이 맞는지 확인하는 비용**이 학습 자체보다 큽니다.
+
+의존성 그래프를 간단히 쓰면
+
+$$
+\text{Python} \rightarrow \text{venv} \rightarrow \text{pip packages} \rightarrow \text{your .py}
+$$
+
+앞 단계가 깨지면 뒤 단계 디버깅은 의미가 없습니다. 2강의 체크리스트는 이 의존 순서를 고정합니다.
 
 ## 핵심 요약
 - Python 3.11+를 설치하고, 터미널에서 버전을 확인하는 것이 출발점이다

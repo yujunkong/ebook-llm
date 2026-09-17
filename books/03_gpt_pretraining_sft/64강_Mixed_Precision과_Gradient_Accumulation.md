@@ -354,6 +354,169 @@ for batch in loader:
 6. **BF16 미지원 장치에서 묵시 실패** — 환경 확인은 사실 문제다. 추측으로 덮지 말 것.
 7. **로그 loss에 `/n`된 값을 그대로 기록** — train curve가 가짜로 낮아 보임. 로그 시 스케일 복원.
 
+## 수식 보강 — 체크포인트 크기 감각
+
+파라미터 $P$개, FP16이면 가중치만
+
+$$
+\mathrm{Mem}_{W}\approx 2P\ \mathrm{bytes}
+$$
+
+Adam 상태까지 두면 수 배로 늘어납니다. LoRA면 저장량이 크게 줄 수 있습니다.
+
+
+<!-- enrich-batch2-64 -->
+## AMP · Grad Accum
+
+손실 스케일:
+
+$$
+L' = s L,\quad
+\nabla L = \nabla L'/s
+$$
+
+Accum:
+
+$$
+g=\frac{1}{K}\sum_{k=1}^K \nabla L_k
+$$
+
+```python
+# K=4 accum 의사코드
+K=4
+for micro in range(K):
+    # (loss/K).backward()
+    pass
+# opt.step(); opt.zero_grad()
+print("effective batch x", K)
+```
+
+
+<!-- enrich-batch3-64 -->
+## FP16 오버플로와 스케일
+
+$$
+\mathrm{fp16\ max}\approx 65504
+$$
+
+$$
+s_{t+1}=
+\begin{cases}
+s_t/2 & \text{overflow}\\
+s_t\cdot 2 & \text{stable for N steps}
+\end{cases}
+$$
+
+```python
+import torch
+x = torch.tensor([1e5], dtype=torch.float16)
+print(x)  # inf 가능 — 스케일 필요성 직관
+```
+
+
+<!-- enrich-pass-1f64 -->
+## 수식 전개 — Loss Scale과 Accumulation
+
+FP16에서 작은 gradient가 underflow되지 않게 손실을 키웁니다.
+
+$$
+L_{\mathrm{scaled}} = s\cdot L
+$$
+
+역전파 후 파라미터 경사는
+
+$$
+\nabla_\theta L
+=
+\frac{1}{s}\nabla_\theta L_{\mathrm{scaled}}
+$$
+
+로 되돌립니다. Dynamic loss scale은 overflow가 나면 $s\leftarrow s/2$, 일정 스텝 성공 시 $s\leftarrow 2s$처럼 조절합니다（구현체마다 상수 다름）.
+
+### Gradient Accumulation
+
+마이크로 배치 $k=1..K$에 대해
+
+$$
+g
+=
+\frac{1}{K}\sum_{k=1}^{K}\nabla L_k
+$$
+
+를 모은 뒤 한 번 업데이트합니다. 코드에서 `loss/K`로 backward하면 평균이 맞춰집니다.
+
+실효 배치 토큰:
+
+$$
+N_{\mathrm{eff}}
+=
+B_{\mathrm{micro}}\cdot T\cdot K\cdot\eta
+$$
+
+## Shape / 메모리 표
+
+| 항목 | 정밀도 | 비고 |
+|---|---|---|
+| 활성화（대부분） | FP16/BF16 | autocast |
+| 마스터 가중치 | FP32 | 업데이트 안정 |
+| Grad（accum 버퍼） | FP32 권장 | 합산 오차↓ |
+| Optimizer state | FP32 | Adam m/v |
+
+BF16은 지수 범위가 넓어 loss scale이 없어도 되는 경우가 많습니다. FP16은 scale을 전제로 설계하세요.
+
+## 구현 스케치 — Accum 루프
+
+```python
+accum = 4
+opt.zero_grad(set_to_none=True)
+for i, batch in enumerate(loader):
+    with torch.autocast(device_type="cuda", dtype=torch.bfloat16):
+        loss = compute_loss(model, batch) / accum
+    loss.backward()
+    if (i + 1) % accum == 0:
+        torch.nn.utils.clip_grad_norm_(model.parameters(), 1.0)
+        opt.step()
+        sched.step()
+        opt.zero_grad(set_to_none=True)
+```
+
+`sched.step()`을 micro마다 호출하지 마세요（제63강）.
+
+## 실패 모드 — AMP / Accum
+
+| 실패 | 증상 | 처방 |
+|---|---|---|
+| `loss/K` 누락 | 실효 lr이 K배 | 평균화 확인 |
+| FP16 + scale 없음 | NaN | GradScaler |
+| unscale 전 clip | 잘못된 clip | API 순서 준수 |
+| accum 중 zero_grad | 경사 소거 | K스텝마다만 |
+
+## 실습 코드 — 오버플로 모니터
+
+```python
+def grad_has_nonfinite(model):
+    for p in model.parameters():
+        if p.grad is None:
+            continue
+        if not torch.isfinite(p.grad).all():
+            return True
+    return False
+```
+
+Non-finite가 반복되면 lr↓, BF16 전환, 데이터 NaN, 마스크 버그를 의심합니다.
+
+## 수식 보강 — 처리량 감각
+
+스텝 시간 $t_{\mathrm{step}}$일 때 초당 토큰은
+
+$$
+\mathrm{tok/s}
+=
+\frac{N_{\mathrm{eff}}}{t_{\mathrm{step}}}
+$$
+
+입니다. 비교는 **동일 하드웨어·동일 시퀀스 길이**에서만 하세요. 숫자를 벤치 주장으로 쓰지 마세요.
+
 ## LLM에서는 어디에 사용될까?
 
 이번 64강에서 배운 개념은 이후 Transformer · GPT · 서빙 강의에서 반복해서 등장합니다. 각 수식·코드 블록을 “실제 모델의 어느 단계인가”와 연결해 다시 읽어 보세요.

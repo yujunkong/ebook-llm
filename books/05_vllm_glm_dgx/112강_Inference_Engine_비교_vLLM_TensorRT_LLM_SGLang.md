@@ -300,9 +300,137 @@ vLLM은 LLM 서빙에서 반복되던 문제를 정면으로 다룬다.
 4. 엔진 교체로 네트워크 TP 문제를 해결하려 한다.  
 5. 성능만 보고 온콜·보안·재현성을 0점 처리한다.
 
-## LLM에서는 어디에 사용될까?
+## 수식 보강 — 엔진 비교 축
 
-이번 112강에서 배운 개념은 이후 Transformer · GPT · 서빙 강의에서 반복해서 등장합니다. 각 수식·코드 블록을 “실제 모델의 어느 단계인가”와 연결해 다시 읽어 보세요.
+비교는 보통 TTFT, TPOT, throughput, 최대 동시성, 양자화/TP 지원으로 합니다. 절대 수치 대신 **동일 하드웨어·동일 모델**에서 상대 비교가 공정합니다.
+
+
+<!-- enrich-block-112 -->
+## 엔진 비교를 위한 공통 지표
+
+처리량:
+
+$$
+\mathrm{TPS}=\frac{\sum_i n_{\mathrm{gen},i}}{\Delta t}
+$$
+
+지연:
+
+$$
+\mathrm{TTFT}=\mathbb{E}[t_{\mathrm{first}}],\qquad
+\mathrm{TPOT}=\mathbb{E}[t_{\mathrm{token}}]
+$$
+
+메모리 여유:
+
+$$
+\mathrm{Headroom}=M_{\mathrm{gpu}}-\mathrm{Mem}_{\mathrm{weights}}-\mathrm{Mem}_{\mathrm{KV}}-\mathrm{Mem}_{\mathrm{act}}
+$$
+
+### 엔진 선택 휴리스틱
+
+| 필요 | 후보 |
+|---|---|
+| 높은 동시성 continuous batching | vLLM / SGLang |
+| 극한 최적화·고정 shape | TensorRT-LLM |
+| 단순 HF 호환 API | TGI |
+
+
+<!-- enrich-extra-112 -->
+## 벤치 표 — 같은 질문으로 엔진 비교
+
+$$
+\mathrm{score}=w_1\mathrm{TPS}+w_2(-\mathrm{P99})+w_3\mathrm{Headroom}
+$$
+
+```python
+# 가상 벤치 결과 비교
+engines = {
+    "vLLM": {"tps": 1200, "p99_ms": 80, "gb_free": 12},
+    "TRT-LLM": {"tps": 1500, "p99_ms": 60, "gb_free": 8},
+    "SGLang": {"tps": 1300, "p99_ms": 70, "gb_free": 11},
+}
+for name, m in engines.items():
+    score = m["tps"] - 5 * m["p99_ms"] + 20 * m["gb_free"]
+    print(name, score)
+```
+
+숫자는 예시입니다. 실제는 모델·양자화·프롬프트 길이·동시성에 좌우됩니다.
+
+### 수식 보강 — 엔진 공통 제약
+
+$$
+\mathrm{Mem}_W+\mathrm{Mem}_{KV}+\mathrm{Mem}_{act}\le M_{\mathrm{GPU}}
+$$
+
+$$
+\mathrm{Latency}_{e2e}\approx \mathrm{TTFT}+(N_{gen}-1)\cdot\mathrm{TPOT}
+$$
+
+## 수식·지표로 공정 비교하기
+엔진 A/B를 비교할 때 최소로 고정할 정의:
+
+$$
+
+\begin{aligned}
+\mathrm{TTFT} &= t_{\mathrm{first}}-t_{\mathrm{req}} \\
+\mathrm{TPOT} &\approx \frac{t_{\mathrm{last}}-t_{\mathrm{first}}}{n_{\mathrm{out}}-1} \\
+\mathrm{Throughput} &\approx \frac{N_{\mathrm{tokens}}}{\Delta t_{\mathrm{wall}}}
+\end{aligned}
+
+$$
+
+동일 비교를 위한 제약（체크리스트）:
+
+| 고정 항목 | 왜 |
+|---|---|
+| 모델·토크나이저·템플릿 | 생성 분포 |
+| dtype/quant | 커널·품질 |
+| 입력 길이 분포 | prefill 비용 |
+| 출력 길이 상한 | decode 스텝 수 |
+| 동시성 | 배치·스케줄 |
+| 워밍업·캐시 상태 | prefix 이득 왜곡 |
+| 하드웨어·드라이버 | 대역폭·SM |
+
+**비주장:** 특정 엔진의 tok/s. 측정 전에는 승자를 쓰지 않는다.
+
+### Prefix cache 이득（정성 모형）
+
+공유 prefix 길이 $L_p$, 히트율 $h$일 때 prefill 비용 감각:
+
+$$
+
+C_{\mathrm{prefill}}^{\mathrm{eff}} \approx (1-h)\,C(L_p+L_{\mathrm{unique}}) + h\,C(L_{\mathrm{unique}})
+
+$$
+
+$h\approx0$이면 캐시 엔진의 설계 이득이 거의 안 보인다. 벤치에 공유 prefix를 넣지 않은 채 “느리다”고 결론 내리지 말 것.
+
+### CUDA Graph 이득이 드러나는 구간
+
+Decode처럼 짧은 커널이 반복될 때 런치 오버헤드 $o$가 $K$번 있으면:
+
+$$
+
+T_{\mathrm{decode}} \approx K\cdot(t_{\mathrm{kernel}}+o)
+\quad\to\quad
+T_{\mathrm{graph}} \approx t_{\mathrm{capture}}+K\cdot t_{\mathrm{kernel}}
+$$
+
+$o$가 상대적으로 클수록 그래프 이득 여지가 커진다. 동적 shape가 많으면 캡처가 어렵거나 이득이 줄어든다.
+
+## LLM에서는 어디에 사용될까?
+- 스타트업: 빠른 모델 교체 → 실험 친화 엔진으로 측정 루프부터
+- 저지연 SLA: 그래프·커널 최적화 경로를 PoC에 포함
+- 에이전트/RAG: prefix·structured 친화 런타임을 트래픽 패턴과 함께 시험
+- 2노드 TP: 엔진 논쟁 전에 NCCL/RoCE 준비（제114~115강）
+
+## 실습 C — 지표 식 채우기
+동일 로그에서 TTFT·TPOT·Throughput을 위 식으로 계산하는 의사 절차를 5단계로 쓰시오（숫자 창작 금지）.
+
+## 실습 D — 캐시 왜곡
+히트율 100% 벤치와 0% 벤치가 제품 결론을 어떻게 반대로 이끌 수 있는지 한 단락으로 쓰시오.
+
 
 ## 핵심 요약
 - vLLM · TensorRT-LLM · SGLang은 **다른 설계 강조**를 가진 서빙 엔진이다.
@@ -381,6 +509,45 @@ KV를 효율적으로 할당·회수하면 더 많은 요청을 동시에 올려
 다음 강의: **제113강. Tensor Parallel**
 
 제113강에서는 텐서를 GPU들에 샤딩하는 방법, 필요한 통신, 언제 TP가 도움이 되는지를 다룬다. 그 통신의 구현 계층이 제114강 NCCL·RoCE다.
+
+<!-- enrich-112-depth -->
+## 비교를 식으로 공정하게
+
+엔진 A/B를 같은 하드웨어·같은 모델·같은 양자화·같은 프롬프트 분포에서 비교한다.
+
+$$
+\mathrm{TTFT}_{P50},\;
+\mathrm{TTFT}_{P99},\;
+\mathrm{TPOT}_{P50},\;
+\mathrm{Throughput}
+$$
+
+공정성 조건（체크리스트）:
+
+1. 동일 체크포인트·토크나이저
+2. 동일 max length / stop
+3. 동일 동시성 $C$ 스위프
+4. 워밍업 제외 측정창 명시
+
+상대 이득:
+
+$$
+\mathrm{Gain}
+=
+\frac{X_A-X_B}{X_B}
+$$
+
+$X$마다 부호 해석이 다르다（지연은↓, 처리량은↑）.
+
+### 엔진 선택 감각（처방 아님）
+
+| 강조점 | 먼저 볼 것 |
+|---|---|
+| 빠른 실험·동적 배치 | 스케줄러·Paged KV 성숙도 |
+| 고정 그래프·극한 지연 | 컴파일·커널 퓨전 |
+| 멀티턴·라디엑스 캐시 | 캐시·세션 API |
+
+벤치 숫자 하나만으로 “승자”를 선언하지 않는다. 제118강 리포트 템플릿으로 남긴다.
 
 <!-- LECTURE_NAV -->
 

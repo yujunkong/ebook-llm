@@ -339,6 +339,216 @@ Pretraining에서는:
 6. **test를 매일 봐서 사실상 val로 사용** — 최종 보고 신뢰 하락
 7. **AMP train / FP32 val을 아무 기록 없이 비교** — 곡선 해석이 어긋남
 
+## 수식 보강 — 불안정 신호
+
+손실 spike, $\mathrm{grad\_norm}=\|\nabla L\|$ 폭발, NaN은 스케일/LR/데이터 버그를 의심합니다. Grad clip:
+
+$$
+g\leftarrow g\cdot\min\Big(1,\frac{\tau}{\|g\|}\Big)
+$$
+
+
+## 수학적으로 이해하기 — Validation 손실
+
+토큰 평균 validation NLL:
+
+$$
+
+L_{\mathrm{val}}
+=
+\frac{
+\sum_{(x,y)\in\mathcal{D}_{\mathrm{val}}}\sum_t m_t(-\log p_\theta(y_t\mid x_{\le t}))
+}{
+\sum_{(x,y)\in\mathcal{D}_{\mathrm{val}}}\sum_t m_t
+}
+
+$$
+
+Pretrain에서는 $m_t=1$（패딩 제외）, SFT에서는 응답 마스크일 수 있습니다.  
+**같은 식으로 계산해도** 데이터 분포가 다르면 숫자가 비교 불가입니다.
+
+### Early stopping 스케치
+
+인내(patience) $P$ step 동안 $L_{\mathrm{val}}$ 최소가 갱신되지 않으면 중단합니다.
+
+$$
+
+\text{stop if }\ t-t_{\mathrm{best}} \ge P
+$$
+
+학습 곡선이 시끄러우면 이동평균 $\tilde L_t$로 비교하기도 합니다. 규칙을 바꾸면 `best` 체크포인트 의미가 바뀌므로 실험 노트에 고정합니다.
+
+## 작은 숫자 예 — 과적합 신호
+
+```text
+step   train   val
+100    3.2     3.3
+500    2.1     2.4
+1000   1.0     2.6   ← train↓ val↑ : 과적합 후보
+```
+
+허구 숫자입니다. 패턴만 보세요. val이 나빠질 때 `best`를 보관했는지가 제65강과 연결됩니다.
+
+## 직관적으로 이해하기 — 모의고사
+
+Training loss는 숙제 점수, Validation은 모의고사, Harness（SFT）는 실기 시험입니다.  
+숙제만 만점이면 안심할 수 없습니다.
+
+## Evaluation vs Validation
+
+| | Validation | Evaluation（넓은 의미） |
+|---|---|---|
+| 빈도 | 학습 중 주기적 | 학습 중·후 |
+| 지표 | 주로 CE/PPL | CE + 생성 + harness |
+| 목적 | 모델 선택·조기종료 | 능력 주장·회귀 |
+
+제67강 PPL은 validation CE의 지수 변환입니다. 생성 품질은 별 축입니다.
+
+## 디버깅·학습 불안정과 Val의 관계
+
+| 증상 | Val 패턴 | 먼저 볼 곳 |
+|---|---|---|
+| 폭주 | val·train 동시 NaN/급등 | lr, AMP（62~64） |
+| 과적합 | train↓ val↑ | early stop, 데이터 |
+| 마스크 버그 | train 비정상↓, 생성 실패 | 71, 76 |
+| 셔플/누수 | val이 너무 쉽게 하락 | 데이터 분리 |
+
+## 부록 A. Val 루프 스케치
+
+```python
+@torch.no_grad()
+def evaluate(model, loader):
+    model.eval()
+    total, count = 0.0, 0
+    for x, y in loader:
+        logits = model(x)
+        loss = F.cross_entropy(
+            logits.view(-1, logits.size(-1)), y.view(-1), reduction="sum"
+        )
+        total += loss.item()
+        count += y.numel()
+    model.train()
+    return total / max(1, count)
+```
+
+`reduction="sum"` 후 토큰 수로 나누면 배치 크기 왜곡을 줄입니다.
+
+## 부록 B. 수식 카드
+
+$$
+
+\mathrm{PPL}=\exp(L_{\mathrm{val}}),\quad
+t_{\mathrm{best}}=\arg\min_t L_{\mathrm{val}}(t)
+$$
+
+
+<!-- enrich-batch2-66 -->
+## Validation 지표
+
+Perplexity:
+
+$$
+\mathrm{PPL}=\exp\left(\frac{1}{N}\sum_i -\log p_i\right)
+$$
+
+```python
+import math
+nll = 2.3  # nats/token
+ppl = math.exp(nll)
+print(ppl)
+```
+
+정확도·동의율 등 태스크 지표는 PPL과 함께 보세요.
+
+
+<!-- enrich-pass-1f64 -->
+## 수식 전개 — Val Loss와 PPL
+
+토큰 평균 validation CE
+
+$$
+L_{\mathrm{val}}
+=
+\frac{\sum_{(b,t)\in\mathrm{val}} m_{b,t}(-\log p_{b,t})}{\sum m_{b,t}}
+$$
+
+에 대해 perplexity는
+
+$$
+\mathrm{PPL}
+=
+\exp(L_{\mathrm{val}})
+$$
+
+입니다（자연로그 CE 가정）. 로그 밑이 바뀌면 변환을 맞추세요.
+
+### Early stopping 감각
+
+인내 구간 $P$ 동안 개선이 없으면 중단:
+
+$$
+\text{stop if }
+\min_{j=0..P} \big(L_{\mathrm{val}}(t-j)-L_{\mathrm{val}}^{\star}\big)
+\ge 0
+$$
+
+여기서 $L_{\mathrm{val}}^{\star}$는 지금까지 최저입니다.
+
+## Shape 표 — Eval 배치
+
+| 텐서 | Shape | 모드 |
+|---|---|---|
+| `input_ids` | `(B, T)` | `model.eval()` |
+| `logits` | `(B, T, V)` | `torch.no_grad()` |
+| 집계 버퍼 | scalar | 토큰 가중 합 |
+
+## 구현 스케치 — 토큰 가중 집계
+
+```python
+@torch.no_grad()
+def eval_loss(model, loader, ignore_index=-100):
+    model.eval()
+    total, n = 0.0, 0
+    for batch in loader:
+        logits = model(batch["input_ids"])
+        loss, count = token_ce_sum(logits, batch["labels"], ignore_index)
+        total += loss
+        n += count
+    return total / max(n, 1)
+```
+
+배치 평균을 단순 평균하면 짧은 배치가 과대 대표됩니다. **토큰 수 가중**이 기본입니다.
+
+## 실패 모드 — Validation
+
+| 실패 | 증상 | 처방 |
+|---|---|---|
+| train 모드로 eval | Dropout 노이즈 | `eval()`+no_grad |
+| Val에 누수 | 낙관적 곡선 | 경로·해시 분리 |
+| 프로토콜 변경 | 곡선 단절 | decoding/길이 고정 |
+| micro-loss만 비교 | 착시 | token-avg |
+
+## 실습 코드 — 발산 감지
+
+```python
+def unstable(loss, grad_norm, thr_loss=50.0, thr_grad=1e3):
+    return (not math.isfinite(loss)) or loss > thr_loss or grad_norm > thr_grad
+```
+
+불안정 시 lr·데이터·AMP를 의심하고, 체크포인트로 롤백합니다（제65강）.
+
+## 수식 보강 — Running average
+
+지수 이동 평균
+
+$$
+\bar L_t
+=
+\beta\bar L_{t-1}+(1-\beta)L_t
+$$
+
+는 로그 노이즈를 줄이지만, **결정에 쓰는 공식 Val**과는 분리해 기록하세요.
+
 ## LLM에서는 어디에 사용될까?
 
 이번 66강에서 배운 개념은 이후 Transformer · GPT · 서빙 강의에서 반복해서 등장합니다. 각 수식·코드 블록을 “실제 모델의 어느 단계인가”와 연결해 다시 읽어 보세요.

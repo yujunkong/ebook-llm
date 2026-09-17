@@ -302,6 +302,221 @@ messages (정답 없음)
 
 이 두 경로가 **같은 `apply_chat_template` 구현**을 import해야 한다. train 스크립트에 문자열을 하드코딩하고 generate에 다른 하드코딩을 두지 말 것.
 
+## 수식 보강 — Chat template
+
+메시지 열 $(m_1,\ldots,m_k)$를 특수 토큰으로 직렬화합니다.
+
+$$
+\text{string}=\mathrm{Template}(m_1,\ldots,m_k)
+$$
+
+토크나이저 후 ID 열이 모델 입력이 됩니다. 역할(user/assistant/system) 경계가 학습 신호입니다.
+
+
+## 수학적으로 이해하기 — 템플릿은 결정적 맵
+
+Chat template $\mathcal{T}$는 메시지 리스트를 토큰열로 보내는 결정적（또는 규약상 결정적）함수입니다.
+
+$$
+
+\mathcal{T}:\ (m_1,\ldots,m_K)\ \mapsto\ x_{1:T}\in\{1,\ldots,V\}^T
+
+$$
+
+학습과 추론이 다른 $\mathcal{T}$를 쓰면, 모델이 보는 조건 분포가 달라집니다.
+
+$$
+
+p_\theta(y\mid \mathcal{T}_{\mathrm{train}}(c))
+\;\neq\;
+p_\theta(y\mid \mathcal{T}_{\mathrm{infer}}(c))
+\quad\text{（일반적으로）}
+
+$$
+
+“지시 실패”의 상당수는 최적화 실패가 아니라 **좌표 변환 실패**입니다.
+
+### Special token과 vocab 확장
+
+역할 마커를 $k$개 추가하면
+
+$$
+
+V \leftarrow V+k
+$$
+
+이고, 임베딩·lm_head에 $k$행이 늘어납니다. 초기화는 평균 임베딩 복사 등이 흔합니다. **토큰 문자열만 바꾸고 ID를 안 넣으면** 마커가 서브워드로 쪼개져 경계가 붕괴합니다.
+
+## 작은 숫자 예 — 두 템플릿의 토큰 수
+
+동일 messages에 대해（설명용 가정）:
+
+| 템플릿 | 렌더 길이 T | assistant 시작 위치 |
+|---|---|---|
+| A: `User:/Assistant:` | 24 | 18 |
+| B: `<\|im_start\|>...` | 28 | 21 |
+
+마스크를 위치 18 기준으로 칠했는데 추론은 B를 쓰면, 경계가 어긋납니다.  
+단위 테스트는 **같은 messages → 같은 ids**를 학습/추론 경로에서 assert 합니다.
+
+```python
+ids_train = tok.apply_chat_template(msgs, add_generation_prompt=False)
+ids_infer_prefix = tok.apply_chat_template(msgs[:-1], add_generation_prompt=True)
+# msgs 마지막이 assistant 정답일 때, prefix는 그 직전까지와 일치해야 함
+```
+
+## 직관적으로 이해하기 — 연극 무대 장치
+
+Special tokens는 조명 큐입니다. `assistant` 조명이 켜진 뒤에만 배우가 말을 잇습니다.  
+템플릿 불일치는 **다른 무대에서 리허설하고 본공연에 서는 것**과 같습니다.
+
+## Generation prompt
+
+추론 시
+
+```text
+... (user message) ... <assistant>
+```
+
+처럼 **빈 assistant 헤더**까지 붙이는 옵션이 `add_generation_prompt=True`입니다. 학습 때 본 패턴과 같아야 모델이 “이제 응답 토큰을 낼 차례”임을 통계적으로 압니다.
+
+## 부록 A. 템플릿 불일치 증후군
+
+| 관찰 | 점검 |
+|---|---|
+| 역할을 따라 씀（`User:`를 생성） | generation prompt/마sk |
+| 갑자기 영어 메타 문구 | 학습 데이터 스타일·system |
+| 특수기호를 글자로 분해 | special token 미등록 |
+| 학습 loss↓·추론 실패 | $\mathcal{T}$ 불일치 최우선 |
+
+## 부록 B. 최소 자체 템플릿 스케치
+
+```python
+def apply_chat_template(messages, add_generation_prompt=False):
+    parts = []
+    for m in messages:
+        parts.append(f"<|{m['role']}|>\n{m['content']}<|end|>\n")
+    if add_generation_prompt:
+        parts.append("<|assistant|>\n")
+    return "".join(parts)
+```
+
+교육용입니다. 실전에서는 모델 카드의 공식 템플릿을 따릅니다.
+
+## 부록 C. 수식 카드
+
+$$
+
+\begin{aligned}
+&\text{train:}&& x=\mathcal{T}(c+\text{assistant answer})\\
+&\text{infer:}&& x=\mathcal{T}(c,\ \text{add_generation_prompt}=1)\\
+&\text{loss:}&& \sum_t m_t(-\log p_\theta(x_t\mid x_{<t}))
+\end{aligned}
+
+$$
+
+
+<!-- enrich-batch2-72 -->
+## Special Tokens
+
+$$
+\mathcal{S}=\{\mathrm{BOS},\mathrm{EOS},\mathrm{PAD},\mathrm{USR},\mathrm{AST}\}
+$$
+
+템플릿이 바뀌면 같은 모델도 분포가 달라집니다.
+
+```python
+tmpl = "<|user|>{q}<|assistant|>"
+print(tmpl.format(q="hi"))
+```
+
+$$
+p_\theta(y\mid \mathrm{tmpl}(x)) \neq p_\theta(y\mid x)
+$$
+
+
+<!-- enrich-pass-1f64 -->
+## 수식 전개 — 템플릿은 결정적 맵
+
+메시지 리스트 $M=((r_i,c_i))_{i=1}^{n}$에 대해 템플릿 $\mathcal{T}$는 문자열（또는 토큰열）을 만듭니다.
+
+$$
+x=\mathcal{T}(M)
+$$
+
+학습과 서빙에서 $\mathcal{T}$가 다르면 분포가 어긋납니다.
+
+특수 토큰 집합 $\mathcal{S}=\{\texttt{bos},\texttt{eos},\texttt{im\_start},\ldots\}$에 대해
+
+$$
+\mathrm{id}:\mathcal{S}\to\mathbb{Z}
+$$
+
+가 tokenizer vocabulary에 등록되어 있어야 합니다. 미등록 문자열을 그대로 넣으면 **조각 토큰**으로 쪼개져 의미가 깨집니다.
+
+### 마스크와의 결합
+
+assistant 스팬만 남기는 마스크는 템플릿이 찍은 경계에 의존합니다.
+
+$$
+m_t=1\iff t\in\mathrm{span}_{\mathcal{T}}(\text{assistant})
+$$
+
+## Shape 표 — apply_chat_template
+
+| 입출력 | 예 |
+|---|---|
+| messages | `List[{role, content}]` |
+| rendered string | `str` |
+| `input_ids` | `(T,)` |
+| special token ids | scalar씩 |
+
+## 구현 스케치 — 경계 기록
+
+```python
+def render_with_spans(messages, tok):
+    ids, spans, roles = [], {}, []
+    for msg in messages:
+        piece = format_role(msg)  # 역할별 특수 토큰 포함
+        start = len(ids)
+        ids.extend(tok(piece))
+        end = len(ids)
+        spans.setdefault(msg["role"], []).append((start, end))
+    return ids, spans
+```
+
+spans로 labels를 만들면 제71강 마스크와 정확히 맞습니다.
+
+## 실패 모드 — Chat Template
+
+| 실패 | 증상 | 처방 |
+|---|---|---|
+| train≠serve 템플릿 | 지시 준수 실패 | 단일 소스 |
+| special token 미등록 | 조각화 | `add_special_tokens` |
+| 시스템 롤 무시 | 톤 불안정 | 템플릿에 명시 |
+| 공백/개행 불일치 | 토큰 어긋남 | 스냅샷 테스트 |
+
+## 실습 코드 — 스냅샷 테스트
+
+```python
+def test_template_snapshot(apply_fn, messages, expected):
+    got = apply_fn(messages)
+    assert got == expected, repr(got)
+```
+
+템플릿을 바꾸면 스냅샷을 의도적으로 갱신합니다. 조용히 바꾸지 마세요.
+
+## 수식 보강 — 멀티턴 길이
+
+$$
+T
+=
+\big|\mathcal{T}(M)\big|
+\le T_{\max}
+$$
+
+초과 시 오래된 턴부터 자르는 truncation 정책을 문서화하세요. 응답 스팬이 잘리면 학습 신호가 사라집니다.
+
 ## LLM에서는 어디에 사용될까?
 - 모델 카드에 `chat_template`(종종 Jinja)가 배포되는 경우가 많다.
 - 토크나이저 설정과 가중치가 한 쌍이다. 토크나이저만 다른 버전으로 바꾸면 특수 토큰 ID가 어긋난다.

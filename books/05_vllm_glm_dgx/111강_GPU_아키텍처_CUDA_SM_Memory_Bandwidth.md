@@ -413,9 +413,38 @@ $$
 
 Decode는 종종 memory-bound입니다(가중치·KV 재사용 대비 연산이 적음).
 
-## LLM에서는 어디에 사용될까?
+## 수식 보강 — Roofline 한 줄
+산술강도 $I$（FLOPs/byte）, 첨단 성능 $\pi$, 대역폭 $\beta$일 때
 
-이번 111강에서 배운 개념은 이후 Transformer · GPT · 서빙 강의에서 반복해서 등장합니다. 각 수식·코드 블록을 “실제 모델의 어느 단계인가”와 연결해 다시 읽어 보세요.
+$$
+
+\mathrm{Perf} \le \min(\pi,\; \beta\cdot I)
+$$
+
+Decode의 낮은 $I$는 오른쪽（memory）천장에 가깝게 만든다. 배치를 키우거나 커널을 합치면 $I$가 올라 **여지**가 생길 수 있다. 절대 FLOPS 숫자는 시트·프로파일러로 확인하고 이 책에 암기값으로 박지 않는다.
+
+
+
+<!-- enrich-batch3-111 -->
+## Roofline 직관
+
+$$
+\mathrm{FLOPs/s}=\min(\mathrm{Peak\ FLOPs},\ \mathrm{AI}\cdot \mathrm{BW})
+$$
+
+Arithmetic Intensity:
+
+$$
+\mathrm{AI}=\frac{\mathrm{FLOPs}}{\mathrm{Bytes}}
+$$
+
+Decode는 종종 memory-bound입니다.
+
+```python
+def roofline(ai, peak_flops=1e14, bw=2e12):
+    return min(peak_flops, ai*bw)
+print(roofline(1), roofline(100))
+```
 
 ## 핵심 요약
 - CUDA 실행은 Grid → Block → Warp → Thread로 펼쳐지고, **SM**이 그 공장이다.
@@ -499,6 +528,41 @@ GPU의 천장과 병목 종류를 보았다. 다음 질문은 **그 위에서 �
 다음 강의: **제112강. Inference Engine 비교 — vLLM · TensorRT-LLM · SGLang**
 
 엔진마다 PagedAttention, CUDA Graph, Radix Cache 같은 무기가 다르다. “항상 승자”는 없고, 워크로드·팀·배포 제약에 맞는 선택을 제112강에서 비교한다.
+
+<!-- enrich-111-depth -->
+## 로프라인으로 decode를 보기
+
+연산 강도:
+
+$$
+I=\frac{\mathrm{FLOPs}}{\mathrm{Bytes}_{\mathrm{HBM}}}
+$$
+
+로프라인:
+
+$$
+\mathrm{Perf}
+\le
+\min\big(\mathrm{PeakFLOP},\ I\cdot \mathrm{BW}_{\mathrm{HBM}}\big)
+$$
+
+LLM decode는 종종 **메모리 바운드**에 가깝다. 가중치·KV 재사용이 BW를 잠식한다.
+
+대략적 토큰 시간 감각:
+
+$$
+t_{\mathrm{tok}}
+\gtrsim
+\frac{M_{\mathrm{weights}}+M_{\mathrm{KV,read}}}{\mathrm{BW}_{\mathrm{eff}}}
+$$
+
+배치를 키우면 가중치 재사용이 늘어 $I$가 올라갈 수 있다. Continuous Batching의 동기가 여기에도 있다.
+
+### SM·점유율 메모
+
+- SM 부족: launch·동기화·작은 커널
+- BW 부족: 거대 가중치 스트리밍·KV
+- 실무는 Nsight로 **어느 쪽이 천장인지**를 먼저 본다
 
 <!-- LECTURE_NAV -->
 

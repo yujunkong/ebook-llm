@@ -7,6 +7,12 @@
 - 제79강. Post-Training 지도로 넘어가기 전 준비물
 - Preference / RLHF / DPO / GRPO가 왜 SFT 다음에 오는지
 
+
+## 읽기 안내（Apple Books）
+
+이 총정리는 시험이 아니라 **지도**입니다. 수식 카드 → 체크리스트 → 막힐 때 돌아갈 강 번호 순으로 읽으면 됩니다.  
+손으로 파이프라인 한 줄을 다시 써 보고, 빈칸이 보이는 강만 짧게 복습하세요.
+
 ## 왜 중요한가?
 3권은 속도가 빠르다. GPT 정의에서 시작해 학습 인프라, Mini Pretrain, Instruction Tuning, LoRA/QLoRA, 평가, Mini SFT까지 왔다. 각 강의를 통과해도 머리속에서는 조각으로 남을 수 있다.
 
@@ -210,6 +216,298 @@ SFT 정책 π_SFT
 | 마스크 버그 | 71, 76 |
 | PEFT·메모리가 헷갈린다 | 73~74 |
 | 역할이 섞인다 | 77 |
+
+## 수식 보강 — Post-training으로
+
+다음 단계는 선호/보상:
+
+$$
+\max_\pi\ \mathbb{E}[r]-\beta\mathrm{KL}(\pi\|\pi_{\mathrm{ref}})
+$$
+
+또는 DPO류로 보상 모델 없이 선호를 직접 학습합니다.
+
+
+<!-- enrich-block-78 -->
+## 3권 총정리 수식 카드
+
+학습률 스케줄 예 (cosine):
+
+$$
+\eta_t = \eta_{\min} + \tfrac{1}{2}(\eta_{\max}-\eta_{\min})\bigl(1+\cos(\pi t/T)\bigr)
+$$
+
+Gradient accumulation:
+
+$$
+g = \frac{1}{K}\sum_{k=1}^{K}\nabla L_k,\qquad
+\theta \leftarrow \theta - \eta\, g
+$$
+
+Mixed precision에서 손실 스케일:
+
+$$
+L_{\mathrm{scaled}} = s\cdot L,\qquad
+\nabla_\theta L = \frac{1}{s}\nabla_\theta L_{\mathrm{scaled}}
+$$
+
+LoRA 갱신:
+
+$$
+W' = W + \frac{\alpha}{r}BA
+$$
+
+다음 4권은 선호·보상·정책 경사로 넘어갑니다.
+
+
+## 수학적으로 이해하기 — 3권 공식 지도
+
+한 장에 모으면 다음과 같습니다.
+
+$$
+
+\begin{aligned}
+&\textbf{Pretrain}&&
+L_{\mathrm{PT}}=-\sum_t\log p_\theta(x_t\mid x_{<t})\\
+&\textbf{PPL}&&
+\mathrm{PPL}=\exp(L_{\mathrm{tok}})\\
+&\textbf{SFT}&&
+L_{\mathrm{SFT}}=-\sum_{t\in\mathcal{R}}\log p_\theta(y_t\mid c,y_{<t})\\
+&\textbf{LoRA}&&
+W=W_0+\frac{\alpha}{r}BA\\
+&\textbf{QLoRA}&&
+W_0\ \text{in 4-bit},\ \Delta W=\tfrac{\alpha}{r}BA\ \text{in higher prec.}
+\end{aligned}
+
+$$
+
+생성（복습）:
+
+$$
+
+x_{t+1}\sim \mathrm{Categorical}\big(\mathrm{softmax}(z_t/\tau)\ \text{with top-}k/\text{top-}p\big)
+
+$$
+
+아직 비어 있는 4권 자리:
+
+$$
+
+\text{Preference:}\quad
+(x,y_w,y_l)\ \mapsto\ \pi_\theta\ \text{가 } y_w\succ y_l\ \text{쪽으로}
+
+$$
+
+세부 손실（DPO/PPO 등）은 제79강 이후에서 전개합니다. 지금은 **자리가 비어 있다**는 좌표만 기억합니다.
+
+## 작은 숫자 스케치 — 체크포인트 이관
+
+Pretrain 체크포인트 크기를 아주 거칠게 스케치합니다（교육용）.
+
+$$
+
+\mathrm{size}
+\approx
+4\cdot\#\theta
+\quad(\mathrm{float32\ weights\ only})
+
+$$
+
+$\#\theta=10^8$이면 약 $400$MB입니다. Optimizer（Adam）를 포함하면 모멘트 때문에 **약 2~3배**로 불어날 수 있습니다（구현·dtype에 따라 다름）.  
+SFT로 이관할 때는 보통 **가중치（+config）**만 가져가고, Adam 모멘트는 새로 시작합니다. LoRA면 저장량은 $r$에 비례해 훨씬 작아집니다.
+
+```text
+ckpt_pt/model.pt  →  load weights
+                  →  （선택）attach LoRA
+                  →  SFT optim 새로 생성
+```
+
+## 직관적으로 이해하기 — 파이프라인 극장
+
+```text
+1막 Pretrain:  대본 없이 세상 이야기를 이어 씀
+2막 SFT:       지시에 답하는 대본을 연습
+3막 Post-Train: 어느 대사가 더 좋은지 심사·재연습（4권）
+앙코르 Serving: 빠르게 무대에 올림（5권）
+```
+
+3권 총정리는 2막 커튼콜입니다. 박수는 치되, **공연이 끝났다고 말하지 않습니다**.
+
+## Packing·마스크·평가가 한 줄에 만나는 곳
+
+| 단계 | 효율 장치 | 품질 장치 |
+|---|---|---|
+| Pretrain | packing（61）, AMP（64） | val/PPL（66~67） |
+| SFT | LoRA（73）, 짧은 길이 | harness（75）, mask（71） |
+| 이관 | checkpoint（65） | before/after（76） |
+
+효율만 보면 품질이 안 보이고, 품질만 보면 비용에 무너집니다. 3권은 둘을 **같은 루프**에 넣는 연습입니다.
+
+## 학습 불안정 미니 맵（디버깅 좌표）
+
+별도 “디버깅 전용 강”이 없어도, 증상→소켓은 고정할 수 있습니다.
+
+| 증상 | 먼저 볼 강 |
+|---|---|---|
+| Loss NaN / 폭주 | 62~64（lr, AMP, accum） |
+| Resume 후 거동 이상 | 65（optim/scaler） |
+| Val↓인데 생성 붕괴 | 67, 58~59 |
+| 지시 무시 | 71~72, 75 |
+| OOM | 64, 74 |
+| 점수만 높음 | 75 leakage |
+
+## 부록 A. 3권 한 페이지 체크（인쇄용）
+
+- [ ] GPT = Decoder-only Causal LM 계보를 설명한다
+- [ ] $L_{\mathrm{PT}}$와 $L_{\mathrm{SFT}}$를 마스크로 구분한다
+- [ ] Packing 효율 $\eta$ 감각（61）을 말한다
+- [ ] Checkpoint에 optim을 넣는 이유를 말한다
+- [ ] $\mathrm{PPL}=\exp(L)$을 쓴다
+- [ ] Chat template 학습/추론 일치를 말한다
+- [ ] LoRA $BA$와 QLoRA 양자화를 구분한다
+- [ ] Harness와 PPL을 혼동하지 않는다
+- [ ] Mini Pretrain·Mini SFT 아티팩트가 있다
+- [ ] 4권 빈칸이 Preference/RL임을 안다
+
+## 부록 B. 수식→프로젝트 매핑
+
+| 수식 | 프로젝트 증거 |
+|---|---|
+| $L_{\mathrm{PT}}$ | 68강 loss 곡선 |
+| generate | 68강 샘플 txt |
+| $L_{\mathrm{SFT}}$+mask | 76강 ignore_index |
+| before/after | 76강 비교 로그 |
+| harness | 75~76 점수표 |
+
+## 부록 C. Post-Training으로 넘기는 문장（암기 금지, 이해용）
+
+> 3권은 $\pi_{\mathrm{SFT}}$라는 **지도 초기 정책**까지 만든다.  
+> 4권은 “무엇이 더 나은 응답인가”를 데이터·보상·정책 최적화로 $\pi_{\mathrm{SFT}}$를 밀어 올린다.
+
+## 부록 D. 워크드 — 역할이 섞인 문장 고치기
+
+원문: “RLHF로 사전학습했다.”  
+교정: “사전학습（next-token）후 SFT로 지시 추종을 심고, RLHF로 선호를 정렬했다.”
+
+원문: “PPL이 낮아서 지시 따르기다.”  
+교정: “PPL은 유창성·적합의 대리일 뿐, 지시 준수는 harness로 본다.”
+
+
+<!-- enrich-extra-78 -->
+## 실습 — Grad Accum 등가성
+
+```python
+# K micro-batch ≈ 큰 배치 (평균)
+import torch
+K = 4
+params = torch.zeros(3, requires_grad=True)
+opt = torch.optim.SGD([params], lr=0.1)
+opt.zero_grad()
+for k in range(K):
+    x = torch.randn(3)
+    loss = ((params - x) ** 2).mean() / K  # 평균 맞추기
+    loss.backward()
+opt.step()
+print(params.detach())
+```
+
+$$
+g=\frac{1}{K}\sum_{k=1}^K\nabla L_k
+$$
+
+마이크로 배치마다 `/K`를 빼먹으면 유효 학습률이 $K$배처럼 커집니다.
+
+## Post-Training으로 넘길 체크
+
+- PT 체크포인트 경로·토크나이저 버전 고정
+- SFT 템플릿과 special token 문서화
+- 평가셋은 학습 지시문과 분리
+
+
+<!-- enrich-pass-1f64 -->
+## 3권 맵 — 수식으로 한 번 더
+
+$$
+\begin{aligned}
+L_{\mathrm{PT}}&=-\sum_t\log p_\theta(x_t\mid x_{<t})\\
+L_{\mathrm{SFT}}&=-\sum_{t\in\mathcal{R}}\log p_\theta(x_t\mid x_{<t})\\
+\mathrm{PPL}&=\exp(L_{\mathrm{tok}})\\
+\eta_t&=\mathrm{warmup\_cosine}(t)\\
+g&=\frac1K\sum_{k=1}^K\nabla L_k
+\end{aligned}
+$$
+
+엔지니어링 축:
+
+| 축 | 강 | 한 줄 |
+|---|---|---|
+| 데이터 | 60~61, 70 | 코퍼스·패킹·instruction |
+| 루프 | 62~66 | step·AMP·ckpt·val |
+| 프로젝트 | 68, 76 | Mini PT / Mini SFT |
+| 정렬 예고 | 77~78 | 역할 → 4권 |
+
+## 구현 스케치 — “다음 권으로 가는 체크”
+
+```python
+READY_FOR_BOOK4 = {
+    "mini_pt_overfit_ok": False,
+    "mini_sft_mask_tested": False,
+    "private_harness_exists": False,
+    "ckpt_resume_ok": False,
+    "roles_pt_vs_sft_clear": False,
+}
+```
+
+모두 True일 필요는 없습니다. **False를 인지한 채** 79강으로 가는 것이 목표입니다.
+
+## 실패 모드 — 총정리에서 흔한 착각
+
+| 착각 | 교정 |
+|---|---|
+| PPL↓면 챗봇 완성 | SFT·템플릿·선호가 남음 |
+| SFT=RLHF | 4권에서 선호/RL |
+| LoRA만 있으면 충분 | 데이터·마스크가 우선 |
+| 공개 벤치만 | private harness |
+
+## 실습 코드 — 메타 로그 한 줄
+
+```python
+def book3_meta(cfg):
+    return {
+        "d_model": cfg.d_model,
+        "block_size": cfg.T,
+        "stage": cfg.stage,  # pt|sft
+        "mask_ratio_target": cfg.mask_ratio_target,
+    }
+```
+
+실험 폴더마다 이 JSON을 남기면 68/76 프로젝트가 비교 가능해집니다.
+
+## 수식 보강 — Post-Training 자리
+
+선호 데이터가 $(x,y_w,y_l)$일 때 다음 권의 방향은
+
+$$
+\pi_\theta(y_w\mid x) \;\succ\; \pi_\theta(y_l\mid x)
+$$
+
+쪽으로 정책을 옮기는 것입니다. 손실의 구체형（BT, PPO, DPO…）은 제79강 이후입니다.
+
+$$
+\max_\pi\ \mathbb{E}[r]-\beta\mathrm{KL}(\pi\|\pi_{\mathrm{ref}})
+$$
+
+는 “보상과 참조에서의 이탈 비용”이라는 **자리 표시**로만 기억하세요.
+
+## 연결 카드 — 5권까지의 멀고 가까운 길
+
+```text
+1권 텐서·최적화 기초
+2권 토크나이저·트랜스포머
+3권 GPT Pretrain + SFT   ← 지금 닫는 문
+4권 Preference / RL
+5권 vLLM·서빙·클러스터
+```
 
 ## LLM에서는 어디에 사용될까?
 

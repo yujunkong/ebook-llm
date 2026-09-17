@@ -375,6 +375,135 @@ step별 loss를 `losses.txt`에 쓰고, (선택) matplotlib로 꺾은선을 그�
 
 이것이 2권의 실전 관문이다. 규모만 키우면 3권 Mini GPT / Pretraining으로 이어진다.
 
+## 수식 보강 — 학습 스텝
+
+$$
+\theta\leftarrow\theta-\eta\nabla_\theta L_{\mathcal{B}}(\theta)
+$$
+
+체크포인트는 $\theta$와 옵티마이저 상태의 스냅샷입니다. 생성은 $\hat x_{t}=\arg\max p(\cdot\mid x_{<t})$ 또는 샘플링입니다.
+
+
+## 수학적으로 이해하기 — 학습 목표와 생성
+
+Mini Transformer 학습은
+
+$$
+
+L = -\frac{1}{\sum m_t}\sum_t m_t\log p_\theta(x_{t+1}\mid x_{\le t})
+$$
+
+입니다（문자 LM이면 $x$는 char id）. 생성은
+
+$$
+
+x_{t+1}=\arg\max_v z_{t,v}
+\quad\text{（greedy）}
+$$
+
+또는 temperature sampling입니다. **Loss↓가 곧 흥미로운 문장**을 보장하지는 않습니다. 미니셋에서는 암기가 먼저 보입니다.
+
+### Overfit 테스트
+
+배치 1개에만 맞추면 $L\to 0$ 근처로 내려가야 합니다. 안 되면 구현 버그 후보입니다.
+
+$$
+
+\text{sanity:}\quad L_{\mathrm{one\text{-}batch}}\ll \log V
+$$
+
+## 작은 숫자 스케치 — 파라미터와 스텝
+
+예（교육용）: $V=65$, $C=128$, $N=4$, $T=64$.  
+대략 파라미터 자릿수만 가늠하고, 공개 벤치 점수와 연결하지 마세요.
+
+로그에 남길 최소 키:
+
+```text
+step, loss, lr, tokens_seen, sample_text
+```
+
+## 직관적으로 이해하기 — 2부작의 역할
+
+```text
+49강: 부품 조립（forward가 돌아간다）
+50강: 엔진 시동（loss↓ + generate）
+```
+
+50강을 끝내면 2권 프로젝트가 “닫힌 루프”가 됩니다. 3권은 데이터·규모·지시입니다.
+
+## 부록 A. 자주 깨지는 지점
+
+1. `y` 시프트 누락 → 복사 과제
+2. `model.train()`/`eval()` 혼동
+3. generate 시 `block_size` crop 누락
+4. 체크포인트에 config 미저장
+5. 문자 tokenizer와 개행 처리 불일치
+
+## 부록 B. 수식 카드
+
+$$
+
+p=\mathrm{softmax}(z),\quad
+L=-\log p_{y},\quad
+x\leftarrow x\| \arg\max z
+$$
+
+
+<!-- enrich-batch2-50 -->
+## Mini-Transformer 구현 체크 (2)
+
+LM Head:
+
+$$
+z_t = h_t W_{\mathrm{LM}}^\top,\quad
+p_t=\mathrm{softmax}(z_t)
+$$
+
+학습 목표:
+
+$$
+L=-\frac{1}{BT}\sum_{b,t}\log p_{b,t}(x_{b,t+1})
+$$
+
+```python
+import torch, torch.nn.functional as F
+B,T,V = 2,8,50
+logits = torch.randn(B,T,V)
+targets = torch.randint(0,V,(B,T))
+loss = F.cross_entropy(logits[:,:-1].reshape(-1,V), targets[:,1:].reshape(-1))
+print(float(loss))
+```
+
+<!-- enrich-agent-bfea -->
+## 학습 루프 수식 카드 (2부)
+
+한 스텝:
+
+$$
+L_{\mathcal{B}}(\theta)
+=
+-\frac{1}{|\mathcal{B}|T}
+\sum_{b=1}^{B}\sum_{t=1}^{T}
+\log p_\theta(y_{b,t}\mid x_{b,\le t})
+$$
+
+$$
+\theta\leftarrow\theta-\eta\nabla_\theta L_{\mathcal{B}}(\theta)
+$$
+
+생성(greedy):
+
+$$
+x_{t+1}=\arg\max_v\, z_{t,v}
+$$
+
+overfit sanity:
+
+$$
+L_{\mathrm{one\text{-}batch}} \ll \log V
+$$
+
 ## LLM에서는 어디에 사용될까?
 
 이번 50강에서 배운 개념은 이후 Transformer · GPT · 서빙 강의에서 반복해서 등장합니다. 각 수식·코드 블록을 “실제 모델의 어느 단계인가”와 연결해 다시 읽어 보세요.

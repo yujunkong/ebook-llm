@@ -261,11 +261,84 @@ $$
 
 5권 말미에서도 동일하다. “우리 스택이 2.3×” 같은 문장은 118 템플릿의 두 행과 계산 없이 쓰지 않는다.
 
+## 수식 보강 — 전권 한 줄
+
+$$
+\text{data}\to p_\theta(x_t\mid x_{<t})\to \text{align}\to \text{serve}(TTFT,TPOT,\mathrm{Mem})
+$$
+
+밑바닥 연산(내적·미분)이 서빙 지표까지 이어집니다.
+
+
+<!-- enrich-block-120 -->
+## 전권 수식 한 장
+
+토큰화 → 임베딩 → Attention → CE → (SFT/RL) → 서빙:
+
+$$
+x=\mathrm{tok}(\cdot),\ 
+e=E_x,\ 
+A=\mathrm{softmax}(QK^\top/\sqrt{d}),\ 
+L=-\log p(x_t\mid x_{<t})
+$$
+
+정렬:
+
+$$
+L_{\mathrm{align}}\in\{L_{\mathrm{SFT}},L_{\mathrm{PPO}},L_{\mathrm{DPO}}\}
+$$
+
+서빙 제약:
+
+$$
+\max \mathrm{TPS}\ \mathrm{s.t.}\ \mathrm{Mem}_{KV}+\mathrm{Mem}_W\le M,\ \mathrm{P99}\le\tau
+$$
+
+밑바닥 수식과 운영 지표가 같은 모델의 양면입니다.
+
+
+<!-- enrich-extra-120 -->
+## 전권 로드맵 한 장
+
+| 권 | 핵심 식 |
+|---|---|
+| 1 | $y=xW+b$, $\nabla L$ |
+| 2 | $A=\mathrm{softmax}(QK^\top/\sqrt{d})$ |
+| 3 | $L_{\mathrm{CLM}}$, LoRA $BA$ |
+| 4 | BT / PPO / DPO |
+| 5 | KV mem, TPS, P99 |
+
+```python
+# 여정 체크: 로짓→샘플 한 줄
+import torch
+logits = torch.randn(5)
+p = torch.softmax(logits, dim=-1)
+idx = torch.multinomial(p, 1)
+print(int(idx), float(p[idx]))
+```
+
 ## LLM에서는 어디에 사용될까?
 
 전권의 개념은 결국 **학습된 모델을 안정적으로 서빙**하는 일로 모입니다.
 
 Embedding · Attention · KV Cache · Continuous Batching · 양자화 · TP는 각각 Prefill/Decode 지연과 처리량에 직접 영향을 줍니다.
+
+## 전권 연결 — RLHF에서 Serving 한 줄
+4권:
+
+$$
+\max_\theta\mathbb{E}[r]-\beta\mathrm{KL}(\pi_\theta\|\pi_{\mathrm{ref}})
+$$
+
+5권（고정 $\theta$）:
+
+$$
+T\approx\mathrm{TTFT}+(N_{\mathrm{out}}-1)\mathrm{TPOT},\quad
+\mathrm{Throughput}\approx\frac{N_{\mathrm{tokens}}}{\Delta t}
+$$
+
+정렬이 $N_{\mathrm{out}}$을 키우면 서빙 식이 먼저 아파진다. 두 권을 한 제품 방정식으로 읽는다.
+
 
 ## 핵심 요약 — 5권
 - Inference는 Training과 목표·병목·메트릭이 다르다.
@@ -274,6 +347,37 @@ Embedding · Attention · KV Cache · Continuous Batching · 양자화 · TP는 
 - 지표는 TTFT·TPOT·Throughput으로 분리해 보고한다.
 - 모델 계열·MoE·스펙큘레이션·GPU·TP·패브릭이 선택 공간을 만든다.
 - 프로젝트는 기동 → 통제 실험 → 리포트 → 운영으로 닫힌다.
+
+## 전권 수식 포스터（추가로 손에 쥐기）
+$$
+
+\begin{aligned}
+\mathrm{Attention}(Q,K,V)&=\mathrm{softmax}\!\Big(\frac{QK^\top}{\sqrt{d}}\Big)V \\
+\rho&=\frac{\pi_\theta}{\pi_{\mathrm{old}}},\quad
+L^{\mathrm{CLIP}}=\mathbb{E}[\min(\rho A,\mathrm{clip}(\rho)A)] \\
+R&=r-\beta\,\mathrm{KL}(\pi\|\pi_{\mathrm{ref}}) \\
+T_{\mathrm{total}}&\approx\mathrm{TTFT}+(n_{\mathrm{out}}-1)\mathrm{TPOT} \\
+\mathrm{Throughput}&\approx\frac{N_{\mathrm{tokens}}}{\Delta t} \\
+T_{\mathrm{AR}}&\gtrsim \frac{2(P-1)}{P}\frac{M}{B_{\mathrm{eff}}}
+\end{aligned}
+
+$$
+
+위 여섯 줄이면 1~5권의 **미분 가능한 모델 → 정렬 → 서빙 → 통신**이 한 장에 붙는다.
+
+### 학습 완료의 정의（이 책）
+
+1. 기호를 코드·장애 트리에 대응시킨다  
+2. 성능 숫자를 조건 없이 외우지 않는다  
+3. 빈 칸（미측정）을 알고 있다  
+4. 다음 병목의 강의 번호를 말할 수 있다  
+
+## LLM에서는 어디에 사용될까?
+전권의 개념은 결국 **학습된 모델을 안정적으로 서빙**하는 일로 모입니다. Embedding·Attention·KV·Batching·Quant·TP·NCCL은 Prefill/Decode 지연과 처리량·안정성에 직접 닿습니다. 정렬（4권）이 바꾼 길이·거부 정책은 서빙 SLO와 함께 관리합니다.
+
+## 실습 F — 포스터 암기
+위 포스터 여섯 줄을 가리고 다시 쓰시오. 막히면 해당 권으로 돌아가시오.
+
 
 ## 핵심 요약
 - 1~2권: 미분 가능한 토큰 모델의 부품
@@ -406,6 +510,66 @@ vLLM（또는 Inference Engine / Serving）, GPU（또는 DGX Spark / 하드웨�
 ```
 
 여기까지가 《밑바닥부터 LLM》 120강의 좌표다.
+
+<!-- enrich-120-depth -->
+## 5권 핵심 식을 한 장에
+
+Prefill / Decode:
+
+$$
+T_{\mathrm{total}}\approx\mathrm{TTFT}+(N_{\mathrm{out}}-1)\mathrm{TPOT}
+$$
+
+KV:
+
+$$
+M_{\mathrm{KV}}\approx 2\cdot L\cdot n_{\mathrm{kv}}\cdot d_h\cdot T\cdot b
+$$
+
+Continuous Batching 효율:
+
+$$
+\eta=\frac{\sum\ell_i}{B\cdot\ell_{\max}}
+$$
+
+스케줄러:
+
+$$
+\max \mathrm{tok/s}\ \mathrm{s.t.}\ \mathrm{Mem}\le M,\ \mathrm{SLO}
+$$
+
+통신:
+
+$$
+t_{\mathrm{tok}}\approx t_{\mathrm{compute}}+t_{\mathrm{comm}}
+$$
+
+### 전권 연결（1→5）
+
+```text
+텐서·미분（1）
+ → 토크나이저·Transformer（2）
+ → Pretrain·SFT（3）
+ → RLHF/DPO（4）
+ → Prefill/KV/Batching/Serving（5）
+```
+
+학습이 $\theta$를 바꾸고, 서빙은 고정 $\theta$로 **시간·메모리·통신**을 줄인다.
+
+### 졸업 체크 10
+
+1. TTFT/TPOT/Throughput 정의
+2. KV 메모리 식의 각 기호
+3. Continuous Batching이 $\eta$를 올리는 이유
+4. PagedAttention이 스케줄러와 한 쌍인 이유
+5. 스케줄러 제약 세 가지
+6. 양자화가 대역·품질에 미치는 정성 효과
+7. 스펙큘레이티브 $\alpha$와 speedup
+8. NCCL allreduce 시간 모형
+9. 리포트에 P99를 넣는 이유
+10. 장애 런북 5단계
+
+10개면 5권 지도가 손에서 그려진다.
 
 <!-- LECTURE_NAV -->
 

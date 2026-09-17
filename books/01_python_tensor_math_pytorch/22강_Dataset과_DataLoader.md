@@ -269,7 +269,7 @@ class DictDataset(Dataset):
 
 기본 collate는 같은 키끼리 리스트/텐서로 묶는다. 텍스트 문자열은 텐서가 아니므로, 학습 전에 토큰 ID 텐서로 바꾸거나 커스텀 `collate_fn`이 필요하다.
 
-## 수식 보강 — 배치 · 에폭 · 스텝 수
+## 배치 · 에폭 · 스텝 수
 
 데이터셋 크기 $N$, 배치 크기 $B$이면 한 에폭의 업데이트 횟수는
 
@@ -283,22 +283,94 @@ $$
 \mathrm{total\ steps} \approx E \cdot \left\lceil \frac{N}{B} \right\rceil
 $$
 
-입니다.
+입니다. (`drop_last=True`이면 바닥 함수 $\lfloor N/B\rfloor$에 가깝습니다.)
 
-미니배치 평균 손실은 샘플 손실의 평균입니다.
+### 미니배치 손실
+
+미니배치 $\mathcal{B}$에 대한 평균 손실은
 
 $$
 L_{\mathcal{B}}(\theta)
 =
 \frac{1}{|\mathcal{B}|}
-\sum_{i\in\mathcal{B}} \ell(f_\theta(x_i), y_i)
+\sum_{i\in\mathcal{B}} \ell\bigl(f_\theta(x_i), y_i\bigr)
 $$
 
-LLM의 언어모델링에서는 $(x_i,y_i)$가 “문맥 토큰 → 다음 토큰” 쌍이며, 패킹되면 한 배치 Shape가 `(B, T)` 토큰 ID가 됩니다.
+입니다. SGD 한 스텝은
+
+$$
+\theta \leftarrow \theta - \eta\, \nabla_\theta L_{\mathcal{B}}(\theta)
+$$
+
+입니다.
+
+### 토큰 배치 Shape
+
+언어 모델에서 한 배치의 토큰 ID는
+
+$$
+X\in\{0,\ldots,V-1\}^{B\times T}
+$$
+
+이고, 다음 토큰 예측이면 타깃도
+
+$$
+Y\in\{0,\ldots,V-1\}^{B\times T}
+$$
+
+(보통 $Y_{b,t}=X_{b,t+1}$, 마지막은 패딩/무시)입니다.
+
+한 스텝에서 보는 토큰 수는
+
+$$
+N_{\mathrm{tok}} = B\cdot T
+$$
+
+입니다. LLM 로그의 “tokens/sec”는 $N_{\mathrm{tok}}/\Delta t$입니다.
+
+### Epoch vs Step
+
+에폭은 데이터 전체를 **한 바퀴** 도는 단위이고, 스텝은 **배치 하나**마다의 업데이트입니다.
+
+$$
+t = e\cdot M + m,\qquad M=\left\lceil N/B\right\rceil,\ 0\le m<M
+$$
+
+학습률 스케줄 $\eta_t$는 보통 스텝 $t$의 함수입니다.
+
+### DataLoader를 집합으로
+
+셔플된 인덱스 순열 $\pi$에 대해 $m$번째 배치 인덱스는
+
+$$
+\mathcal{B}_m = \{\pi(mB),\ldots,\pi(\min((m+1)B,N)-1)\}
+$$
+
+입니다. DataLoader는 이 $\mathcal{B}_m$을 만들어 텐서로 묶는 장치입니다.
+
+```python
+# 스텝 수 감각
+N, B, E = 1000, 32, 3
+steps_per_epoch = (N + B - 1) // B  # ceil
+total_steps = E * steps_per_epoch
+print(steps_per_epoch, total_steps)
+```
+
+### 패딩과 유효 손실
+
+패딩 위치를 마스크 $m_{b,t}\in\{0,1\}$로 두면
+
+$$
+L
+=
+\frac{\sum_{b,t} m_{b,t}\,\ell_{b,t}}{\sum_{b,t} m_{b,t}}
+$$
+
+입니다. `ignore_index`가 이 역할을 합니다.
 
 > **핵심**
 >
-> DataLoader는 수학적으로 “인덱스 집합 $\mathcal{B}$를 샘플링해 $L_{\mathcal{B}}$를 만드는 장치”입니다.
+> Dataset은 $i\mapsto(x_i,y_i)$, DataLoader는 $\mathcal{B}\mapsto$ 배치 텐서, 학습 루프는 $L_{\mathcal{B}}$의 반복입니다.
 
 ## LLM에서는 어디에 사용될까?
 LLM 학습 데이터는 대략 다음 파이프라인을 따른다.
@@ -367,6 +439,75 @@ LLM 학습 데이터는 대략 다음 파이프라인을 따른다.
 
 5. **LLM 텍스트를 바로 `TensorDataset`에 넣으려 한다**  
    문자열은 텐서가 아니다. 토큰 ID로 수치화한 뒤 배치를 만든다.
+
+## 미니 예제 보강 — 배치·스텝·토큰 수
+
+### 배치 개수 손계산
+
+$N=10$, $B=4$이면
+
+$$
+\left\lceil \frac{10}{4} \right\rceil = 3
+$$
+
+배치이며, 마지막 배치는 크기 $10 \bmod 4 = 2$입니다. `drop_last=True`이면 마지막을 버려 스텝 수는
+
+$$
+\left\lfloor \frac{N}{B} \right\rfloor = 2
+$$
+
+가 됩니다.
+
+### 에폭 전체의 샘플 방문
+
+셔플을 켠 한 에폭에서 각 샘플은 (대략) 한 번씩 나옵니다. $E$ 에폭이면 샘플 방문 총횟수는
+
+$$
+N_{\text{visits}} = E \cdot N
+$$
+
+이고, 업데이트 횟수는 (drop_last 없을 때)
+
+$$
+N_{\text{update}} = E \cdot \left\lceil \frac{N}{B} \right\rceil
+$$
+
+입니다.
+
+### 토큰 배치 (LLM 감각)
+
+시퀀스 길이 $T$인 샘플 $B$개를 묶으면 배치 텐서 shape는 대개 $(B,T)$이고, 토큰 수는
+
+$$
+N_{\text{tok}} = B \cdot T
+$$
+
+입니다. (패딩을 넣으면 “실제 유효 토큰”은 이보다 작을 수 있습니다.) DataLoader는 이 $(B,T)$ 묶음을 반복해 공급하는 장치입니다.
+
+### 복잡도 감각
+
+한 에폭에서 Dataset `__getitem__`은 대략 $N$번 호출됩니다. collate·복사 비용을 $C$라 하면 데이터 로딩은 $O(N\cdot C)$ 스케일입니다. `num_workers>0`은 이 비용을 **겹쳐 실행**해 GPU 대기 시간을 줄이려는 장치입니다. (이득은 환경에 따라 다릅니다.)
+
+### 연습용 손계산 — 세 에폭
+
+$N=100$, $B=16$, $E=3$, `drop_last=False`이면
+
+$$
+\left\lceil \frac{100}{16} \right\rceil = 7,\qquad
+N_{\text{update}} = 3\times 7 = 21
+$$
+
+입니다. `drop_last=True`이면 $\lfloor 100/16\rfloor=6$이므로 업데이트는 $18$회입니다. DataLoader 설정을 바꾸기 전에 이렇게 손계산해 두면, 로그에 찍힌 step 수와 대조할 수 있습니다.
+
+### LLM 연결 — 패딩 마스크와의 만남
+
+길이가 다른 시퀀스를 $T_{\max}$로 패딩하면 배치 텐서는 직사각형이 되지만, Loss에는 pad 위치를 빼야 합니다. 마스크 $m_{b,t}\in\{0,1\}$에 대해 유효 토큰만 평균하는 형태는
+
+$$
+L = \frac{\sum_{b,t} m_{b,t}\, \ell_{b,t}}{\sum_{b,t} m_{b,t}}
+$$
+
+처럼 쓸 수 있습니다. collate_fn이 pad와 mask를 함께 만드는 이유가 여기에 있습니다. (구현 세부는 이후 토큰·학습 강의에서 이어집니다.)
 
 ## 핵심 요약
 - `Dataset`은 `__len__`과 `__getitem__`으로 샘플을 정의한다.

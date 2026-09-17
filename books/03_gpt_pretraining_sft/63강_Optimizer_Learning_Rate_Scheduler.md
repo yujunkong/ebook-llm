@@ -370,6 +370,136 @@ $$
 
 형태의 가중치 감쇠를 적용합니다($\lambda$: weight decay). L2를 loss에 더하는 것과 최적화가 미묘하게 다릅니다.
 
+
+<!-- enrich-batch2-63 -->
+## AdamW · LR 스케줄
+
+Adam 모멘트:
+
+$$
+m_t=\beta_1 m_{t-1}+(1-\beta_1)g_t
+$$
+
+$$
+v_t=\beta_2 v_{t-1}+(1-\beta_2)g_t^2
+$$
+
+$$
+\theta\leftarrow\theta-\eta\,\hat{m}/(\sqrt{\hat{v}}+\varepsilon)
+$$
+
+Warmup:
+
+$$
+\eta_t=\eta_{\mathrm{peak}}\cdot\frac{t}{t_{\mathrm{wu}}}\quad(t\le t_{\mathrm{wu}})
+$$
+
+```python
+import math
+def cosine_lr(t, T, peak=1e-3, floor=1e-5):
+    # t in [0,T]
+    return floor + 0.5*(peak-floor)*(1+math.cos(math.pi*t/T))
+print(cosine_lr(0,1000), cosine_lr(500,1000))
+```
+
+
+<!-- enrich-pass-1f64 -->
+## 수식 전개 — Warmup + Cosine 다시 쓰기
+
+워밍업 구간 $t < T_w$에서
+
+$$
+\eta_t
+=
+\eta_{\mathrm{max}}\cdot\frac{t}{T_w}
+$$
+
+이후 cosine decay（$t\in[T_w, T]$）:
+
+$$
+\eta_t
+=
+\eta_{\min}
++
+\frac{1}{2}(\eta_{\mathrm{max}}-\eta_{\min})
+\left(
+1+\cos\pi\frac{t-T_w}{T-T_w}
+\right)
+$$
+
+입니다. $T$는 총 옵티마이저 스텝입니다. Accumulation을 쓰면 **micro-step이 아니라 opt-step**에 맞춰 $t$를 증가시키세요.
+
+### AdamW 감쇠
+
+가중치 감쇠를 경사와 분리하면（개념）
+
+$$
+\theta
+\leftarrow
+\theta
+-
+\eta\big(\hat m / (\sqrt{\hat v}+\varepsilon) + \lambda\theta\big)
+$$
+
+입니다. $\lambda$는 weight decay입니다. Bias correction $\hat m,\hat v$는 Adam 정의를 따릅니다.
+
+## Shape / 상태 표 — Optimizer
+
+| 항목 | Shape | 비고 |
+|---|---|---|
+| $\theta$ | 파라미터와 동일 | |
+| $m$（1차 모멘트） | $\theta$와 동일 | Adam |
+| $v$（2차 모멘트） | $\theta$와 동일 | Adam |
+| $\eta_t$ | scalar | 스케줄러 |
+| $\lambda$ | scalar（그룹별 가능） | decay 그룹 |
+
+Decay에서 bias/Norm을 빼는 관례는 구현·라이브러리마다 다르니, **파라미터 그룹 표**를 로그에 남기세요.
+
+## 구현 스케치 — 스케줄 검증 로그
+
+```python
+def log_lrs(opt, sched, step):
+    lrs = [pg["lr"] for pg in opt.param_groups]
+    print({"step": step, "lrs": lrs, "sched": type(sched).__name__})
+```
+
+초반 $T_w$ 동안 lr이 선형으로 오르는지, 이후 단조 감소하는지 그래프 없이도 표로 확인할 수 있습니다.
+
+## 실패 모드 — LR / Optimizer
+
+| 실패 | 증상 | 처방 |
+|---|---|---|
+| Warmup 0 + 큰 lr | 초반 폭발 | warmup 추가 |
+| sched를 micro마다 step | 너무 빨리 식음 | opt-step에만 |
+| decay를 모든 파라미터에 | 성능 악화 가능 | bias/Norm 분리 |
+| ckpt에 optim 미저장 | resume 시 점프 | 상태 포함（65강） |
+
+## 실습 코드 — Cosine with warmup（순수 함수）
+
+```python
+import math
+
+def lr_at(step, tmax, warmup, lr_max, lr_min=0.0):
+    if step < warmup:
+        return lr_max * step / max(warmup, 1)
+    progress = (step - warmup) / max(tmax - warmup, 1)
+    progress = min(max(progress, 0.0), 1.0)
+    cos = 0.5 * (1.0 + math.cos(math.pi * progress))
+    return lr_min + (lr_max - lr_min) * cos
+```
+
+이 함수 출력을 스케줄러 API 결과와 대조하면 배선 버그를 빨리 잡습니다.
+
+## 수식 보강 — 실효 배치와 LR 감각
+
+실효 배치 토큰 $N_{\mathrm{eff}}=B\cdot T\cdot K\cdot\eta$가 $c$배 커질 때, 선형 스케일 감각은
+
+$$
+\eta' \approx c\cdot\eta
+$$
+
+입니다. 다만 LLM에서는 상한·워밍업·안정성이 더 중요합니다. **공식처럼 맹신하지 말고** 작은 그리드만 시도하세요.
+
 ## LLM에서는 어디에 사용될까?
 
 이번 63강에서 배운 개념은 이후 Transformer · GPT · 서빙 강의에서 반복해서 등장합니다. 각 수식·코드 블록을 “실제 모델의 어느 단계인가”와 연결해 다시 읽어 보세요.

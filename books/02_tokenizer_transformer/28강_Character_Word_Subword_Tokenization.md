@@ -324,6 +324,132 @@ Subword는 `variable`, `_`, `name`처럼 조각내 통계를 공유한다.
 결론: “어떤 단위가 정답인가?”는 언어·도메인·모델 목적에 따라 달라진다.  
 범용 LLM에서는 Subword가 평균적으로 가장 실용적이다.
 
+## 수식 보강 — 토큰화 길이
+
+문자 단위: $T\approx$ 문자 수. 단어 단위: $T$는 공백 분리 수. Subword는 그 사이입니다.
+
+압축률 감각:
+
+$$
+\rho=\frac{\#\mathrm{chars}}{\#\mathrm{tokens}}
+$$
+
+$\rho$가 클수록 토큰당 정보가 많습니다(언어·토크나이저 의존).
+
+
+## 수학적으로 이해하기 — 분할 비용
+
+텍스트를 토큰열로 바꿀 때 대략 두 비용을 봅니다.
+
+1. **서열 길이** $T$ — Attention $O(T^2)$에 직접 영향
+2. **어휘 크기** $V$ — 임베딩·lm_head 파라미터 $\propto V$
+
+Character: $V$ 작음, $T$ 큼.  
+Word: $V$ 폭증·OOV, $T$ 작음.  
+Subword: 둘 사이의 타협.
+
+평균 바이트/토큰을 $\beta$라 하면 같은 문자열이라도
+
+$$
+
+T \approx \frac{\#\text{bytes}}{\beta}
+$$
+
+감각이 달라집니다. $\beta$는 언어·도메인·토크나이저에 따라 다릅니다. **특정 공개 모델의 $\beta$를 단정하지 마세요.**
+
+## 작은 숫자 예 — 같은 문장, 다른 T
+
+문장 `hello world`（공백 포함 11자） 설명용:
+
+| 방식 | 토큰 예 | T |
+|---|---|---|
+| char | h e l l o _ w o r l d | 11 |
+| word | hello world | 2 |
+| subword | hell o _world （가명） | 3 |
+
+숫자는 교육용입니다. 실제 BPE 병합은 제29강에서 계산합니다.
+
+## 부록 A. OOV와 UNK
+
+Word tokenizer에서 미등재 단어는 UNK로 붕괴합니다. 정보손실을
+
+$$
+
+\text{UNK rate}=\frac{\#\text{UNK tokens}}{T}
+$$
+
+로 모니터링할 수 있습니다. Subword는 이 비율을 낮추려는 동기입니다.
+
+## 부록 B. 수식 카드
+
+$$
+
+\text{tradeoff:}\quad
+V\downarrow \Rightarrow T\uparrow,\quad
+V\uparrow \Rightarrow \#\theta_{\mathrm{emb}}\uparrow
+$$
+
+
+<!-- enrich-batch2-28 -->
+## Tokenization 계열 비교
+
+Character: $x_t\in\Sigma$
+
+Word: 사전 밖 → UNK
+
+Subword (BPE류): merge 규칙 $(a,b)\rightarrow ab$
+
+$$
+\text{compression}=\frac{\#\mathrm{chars}}{\#\mathrm{tokens}}
+$$
+
+```python
+def bpe_merge_count(tokens, pair):
+    # 인접 pair 등장 횟수
+    a, b = pair
+    return sum(1 for i in range(len(tokens)-1) if tokens[i]==a and tokens[i+1]==b)
+
+toks = list("low lower newest")
+print(bpe_merge_count(toks, ("e","w")))
+```
+
+<!-- enrich-agent-bfea -->
+## 분할 비용의 한 줄 정리
+
+같은 문자열 $s$에 대해 세 방식의 길이를 $T_{\mathrm{char}}, T_{\mathrm{word}}, T_{\mathrm{sub}}$라 하면 대개
+
+$$
+T_{\mathrm{word}} \le T_{\mathrm{sub}} \le T_{\mathrm{char}}
+$$
+
+이고, 어휘 크기는 대략 반대 방향입니다.
+
+$$
+V_{\mathrm{char}} \ll V_{\mathrm{sub}} \ll V_{\mathrm{word}}^{\mathrm{(open)}}
+$$
+
+Attention 비용이 $O(T^2)$에 가깝다면, $T$를 줄이는 Subword는 **계산·메모리** 측면에서도 이득입니다.
+
+$$
+\mathrm{Cost} \propto T^2 \cdot d
+$$
+
+### 압축률
+
+$$
+\rho=\frac{\#\mathrm{chars}}{T}
+$$
+
+$\rho$가 클수록 토큰 하나가 더 많은 문자를 품습니다. 언어·도메인·토크나이저에 따라 $\rho$는 달라지므로, 공개 모델의 수치를 단정하지 마세요.
+
+```python
+# 같은 문장의 T 비교 (초간단)
+s = "토큰화는 절충이다"
+T_char = len(s)
+T_word = len(s.split())
+print("T_char", T_char, "T_word", T_word)
+```
+
 ## LLM에서는 어디에 사용될까?
 대표적 선택:
 

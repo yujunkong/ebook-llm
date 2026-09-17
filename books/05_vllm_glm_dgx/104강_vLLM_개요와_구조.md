@@ -406,6 +406,29 @@ $$
 
 대기 시간과 TTFT 제약을 함께 둡니다.
 
+
+<!-- enrich-batch3-104 -->
+## vLLM 핵심 식 — PagedAttention
+
+블록 테이블로 비연속 KV:
+
+$$
+\mathrm{KV}[b,j] \mapsto \mathrm{page}[\mathrm{block\_table}[b,j]]
+$$
+
+메모리 단편화 ↓, 공유 프롬프트 시 페이지 재사용.
+
+$$
+\mathrm{Mem}_{KV}\approx N_{\mathrm{pages}}\cdot \mathrm{page\ size}
+$$
+
+```python
+page = 16
+seq = 2000
+pages = (seq + page - 1)//page
+print(pages)
+```
+
 ## LLM에서는 어디에 사용될까?
 
 이번 104강에서 배운 개념은 이후 Transformer · GPT · 서빙 강의에서 반복해서 등장합니다. 각 수식·코드 블록을 “실제 모델의 어느 단계인가”와 연결해 다시 읽어 보세요.
@@ -497,6 +520,44 @@ Continuous: 정적 배치의 idle/호위·늦은 입학. PagedAttention: 거대 
 그 다음 **제106강. vLLM Scheduler**에서 입학·우선순위·Prefill/Decode 혼합 정책을 더 깊게 보고, **제107강**에서 TTFT·TPOT·Throughput으로 측정 언어를 고정한다.
 
 > 엔진은 마법이 아니다. 이미 배운 Prefill·KV·Batching·Quantization의 운영체제에 가깝다.
+
+<!-- enrich-104-depth -->
+## 구성 요소를 비용 식으로 연결하기
+
+vLLM류 엔진을 네 블록으로 보면:
+
+```text
+API/Tokenizer → Scheduler → Attention+KV(Paged) → Sampler
+```
+
+메모리 상한:
+
+$$
+M_{\mathrm{model}}+M_{\mathrm{KV}}+M_{\mathrm{act}}
+\le
+M_{\mathrm{GPU}}
+$$
+
+KV는 대략
+
+$$
+M_{\mathrm{KV}}
+\approx
+2\cdot L\cdot H\cdot d_h\cdot T_{\mathrm{tot}}\cdot b
+$$
+
+스케줄러는 $T_{\mathrm{tot}}$（전 시퀀스 합）을 블록 단위로 자르며 배치를 고른다.
+
+### 한 줄 역할 카드
+
+| 블록 | 질문 |
+|---|---|
+| Scheduler | 누구를 이번 스텝에 넣을까 |
+| PagedAttention | KV를 어디에 붙일까 |
+| Continuous Batching | 끝난 자리를 바로 채울까 |
+| Sampler | 다음 토큰 분포를 어떻게 뽑을까 |
+
+다음 강（PagedAttention·Scheduler）은 이 표의 두 칸을 깊게 판다.
 
 <!-- LECTURE_NAV -->
 

@@ -308,6 +308,28 @@ def decode_batch_step(model, token_batch, kv_list):
 
 요청별 남은 길이가 달라도, 매 스텝 활성 시퀀스 집합 $\mathcal{A}_t$에 대해 배치 decode합니다. 처리량은 $|\mathcal{A}_t|$와 메모리 한도에 좌우됩니다.
 
+
+<!-- enrich-batch3-102 -->
+## Continuous Batching 효율
+
+정적 배치 대비 유휴:
+
+$$
+\eta_{\mathrm{idle}}=1-\frac{\sum_i n_{\mathrm{active},i}}{B\cdot T_{\mathrm{slot}}}
+$$
+
+연속 배칭은 시퀀스 종료 즉시 새 요청을 넣어 $\eta_{\mathrm{idle}}$을 줄입니다.
+
+```python
+# 슬롯 점유율 스케치
+active = [1,1,0,1,1,0,1,1]
+print(sum(active)/len(active))
+```
+
+$$
+\mathrm{throughput}\uparrow \Leftarrow \eta_{\mathrm{idle}}\downarrow
+$$
+
 ## LLM에서는 어디에 사용될까?
 ### 9.1 지표와의 관계（정의만）
 
@@ -398,6 +420,24 @@ A(5), B(1), C(5), D(1), batch=2 가정으로 두 방식의 “C의 시작 시각
 6. **벤치 그래프 숫자를 맥락 없이 이식**  
    워크로드（입출력 길이 분포）가 반이다.
 
+## 수식 보강 — 처리량 근사 한 줄 더
+동시 인플라이트 $B$, 스텝당 평균 생성 토큰（시퀀스당）이 약 1일 때
+
+$$
+
+\mathrm{Throughput}_{\mathrm{tok}} \approx \frac{B}{\bar{t}_{\mathrm{step}}}
+$$
+
+$\bar{t}_{\mathrm{step}}$는 prefill 혼입·메모리 압박에 따라 변한다. Static batching의 패딩 낭비
+
+$$
+
+\eta_{\mathrm{pad}} = 1 - \frac{\sum_i L_i}{B\cdot L_{\max}}
+$$
+
+가 커질수록 동일 $B$라도 유용 계산 비율이 떨어진다. Continuous batching은 $B$의 **구성원을 스텝마다 교체**해 이 낭비를 줄이는 쪽에 가깝다.
+
+
 ## 핵심 요약
 - Static Batching은 배치 수명에 요청 수명을 묶기 쉽다.
 - Continuous Batching은 iteration마다 종료·입학을 반영한다.
@@ -483,6 +523,36 @@ Iteration-level scheduling을 한 줄로.
 다음 **제103강. Quantization — INT8, INT4, FP8**에서는 가중치·활성값을 낮은 비트로 표현해 메모리·대역폭을 줄이는 아이디어를, 품질 트레이드오프와 함께 다룬다.
 
 > 빈자리를 채우는 기술 다음에, 자리 자체를 좁히는 기술이 온다.
+
+<!-- enrich-102-depth -->
+## 배치 효율을 수식으로 다시 보기
+
+정적 배치에서 패딩 낭비를 $p$, 유효 토큰 비율을 $\eta$라 하면
+
+$$
+\eta = \frac{\sum_i \ell_i}{B\cdot \ell_{\max}}
+\approx 1-p
+$$
+
+Continuous Batching은 시퀀스가 끝나는 즉시 자리를 비워 $\eta$를 올린다.
+
+대략적 처리량 감각:
+
+$$
+\mathrm{Throughput}
+\approx
+\frac{N_{\mathrm{active}}\cdot \bar{r}_{\mathrm{decode}}}{1+\kappa_{\mathrm{prefill}}}
+$$
+
+여기서 $\bar{r}_{\mathrm{decode}}$는 decode 토큰/초, $\kappa_{\mathrm{prefill}}$는 prefill이 배치를 잠식하는 상대 비용이다.
+
+### 실무 체크 세 줄
+
+1. 평균 배치 내 활성 시퀀스 수 $N_{\mathrm{active}}$를 로그로 남긴다.
+2. prefill 유입이 TTFT P99를 깨는지 본다.
+3. 패딩 비율 리포트를 정적 배치 대비로 남긴다.
+
+이 세 줄이 제106강 스케줄러·제118강 리포트와 같은 언어가 된다.
 
 <!-- LECTURE_NAV -->
 

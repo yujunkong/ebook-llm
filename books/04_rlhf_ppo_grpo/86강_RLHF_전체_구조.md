@@ -139,7 +139,7 @@ r_φ ← minimize BT loss
 
 개념적 목표(자주 쓰는 형태):
 
-\[
+$$
 \max_\theta \;
 \mathbb{E}_{x\sim\mathcal{D},\, y\sim\pi_\theta(\cdot\mid x)}
 \big[r_\phi(x,y)\big]
@@ -149,7 +149,7 @@ r_φ ← minimize BT loss
 \big[
 \mathrm{KL}\big(\pi_\theta(\cdot\mid x)\,\|\,\pi_{\mathrm{ref}}(\cdot\mid x)\big)
 \big]
-\]
+$$
 
 해석:
 
@@ -160,9 +160,9 @@ $\beta$가 크면 보수적(안전·안정), 작으면 공격적(보상 추격·
 
 유효 보상으로 합치기도 한다:
 
-\[
+$$
 R(x,y)=r_\phi(x,y)-\beta\log\frac{\pi_\theta(y\mid x)}{\pi_{\mathrm{ref}}(y\mid x)}
-\]
+$$
 
 (구현·추정 방식은 제88·89강에서 구체화.)
 
@@ -256,31 +256,31 @@ KL:      “학교 때 배우지 않은 이상한 요리”로 도망가지 않�
 ## 수학적으로 이해하기
 ### 5.1 정책으로서의 LM
 
-\[
+$$
 \pi_\theta(y\mid x)=\prod_{t=1}^{|y|}\pi_\theta(y_t\mid x,y_{<t})
-\]
+$$
 
 로그 확률:
 
-\[
+$$
 \log\pi_\theta(y\mid x)=\sum_t \log\pi_\theta(y_t\mid x,y_{<t})
-\]
+$$
 
 PPO는 이 토큰 로그확률의 비율을 사용한다(제87강).
 
 ### 5.2 기대 보상 목표
 
-\[
+$$
 J(\theta)=\mathbb{E}_{x,y\sim\pi_\theta}[r_\phi(x,y)]
-\]
+$$
 
 그대로 올리면 KL 폭발 위험 → 페널티 포함:
 
-\[
+$$
 J_\beta(\theta)=
 \mathbb{E}[r_\phi(x,y)]
 -\beta\,\mathbb{E}_x\big[\mathrm{KL}(\pi_\theta\|\pi_{\mathrm{ref}})\big]
-\]
+$$
 
 ### 5.3 왜 “한 방 경사”로 안 끝내는가?
 
@@ -291,20 +291,20 @@ $y$가 이산·길고, 보상이 응답 끝에만 있으면 분산이 크다.
 
 롤아웃 샘플 $(x,y)$에 대해:
 
-\[
+$$
 \begin{aligned}
 r &\leftarrow r_\phi(x,y)\\
 A &\leftarrow \mathrm{Advantage}(r, V_\psi,\ldots)\\
 \theta &\leftarrow \arg\max_\theta\,
 \mathbb{E}\big[\mathrm{PPO\text{-}clip}(\theta; A, \pi_{\theta_{\mathrm{old}}})\big]
 \end{aligned}
-\]
+$$
 
 Value는
 
-\[
+$$
 \min_\psi \mathbb{E}\big[(V_\psi(x)-R)^2\big]
-\]
+$$
 
 형태로 같이 학습하는 구현이 많다.
 
@@ -410,6 +410,67 @@ def approx_kl(logp_theta, logp_ref):
 1. ref에 gradient가 흐름 → `torch.no_grad()` / `requires_grad=False`
 2. RM에 gradient가 흐름 → RL 단계에서는 freeze가 기본
 3. prompt 길이·response 길이를 나눠 logprob 슬라이싱
+
+## 수식 보강 — RLHF 파이프라인
+<!-- enrich-86-pipeline-math -->
+
+단계 표기:
+
+$$
+\pi_{\mathrm{SFT}}\to r_\phi\to \pi_{\mathrm{RL}}
+$$
+
+KL-제약 목표:
+
+$$
+\max_\pi\ \mathbb{E}_{x,y\sim\pi}[r_\phi(x,y)]-\beta\mathrm{KL}(\pi\|\pi_{\mathrm{ref}})
+$$
+
+### 토큰 정책으로 풀기
+
+응답 $y=(y_1,\ldots,y_T)$이면
+
+$$
+\pi(y\mid x)=\prod_{t=1}^{T}\pi(y_t\mid x,y_{<t})
+$$
+
+롤아웃에서 보상은 대개 **시퀀스 단위** $r_\phi(x,y)$이고, 토큰 로그확률에 advantage를 방송한다.
+
+### 총보상（실무 스케치）
+
+$$
+R(x,y)=r_\phi(x,y)-\beta\,\widehat{\mathrm{KL}}\big(\pi_\theta(\cdot\mid x)\|\pi_{\mathrm{ref}}(\cdot\mid x)\big)
+$$
+
+추정 KL의 한 형태:
+
+$$
+\widehat{\mathrm{KL}}
+\approx
+\sum_t\big(\log\pi_\theta(y_t\mid\ldots)-\log\pi_{\mathrm{ref}}(y_t\mid\ldots)\big)
+$$
+
+（샘플 $y\sim\pi_\theta$ 기준. 구현·논문마다 배치 위치가 다를 수 있다.）
+
+### PPO로 넘기는 다리
+
+온정책 비율
+
+$$
+\rho_t=\frac{\pi_\theta(y_t\mid s_t)}{\pi_{\mathrm{old}}(y_t\mid s_t)}
+$$
+
+클립 목표（제87강）:
+
+$$
+L^{\mathrm{CLIP}}
+=
+\mathbb{E}\big[
+\min\big(\rho_t A_t,\ \mathrm{clip}(\rho_t,1-\epsilon,1+\epsilon)A_t\big)
+\big]
+$$
+
+RLHF 전체 구조의 핵은 “$r_\phi$로 $A$를 만들고, KL로 묶고, clip으로 한 걸음을 제한”이다.
 
 ## LLM에서는 어디에 사용될까?
 연구·제품에서 보이는 변형:

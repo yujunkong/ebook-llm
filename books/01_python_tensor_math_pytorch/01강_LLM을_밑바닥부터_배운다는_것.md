@@ -104,6 +104,44 @@ LLM도 결국 이 큰 줄기 위에 있다. 다만 다루는 데이터가 텍스
 
 학습이 잘 되면 “자연스러운 이어짐”에 높은 점수를 주고, 이를 반복해 문장·문서·코드를 생성한다.
 
+수식으로 쓰면, 지금까지의 토큰 서열을 $x_1,x_2,\ldots,x_t$라 할 때 모델은 다음 토큰의 조건부 분포
+
+$$
+P(x_{t+1}\mid x_1,\ldots,x_t)
+$$
+
+를 근사합니다. 점수를 logits $\mathbf{z}\in\mathbb{R}^{V}$로 만들고, Softmax로 확률로 바꿉니다.
+
+$$
+P(x_{t+1}=k\mid x_{\le t}) = \frac{e^{z_k}}{\sum_{j=1}^{V} e^{z_j}}
+$$
+
+학습은 대개 정답 다음 토큰 $y$에 대한 음의 로그 확률(크로스 엔트로피)을 줄이는 일입니다.
+
+$$
+L = -\log P(y\mid x_{\le t})
+$$
+
+1권에서는 Softmax·CE를 본격 구현하기 전에, **“점수 → 선택 → 반복”** 감각과 Tensor·미분·학습 루프를 먼저 익힙니다.
+
+### 미니 예제 — 세 토큰 점수만으로 보기
+
+어휘가 $\{$좋다, 맑다, 의자$\}$이고 점수가 $(2.0,\,1.0,\,0.0)$이면, Softmax 없이도 “가장 큰 점수”를 고르는 greedy 선택은
+
+$$
+\hat{y} = \arg\max_k z_k = \text{좋다}
+$$
+
+입니다. 확률로 바꾸면(손으로 대략)
+
+$$
+e^{2}\approx 7.39,\ e^{1}\approx 2.72,\ e^{0}=1
+\quad\Rightarrow\quad
+P(\text{좋다})\approx \frac{7.39}{11.11}\approx 0.67
+$$
+
+처럼 “높다/낮다”가 숫자로 드러납니다. 상세 계산은 이후 Loss·Softmax 강의에서 다룹니다.
+
 하지만 실제 서비스용 LLM은 이 한 단계로 끝나지 않는다. 대개 다음 순서를 거친다.
 
 ```text
@@ -303,15 +341,166 @@ if __name__ == "__main__":
 
 2권 이후에는 `toy_memory` 자리를 **학습된 Parameter**가 대체한다.
 
-## 수식 보강 — LLM을 함수로 보기
+## LLM을 확률 함수로 보기
 
-거시적으로 LLM은 이산 토큰 열을 받아 다음 토큰 분포를 내는 함수입니다.
+거시적으로 LLM은 **이산 토큰 열**을 받아 **다음 토큰 분포**를 내는 함수입니다.
 
 $$
 f_\theta : \{1,\ldots,V\}^{T} \to \Delta^{V-1}
 $$
 
-$\Delta^{V-1}$은 확률 심플렉스입니다. $\theta$는 학습 파라미터 전체입니다. 이후 강의는 $f_\theta$ 안의 행렬곱·Attention·정규화를 하나씩 엽니다.
+기호의 의미는 다음과 같습니다.
+
+- $V$: 어휘(vocabulary) 크기. 토큰 ID는 $1,\ldots,V$ (구현에 따라 $0,\ldots,V-1$)
+- $T$: 문맥 길이(토큰 개수)
+- $\theta$: 학습 가능한 파라미터 전체(수억~수천억 개일 수 있음)
+- $\Delta^{V-1}$: 확률 심플렉스. 성분 $\ge 0$이고 합이 $1$인 벡터의 집합
+
+$$
+\Delta^{V-1}
+=
+\left\{
+p\in\mathbb{R}^{V}
+\;\middle|\;
+p_k \ge 0,\ 
+\sum_{k=1}^{V} p_k = 1
+\right\}
+$$
+
+이후 강의는 $f_\theta$ 안의 Embedding·행렬곱·Attention·정규화를 하나씩 엽니다. 1강의 목표는 “완벽한 공식”이 아니라, **나중에 꽂힐 좌표**를 잡는 것입니다.
+
+### Next Token Prediction을 수식으로
+
+문맥 $x_{1:t}=(x_1,\ldots,x_t)$가 주어졌을 때, 모델은 다음 토큰 $x_{t+1}$의 조건부 분포를 냅니다.
+
+$$
+p_\theta(x_{t+1}\mid x_{1:t})
+=
+\mathrm{softmax}\!\left(z_t\right)_{x_{t+1}}
+$$
+
+여기서 $z_t\in\mathbb{R}^{V}$는 위치 $t$의 **logit** 벡터입니다. Softmax는
+
+$$
+\mathrm{softmax}(z)_k
+=
+\frac{e^{z_k}}{\sum_{j=1}^{V} e^{z_j}}
+$$
+
+입니다. 생성(inference)은 이 분포에서 토큰을 고르는 일의 반복입니다.
+
+$$
+x_{t+1}
+\sim
+p_\theta(\cdot\mid x_{1:t})
+\quad\text{또는}\quad
+x_{t+1}
+=
+\arg\max_k\, p_\theta(k\mid x_{1:t})
+$$
+
+`toy_memory` 예제는 학습된 $p_\theta$ 대신 **사전 정의된 이어짐 표**를 쓴 축소판입니다. 2권 이후에는 그 표가 신경망으로 바뀝니다.
+
+### 한 문장의 결합 확률
+
+길이 $T$인 토큰 열 $x_{1:T}$의 모델 확률은 연쇄 법칙(chain rule)으로 분해됩니다.
+
+$$
+p_\theta(x_{1:T})
+=
+\prod_{t=1}^{T}
+p_\theta(x_t\mid x_{1:t-1})
+$$
+
+($t=1$일 때는 빈 문맥 또는 BOS 토큰을 가정합니다.)
+
+학습에서는 보통 **음의 로그 우도(NLL)** 를 줄입니다.
+
+$$
+L(\theta)
+=
+-\sum_{t=1}^{T}
+\log p_\theta(x_t\mid x_{1:t-1})
+$$
+
+이 $L$이 Cross-Entropy Loss의 언어 모델 버전입니다. 1권 후반에서 Softmax·CE를, 2~3권에서 Transformer 안의 $z_t$를 만듭니다.
+
+### 파라미터와 “밑바닥”의 관계
+
+“밑바닥부터”란 다음을 **한 줄로 잇는다**는 뜻입니다.
+
+```text
+토큰 ID → 벡터 → 행렬곱/Attention → logit → Softmax → Loss → Gradient → 갱신
+```
+
+수식으로만 압축하면:
+
+$$
+x \xrightarrow{\mathrm{Emb}} h
+\xrightarrow{f_{\mathrm{block}}} z
+\xrightarrow{\mathrm{softmax}} p
+\xrightarrow{\mathrm{CE}} L
+\xrightarrow{\nabla} \Delta\theta
+$$
+
+지금은 각 화살표를 “이름만” 알면 충분합니다. 화살표마다 전용 강의가 있습니다.
+
+### 미니 손계산 — 3토큰 어휘
+
+어휘를 `{A,B,C}` ($V=3$)라 두고, 어떤 문맥에서 logit이
+
+$$
+z = [2.0,\ 1.0,\ 0.0]
+$$
+
+이라고 합시다. Softmax 분모는
+
+$$
+e^{2}+e^{1}+e^{0} \approx 7.389 + 2.718 + 1 = 11.107
+$$
+
+이므로
+
+$$
+p \approx
+\left[
+\frac{7.389}{11.107},\ 
+\frac{2.718}{11.107},\ 
+\frac{1}{11.107}
+\right]
+\approx
+[0.665,\ 0.245,\ 0.090]
+$$
+
+다음 토큰으로 `A`를 고르면 NLL 항은 $-\log 0.665 \approx 0.408$입니다.  
+이 책의 모든 “학습”은 결국 이런 항을 **데이터 전체에 대해 평균내어** $\theta$로 미분하는 일입니다.
+
+```python
+# 01강 감각용: Softmax를 아직 라이브러리 없이 맛보기
+import math
+
+z = [2.0, 1.0, 0.0]
+ez = [math.exp(v) for v in z]
+Z = sum(ez)
+p = [v / Z for v in ez]
+nll_A = -math.log(p[0])
+print([round(x, 3) for x in p], round(nll_A, 3))
+```
+
+### 커리큘럼을 식에 대응시키기
+
+| 조각 | 대략적 위치 | 이 책 |
+|---|---|---|
+| Python·배열·미분 | $x$, $\nabla$를 다루는 언어 | 1권 |
+| Tokenizer | 텍스트 $\to$ ID | 2권 초반 |
+| Attention / Transformer | $f_{\mathrm{block}}$ | 2권 |
+| Pretrain / SFT | $L(\theta)$ 최소화 | 3권 |
+| RLHF 등 | 선호에 맞는 목표로 $\theta$ 조정 | 4권 |
+| Serving | $f_\theta$를 빠르게 평가 | 5권 |
+
+> **핵심**
+>
+> 1강을 끝내면 “LLM = 조건부 토큰 분포 $p_\theta$”라는 한 문장을 자기 언어로 말할 수 있어야 합니다.
 
 ## LLM에서는 어디에 사용될까?
 실제 LLM 제품 하나를 분해하면 대략 다음 층이 보인다.
@@ -376,6 +565,21 @@ $\Delta^{V-1}$은 확률 심플렉스입니다. $\theta$는 학습 파라미터 
 
 4. **실행하지 않고 읽기만 한다**  
    이 책은 실전형이다. 코드는 실행하고, 숫자를 바꾸고, 깨지는 장면을 직접 봐야 한다.
+
+## 수식 한 장으로 보는 1권의 목표
+
+이 책이 궁극적으로 다루는 학습 한 스텝은 다음으로 압축됩니다.
+
+$$
+\theta \leftarrow \theta - \eta \nabla_\theta L(\theta;\,\text{batch})
+$$
+
+- $\theta$: 모델 파라미터
+- $\eta$: 학습률
+- $L$: 배치에서 계산한 Loss
+- $\nabla_\theta L$: Gradient
+
+1권의 Python·NumPy·미분·PyTorch는 모두 이 한 줄을 **안정적으로 실행·디버깅**하기 위한 준비입니다. 2권 이후에는 $L$이 다음 토큰 CE가 되고, $\theta$ 안에 Attention이 들어갑니다.
 
 ## 핵심 요약
 - AI는 큰 목표, Machine Learning은 데이터로 규칙을 배우는 방법, Deep Learning은 깊은 신경망 기반 접근, LLM은 대규모 언어 모델이다.

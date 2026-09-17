@@ -239,6 +239,106 @@ $$
 
 고정 윈도우 RNN/CNN과 달리, $\alpha_{ij}$가 입력에 따라 바뀌어 **가변적 장거리 의존**을 표현합니다.
 
+
+<!-- enrich-batch2-35 -->
+## RNN 병목과 Attention
+
+RNN 은닉:
+
+$$
+h_t = f(h_{t-1}, x_t)
+$$
+
+장기 의존은 $h$ 병목을 통과해야 합니다. Attention은 모든 위치에 직접 연결:
+
+$$
+c_i=\sum_j \alpha_{ij}v_j,\quad
+\alpha_{ij}=\frac{e^{s_{ij}}}{\sum_k e^{s_{ik}}}
+$$
+
+```python
+import torch, torch.nn.functional as F
+S = torch.randn(5, 5)  # scores
+A = F.softmax(S, dim=-1)
+print(A.sum(-1))
+```
+
+복잡도 스케치: Self-Attention은 $O(T^2 d)$ 항이 있습니다.
+
+
+<!-- enrich-batch3-35 -->
+## Path length와 Gradient
+
+RNN 역전파는 시간 축으로 곱이 이어집니다.
+
+$$
+\frac{\partial L}{\partial h_1}=\frac{\partial L}{\partial h_T}\prod_{t=2}^{T}\frac{\partial h_t}{\partial h_{t-1}}
+$$
+
+곱이 작으면 vanishing, 크면 exploding. Attention은 $h_1$에서 $h_T$로 **직접 링크**를 만들어 경로를 짧게 합니다.
+
+$$
+\alpha_{T1}\propto \exp(q_T^\top k_1/\sqrt{d})
+$$
+
+```python
+import torch
+# 점수→가중치
+q = torch.randn(4); k = torch.randn(4, 8); # toy
+# 생략: 실제는 d_k 차원
+print(q.shape)
+```
+
+<!-- enrich-agent-bfea -->
+## 장거리 의존과 정보 병목
+
+RNN은 시각 $t$의 정보를 $h_t$에 압축합니다.
+
+$$
+h_t = f(h_{t-1}, x_t)
+$$
+
+거리 $k$만큼 떨어진 토큰 쌍은 $k$번의 $f$를 통과해야 하므로, 기울기·정보 손실에 취약합니다. Attention은 위치 $i$가 $j$를 **한 번에** 참조합니다.
+
+$$
+s_{ij} = \frac{q_i^\top k_j}{\sqrt{d_k}},\qquad
+\alpha_{ij}=\frac{e^{s_{ij}}}{\sum_k e^{s_{ik}}},\qquad
+c_i=\sum_j \alpha_{ij} v_j
+$$
+
+모든 쌍 $(i,j)$를 보면 점수 행렬은 $T\times T$이고, 나중 강의의 Causal mask는 그 하삼각만 남깁니다.
+
+### 복잡도 감각
+
+$$
+\mathrm{RNN\ step}:\ O(T),\qquad
+\mathrm{Self\text{-}Attention}:\ O(T^2)
+$$
+
+짧은 $T$에서는 Attention의 병렬성이 이기고, 매우 긴 $T$에서는 $T^2$가 부담이 됩니다(이후 효율적 Attention·서빙 강의).
+
+### Softmax 가중 평균
+
+$$
+\sum_j \alpha_{ij}=1,\quad \alpha_{ij}\ge 0
+\implies
+c_i\ \text{는}\ \{v_j\}\ \text{의 볼록결합}
+$$
+
+“문맥 벡터”라는 말이 이 식에서 나옵니다.
+
+```python
+import math
+# 2토큰 미니 Attention 점수
+q = [1.0, 0.0]
+k0, k1 = [1.0, 0.0], [0.0, 1.0]
+s0 = q[0]*k0[0] + q[1]*k0[1]
+s1 = q[0]*k1[0] + q[1]*k1[1]
+e0, e1 = math.exp(s0), math.exp(s1)
+a0, a1 = e0/(e0+e1), e1/(e0+e1)
+print(round(a0, 3), round(a1, 3))
+```
+
 ## LLM에서는 어디에 사용될까?
 ### 9.1 Transformer 블록의 중심
 

@@ -401,6 +401,163 @@ $$
 
 패킹 효율 $\eta$면 실제 스텝당 유효 토큰은 $B\cdot T\cdot\eta$입니다.
 
+
+<!-- enrich-batch2-60 -->
+## Pretraining 데이터 구성 수식
+
+혼합 비율:
+
+$$
+\mathcal{D}=\sum_i \alpha_i \mathcal{D}_i,\quad \sum_i\alpha_i=1
+$$
+
+중복·품질 필터 후 유효 토큰 수 $N_{\mathrm{tok}}$.
+
+$$
+\text{epochs}\approx \frac{N_{\mathrm{steps}}\cdot B\cdot T}{N_{\mathrm{tok}}}
+$$
+
+```python
+def approx_epochs(steps, batch, seqlen, n_tok):
+    # 토큰 소비량 / 말뭉치 크기
+    return steps * batch * seqlen / max(n_tok, 1)
+
+print(approx_epochs(1000, 64, 1024, 1e8))
+```
+
+
+<!-- enrich-pass-1f64 -->
+## 수식 전개 — 코퍼스 토큰 예산
+
+문서 집합 $\mathcal{D}=\{d_1,\ldots,d_N\}$에서 토큰 수는
+
+$$
+N_{\mathrm{tok}}
+=
+\sum_{i=1}^{N}
+\mathrm{len}\big(\mathrm{tok}(d_i)\big)
+$$
+
+입니다. 평균 문서 길이를 $\bar L$로 두면 $N_{\mathrm{tok}}\approx N\cdot\bar L$입니다.
+
+학습 예산이 $B_{\mathrm{tok}}$ 토큰이면 대략
+
+$$
+\mathrm{epochs}
+\approx
+\frac{B_{\mathrm{tok}}}{N_{\mathrm{tok}}}
+$$
+
+입니다. Mini 실습에서는 $B_{\mathrm{tok}}$를 작게 잡고 **한 배치 overfit**부터 확인합니다.
+
+### Mixture 가중치
+
+출처 $k$의 비율 $w_k$（$\sum_k w_k=1$）를 두면 기대 토큰 기여는
+
+$$
+\mathbb{E}[N_{\mathrm{tok}}^{(k)}]
+=
+w_k\cdot B_{\mathrm{tok}}
+$$
+
+입니다. 가중치를 바꾸면 도메인 편향이 바뀝니다. 숫자를 지어내어 “웹 비율 00%”처럼 쓰지 말고, **자신의 JSONL 비율**만 기록하세요.
+
+## Shape 표 — 문서에서 배치까지
+
+| 단계 | 기호 | 전형 Shape / 단위 |
+|---|---|---|
+| 원문 문서 | $d_i$ | 문자열 |
+| 토큰 ID | $\mathrm{tok}(d_i)$ | `(L_i,)` |
+| 패킹 창 | $x$ | `(T,)` |
+| 미니배치 | $X$ | `(B, T)` |
+| 라벨（시프트） | $Y$ | `(B, T)` |
+
+$T$는 `block_size`, $B$는 배치 크기입니다. 패딩이 있으면 Attention mask $M\in\{0,1\}^{B\times T}$가 함께 갑니다.
+
+## 구현 스케치 — 정제·필터 파이프라인
+
+```python
+def clean_text(s: str) -> str:
+    # HTML 잔여·과도한 공백만 최소 처리（교육용）
+    s = s.replace("\r\n", "\n")
+    while "  " in s:
+        s = s.replace("  ", " ")
+    return s.strip()
+
+def keep_doc(s: str, min_chars: int = 40) -> bool:
+    if len(s) < min_chars:
+        return False
+    lines = [ln for ln in s.splitlines() if ln.strip()]
+    if len(lines) >= 4 and len(set(lines)) == 1:
+        return False
+    return True
+```
+
+정제（cleaning）는 문자열을 고치고, 필터（filtering）는 문서 채택 여부를 결정합니다. 두 단계를 한 함수에 섞으면 재현이 어렵습니다.
+
+## 실패 모드 — 데이터셋
+
+| 실패 | 증상 | 점검 |
+|---|---|---|
+| Train/Val 누수 | Val Loss가 비정상적으로 낮음 | 해시·경로 분리 |
+| 중복 폭주 | 같은 문장 반복 생성 | exact/near dedup |
+| 경계 무시 | 문서 이어붙이기 환각 | EOS/문서 ID |
+| 라이선스 무시 | 배포 불가 | 출처 메타 |
+| 가짜 규모 | 근거 없는 TB 주장 | 로컬 파일만 집계 |
+
+## 실습 코드 — 토큰 수·분할 요약
+
+```python
+import json
+from pathlib import Path
+
+def summarize_jsonl(path: Path, tok_fn):
+    n_doc, n_tok = 0, 0
+    for line in path.read_text(encoding="utf-8").splitlines():
+        if not line.strip():
+            continue
+        obj = json.loads(line)
+        text = obj.get("text") or obj.get("content") or ""
+        n_doc += 1
+        n_tok += len(tok_fn(text))
+    return {"docs": n_doc, "tokens": n_tok, "avg_len": n_tok / max(n_doc, 1)}
+```
+
+`tok_fn`은 제61강의 tokenizer에 연결합니다. 오늘은 “문서 리스트가 재현 가능한가”가 핵심입니다.
+
+## 부록 — 중복 제거 직관 수식
+
+문서 $d$의 지문（fingerprint）을 $h(d)$라 하면 exact dedup은
+
+$$
+\mathcal{D}'
+=
+\big\{ d\in\mathcal{D}
+:\ h(d)\ \text{가 처음 등장} \big\}
+$$
+
+입니다. Near-duplicate는 shingle 유사도
+
+$$
+\mathrm{sim}(d,d')
+=
+\frac{|S(d)\cap S(d')|}{|S(d)\cup S(d')|}
+$$
+
+에 임계값을 둡니다. Mini에서는 exact만으로도 충분합니다.
+
+## 수식 보강 — 유효 학습 신호
+
+패딩 비율을 $p_{\mathrm{pad}}$라 하면 스텝당 유효 토큰은 대략
+
+$$
+N_{\mathrm{eff}}
+=
+B\cdot T\cdot (1-p_{\mathrm{pad}})
+$$
+
+입니다. Packing으로 $p_{\mathrm{pad}}$를 낮추는 이야기의 입구가 제61강입니다.
+
 ## LLM에서는 어디에 사용될까?
 
 이번 60강에서 배운 개념은 이후 Transformer · GPT · 서빙 강의에서 반복해서 등장합니다. 각 수식·코드 블록을 “실제 모델의 어느 단계인가”와 연결해 다시 읽어 보세요.

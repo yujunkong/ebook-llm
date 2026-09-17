@@ -364,6 +364,250 @@ Eval/Checkpoint를 **너무 자주** 하면 처리량(tok/s)이 떨어진다. �
 6. **clip을 `step` 뒤에 적용** — 이미 갱신된 뒤라 의미 없음.
 7. **손실을 Python float로 너무 일찍 변환** — 그래프 끊김은 `backward` 전 `loss`에 하면 안 됨. 로그용 `detach`는 가능.
 
+## 수식 보강 — 스텝과 토큰 예산
+
+$$
+N_{\mathrm{tokens}}\approx E\cdot B\cdot T\cdot\eta
+$$
+
+학습률 스케줄 $\eta_t$는 보통 warmup 후 cosine 감쇠입니다.
+
+
+## 수학적으로 이해하기 — 스텝과 토큰 예산
+
+전역 스텝 $t$와 마이크로배치 토큰 수 $N_{\mathrm{tok}}$에 대해
+
+$$
+
+\text{tokens\_seen}
+\leftarrow
+\text{tokens\_seen} + N_{\mathrm{tok}}
+$$
+
+Gradient accumulation 스텝 $K$이면 옵티마이저 갱신 1회당
+
+$$
+
+N_{\mathrm{eff}} \approx K\cdot B\cdot T
+$$
+
+（패딩 제외 시 더 정교한 카운트가 필요）. Learning rate schedule $\eta(t)$는 **옵티마이저 스텝**에 묶는 것이 보통입니다.
+
+### 안정성 스케치
+
+손실이 한 스텝에 급증하면 skip 규칙을 둘 수 있습니다.
+
+$$
+
+\text{if } L_t > \gamma \tilde L \text{ then skip update}
+$$
+
+（$\tilde L$은 최근 평균, $\gamma$는 임계 배수）. 과도한 skip은 학습을 멈추게 하니 로깅이 필수입니다.
+
+## 작은 숫자 예 — Accumulation
+
+$B=2$, $T=128$, $K=4$이면 대략
+
+$$
+
+N_{\mathrm{eff}} \approx 4\cdot 2\cdot 128 = 1024
+$$
+
+토큰/갱신입니다. VRAM이 안 되면 $B$를 줄이고 $K$를 늘려 $N_{\mathrm{eff}}$를 유지하는 패턴이 제64강과 맞닿습니다.
+
+## 직관적으로 이해하기 — 비행 체크리스트
+
+```text
+1) zero_grad
+2) forward / loss
+3) backward（accum 중이면 스케일）
+4) （accum 끝）clip / step / sched
+5) 로그 / 가끔 val / 가끔 save / 가끔 generate
+```
+
+순서가 바뀌면 “학습이 안 되는” 유령이 나타납니다.
+
+## 디버깅과 학습 불안정（요약 맵）
+
+이 책 시리즈에 별도 “디버깅 전용 강”이 없다면, **루프 설계 강이 1차 관제탑**입니다.
+
+| 증상 | 점검 순서 |
+|---|---|
+| Loss 변하지 않음 | lr=0, freeze, step 미호출, accum 카운터 |
+| Loss NaN | 입력 NaK, lr과대, FP16 overflow, bad mask |
+| 스텝당 시간 폭증 | 동기화·생성·val 빈도, DataLoader |
+| 재현 실패 | seed, cudnn, 데이터 순서 |
+| OOM | B, T, activation, AMP |
+
+## 부록 A. 최소 train_step
+
+```python
+def train_step(model, batch, optimizer, scaler=None, accum=1):
+    x, y = batch
+    with torch.cuda.amp.autocast(enabled=scaler is not None):
+        loss = model(x, y) / accum
+    if scaler is None:
+        loss.backward()
+    else:
+        scaler.scale(loss).backward()
+    return loss.detach() * accum
+```
+
+## 부록 B. 수식 카드
+
+$$
+
+\theta\leftarrow\theta-\eta(t)\hat g,
+\quad
+\hat g=\mathrm{clip}\Big(\frac{1}{K}\sum_{k=1}^{K}g^{(k)},\ c\Big)
+$$
+
+
+<!-- enrich-batch2-62 -->
+## Training Loop 골격 수식
+
+$$
+\theta_{t+1}=\mathrm{Opt}(\theta_t,\nabla L_t,\eta_t)
+$$
+
+```python
+# 의사코드성 루프
+for step in range(1, 101):
+    # batch = next(loader)
+    # loss = model(batch)
+    # loss.backward(); opt.step(); opt.zero_grad()
+    if step % 50 == 0:
+        print("ckpt", step)
+```
+
+로그에 남길 최소 지표: $L$, $\eta$, tokens/s, grad norm.
+
+$$
+\|g\|_2=\bigl(\sum_i g_i^2\bigr)^{1/2}
+$$
+
+
+<!-- enrich-pass-1f64 -->
+## 수식 전개 — 스텝·토큰·시간
+
+한 스텝에서 처리하는 토큰 수（패딩 제외）를 $N_{\mathrm{step}}$라 하면
+
+$$
+N_{\mathrm{step}}
+=
+\sum_{b=1}^{B}\sum_{t=1}^{T} m_{b,t}
+$$
+
+입니다. 총 토큰 예산 $B_{\mathrm{tok}}$에 대해 필요 스텝은
+
+$$
+S
+\approx
+\frac{B_{\mathrm{tok}}}{N_{\mathrm{step}}}
+$$
+
+입니다. Gradient accumulation $K$가 있으면 옵티마이저 스텝은
+
+$$
+S_{\mathrm{opt}}
+=
+\left\lfloor\frac{S_{\mathrm{micro}}}{K}\right\rfloor
+$$
+
+로 줄어듭니다（제64강）.
+
+### Loss 집계
+
+토큰 평균 CE:
+
+$$
+L
+=
+\frac{\sum_{b,t} m_{b,t}\,(-\log p_{b,t}) }{\sum_{b,t} m_{b,t}}
+$$
+
+시퀀스 평균과 섞어 로그하지 마세요. 비교가 깨집니다.
+
+## Shape 표 — Train Step 텐서
+
+| 이름 | Shape | 비고 |
+|---|---|---|
+| `input_ids` | `(B, T)` | |
+| `labels` | `(B, T)` | 시프트 또는 동일+ignore |
+| `logits` | `(B, T, V)` | |
+| `loss` | `()` | scalar |
+| grad（파라미터） | 파라미터와 동일 | clip 전/후 기록 |
+
+## 구현 스케치 — 한 스텝의 뼈대
+
+```python
+def train_step(model, batch, opt, scaler=None, max_norm=1.0):
+    model.train()
+    opt.zero_grad(set_to_none=True)
+    logits = model(batch["input_ids"])
+    loss = token_ce(logits, batch["labels"], ignore_index=-100)
+
+    if scaler is None:
+        loss.backward()
+        grad_norm = torch.nn.utils.clip_grad_norm_(model.parameters(), max_norm)
+        opt.step()
+    else:
+        scaler.scale(loss).backward()
+        scaler.unscale_(opt)
+        grad_norm = torch.nn.utils.clip_grad_norm_(model.parameters(), max_norm)
+        scaler.step(opt)
+        scaler.update()
+    return {"loss": float(loss.detach()), "grad_norm": float(grad_norm)}
+```
+
+스케줄러 `step()` 위치는 API에 맞게 고정하고 로그로 검증합니다（제63강）.
+
+## 실패 모드 — Training Loop
+
+| 실패 | 증상 | 점검 |
+|---|---|---|
+| `zero_grad` 누락 | Loss 폭발·이상 | 매 스텝 확인 |
+| eval 모드로 학습 | Dropout off 상태로 train | `model.train()` |
+| 시드 미고정 | 재현 실패 | torch/numpy/cuda seed |
+| 로그만 micro-loss | 착시 | token-avg·accum 반영 |
+| clip 과도 | 학습 정체 | grad_norm 히스토그램 |
+
+## 실습 코드 — 토큰 예산 루프
+
+```python
+def train_by_token_budget(model, loader, opt, budget, log_every=50):
+    seen, step = 0, 0
+    while seen < budget:
+        for batch in loader:
+            out = train_step(model, batch, opt)
+            seen += int(batch["attention_mask"].sum())
+            step += 1
+            if step % log_every == 0:
+                print({"step": step, "tokens": seen, "loss": out["loss"]})
+            if seen >= budget:
+                break
+```
+
+Epoch 루프와 토큰 예산 루프를 혼용할 때는 **종료 조건이 무엇인지**를 config에 한 줄로 적으세요.
+
+## 수식 보강 — Grad clip
+
+전역 노름
+
+$$
+\|g\|_2
+=
+\sqrt{\sum_i \|g_i\|_2^2}
+$$
+
+가 `max_norm`을 넘으면
+
+$$
+g\leftarrow g\cdot \frac{\mathrm{max\_norm}}{\|g\|_2+\varepsilon}
+$$
+
+로 줄입니다. clip 비율이 매 스텝 1에 가깝면 max_norm이 너무 작을 수 있습니다.
+
 ## LLM에서는 어디에 사용될까?
 
 이번 62강에서 배운 개념은 이후 Transformer · GPT · 서빙 강의에서 반복해서 등장합니다. 각 수식·코드 블록을 “실제 모델의 어느 단계인가”와 연결해 다시 읽어 보세요.

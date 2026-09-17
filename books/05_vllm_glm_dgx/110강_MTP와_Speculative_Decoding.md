@@ -354,9 +354,49 @@ $$
 
 감각의 이득을 봅니다(정확한 배수는 모델·수락률에 의존, 임의 수치 금지).
 
-## LLM에서는 어디에 사용될까?
+## 수식 보강 — 수락률과 유효 속도
+드래프트가 $\gamma$개 토큰을 제안하고 수락률이 $\alpha$일 때（이상화된 교육용）:
 
-이번 110강에서 배운 개념은 이후 Transformer · GPT · 서빙 강의에서 반복해서 등장합니다. 각 수식·코드 블록을 “실제 모델의 어느 단계인가”와 연결해 다시 읽어 보세요.
+$$
+
+\mathrm{tokens/round} \approx 1+\alpha\gamma
+$$
+
+검증 비용이 커 $\alpha$가 낮으면
+
+$$
+
+T_{\mathrm{wall}} \uparrow
+\quad\text{despite}\quad
+\gamma \uparrow
+$$
+
+가 될 수 있다. **측정 없이 $\gamma$만 키우지 말 것.** 품질은 수락 규칙이 target 분포를 보존하는지에 달려 있다（제110 본문）.
+
+
+
+<!-- enrich-batch3-110 -->
+## Speculative Decoding
+
+초안 모델 $\pi_d$가 $\gamma$토큰 제안, 목표 $\pi_t$가 검증.
+
+$$
+\alpha=\Pr[\mathrm{accept}]
+$$
+
+기대 가속(이상화):
+
+$$
+\mathrm{speedup}\approx \frac{1+\gamma\alpha}{1+c}
+$$
+
+($c$: 검증 비용 비율)
+
+```python
+def est_speedup(gamma, alpha, c=0.2):
+    return (1+gamma*alpha)/(1+c)
+print(est_speedup(5, 0.7))
+```
 
 ## 핵심 요약
 - Speculative decoding = **값싼 draft 제안 + target verify**로 스텝당 확정 토큰을 늘리려는 기법.
@@ -470,6 +510,39 @@ draft/verify 비용 증가와 수락 실패 시 낭비가 커져 오히려 느�
 - 제108 계열 지도 → 제109 MoE → **제110 MTP/Speculative** → 제111 GPU  
 
 엔진·구조·하드웨어가 한 줄로 이어진다.
+
+<!-- enrich-110-depth -->
+## 스펙큘레이티브 속도up 식
+
+드래프트가 $\gamma$토큰을 제안하고 타깃이 검증할 때, 수락률을 $\alpha$라 하면 대략
+
+$$
+\mathbb{E}[\text{전진 토큰}]
+\approx
+\alpha\cdot\gamma
+\quad\text{（스텝당, 단순 모형）}
+$$
+
+벽시계 이득（개념）:
+
+$$
+\mathrm{Speedup}
+\approx
+\frac{T_{\mathrm{base}}}{T_{\mathrm{draft}}+T_{\mathrm{verify}}/\mathbb{E}[\text{전진}]}
+$$
+
+$\alpha$가 낮으면 verify 비용만 늘고 이득이 사라진다.
+
+MTP（Multi-Token Prediction）는 헤드가 여러 위치를 공동 예측해 드래프트 품질을 올리려는 계열이다. 수락률 $\alpha$와 드래프트 비용의 트레이드오프가 핵심이다.
+
+### 측정 체크
+
+- 토큰당 수락률 $\hat\alpha$
+- 평균 수락 길이
+- 베이스 대비 TTFT/TPOT
+- 품질（동일 디코드 파라미터）회귀 여부
+
+숫자 없이 “스펙큘레이티브라서 빠르다”고 쓰지 않는다.
 
 <!-- LECTURE_NAV -->
 

@@ -298,9 +298,126 @@ Smoke test 결과:
 5. dual-Spark “더 큰 모델” 문구를 측정 없이 SLA에 넣는다.  
 6. 커뮤니티의 인터페이스 이름을 그대로 복사한다.
 
-## LLM에서는 어디에 사용될까?
+## 수식 보강 — 다중 노드 메모리
 
-이번 115강에서 배운 개념은 이후 Transformer · GPT · 서빙 강의에서 반복해서 등장합니다. 각 수식·코드 블록을 “실제 모델의 어느 단계인가”와 연결해 다시 읽어 보세요.
+모델 병렬로 샤딩하면 랭크당 가중치 메모리는 대략 $1/N$이 됩니다. KV는 요청 길이·동시성에 따라 따로 늘어납니다.
+
+
+<!-- enrich-block-115 -->
+## 멀티 노드 메모리·배치
+
+모델 파라미터 메모리:
+
+$$
+\mathrm{Mem}_W = N_{\mathrm{params}}\cdot b_{\mathrm{bytes}}\cdot f_{\mathrm{overhead}}
+$$
+
+데이터 병렬 시 글로벌 배치:
+
+$$
+B_{\mathrm{global}}=B_{\mathrm{local}}\cdot N_{\mathrm{gpu}}
+$$
+
+유효 학습률/노이즈는 $B_{\mathrm{global}}$에 따라 달라지므로 LR 재스케일을 검토합니다.
+
+
+<!-- enrich-extra-115 -->
+## 구성 체크 — 2노드
+
+```python
+# 환경 변수 스케치 (교육용)
+import os
+cfg = {
+    "NNODES": 2,
+    "NPROC_PER_NODE": 8,
+    "MASTER_ADDR": "10.0.0.1",
+    "MASTER_PORT": "29500",
+}
+world = int(cfg["NNODES"]) * int(cfg["NPROC_PER_NODE"])
+print("world_size", world)
+```
+
+$$
+B_{\mathrm{global}}=B_{\mathrm{micro}}\cdot N_{\mathrm{accum}}\cdot N_{\mathrm{gpu}}
+$$
+
+## 수식·용량으로 보는 2× 구성
+### 통합 메모리·KV 예산（개념）
+
+가중치 바이트 $W$, KV 캐시 $M_{\mathrm{KV}}$, 기타 오버헤드 $O$에 대해 대략
+
+$$
+
+W + M_{\mathrm{KV}} + O \;\le\; M_{\mathrm{avail}}
+$$
+
+$M_{\mathrm{KV}}$는 동시 요청·컨텍스트에 비례（제101·105강）:
+
+$$
+
+M_{\mathrm{KV}} \propto B_{\mathrm{inflight}}\cdot L\cdot(\text{층}\cdot\text{헤드차원}\cdot\text{바이트})
+$$
+
+**사실:** DGX Spark는 통합 메모리 등 플랫폼 특성이 있다. HBM-only 가정으로 환산표를 만들지 말 것.  
+**해석:** 2대 연결의 목적은 “메모리를 이어 붙인다”만이 아니라 **병렬·통신 경로를 연다**는 데 있다.
+
+### TP=2일 때 통신
+
+노드 간 TP를 켠다면 제114강의
+
+$$
+
+T_{\mathrm{token}} \approx T_{\mathrm{compute}} + \sum T_{\mathrm{collective}}
+$$
+
+가 그대로 적용된다. 케이블·RoCE가 준비되기 전에 TP size만 올리면 hang·역설적 감속이 난다.
+
+### 단일 vs 듀얼 — 언제이득인가（정성）
+
+| 상황 | 경향 |
+|---|---|
+| 단일 GPU에 모델이 여유 | 듀얼은 통신 비용만 살 수 있음 |
+| 가중치·KV가 단일 한계 | TP/샤딩 후보 |
+| 처리량 수평 확장 | 복제(replica) vs 샤딩을 구분 |
+
+복제와 TP를 혼동하지 말 것. 복제는 요청 라우팅, TP는 한 모델의 쪼갬이다.
+
+
+<!-- enrich-batch4-115 -->
+## 2× 노드 토폴로지 스케치
+
+$$
+N_{\mathrm{gpu}}=N_{\mathrm{node}}\cdot G_{\mathrm{per\ node}}
+$$
+
+```python
+nodes, gpus = 2, 8
+print("world", nodes*gpus)
+# MASTER_ADDR는 노드0, 방화벽/포트 허용 필요
+```
+
+### 헬스 체크
+
+1. `nvidia-smi` 전 GPU 가시성
+2. NCCL test bandwidth
+3. 시계 동기(로그 상관)
+
+$$
+t_{\mathrm{step}}=t_{\mathrm{comp}}+t_{\mathrm{comm}}+t_{\mathrm{idle}}
+$$
+
+## LLM에서는 어디에 사용될까?
+- 랩에서 2대 Spark로 멀티노드 서빙 PoC
+- NCCL 경로를 제품 문서의 QSFP/ConnectX와 대조
+- 제116강 Serving 프로젝트의 하드웨어 전제
+- 제117강 최적화 실험의 “GPU count” 축
+
+## 실습 D — 메모리 부등식
+가상으로 $W$가 $M_{\mathrm{avail}}$의 70%일 때, 동시성 $B$를 키우면 어떤 항이 먼저 한계에 닿는지 쓰시오.
+
+## 실습 E — 토폴로지 라벨
+물리 케이블 / IP / NCCL / 엔진 TP 설정을 한 장의 레이어 그림으로 그리시오.
+
 
 ## 핵심 요약
 - DGX Spark는 GB10 Grace Blackwell 기반 데스크탑 AI 플랫폼이며, 공개 스펙은 **출처와 날짜를 붙여** 읽는다.
@@ -379,6 +496,55 @@ User Guide/주문 SKU/실제 `lsblk` 등 장치 실측으로 확인한다.
 다음 강의: **제116강. 프로젝트 — 실제 LLM Serving**
 
 제116강은 vLLM(또는 스케치)으로 모델을 띄우고, TTFT/TPOT 템플릿으로 병목을 해석한다. 제117강은 그 측정을 GPU 최적화 실험으로 확장한다.
+
+<!-- enrich-115-depth -->
+## 2노드 구성을 용량 식으로
+
+노드당 GPU 메모리 $M$, 모델 가중치 $W$, KV 여유 $K$라 하면 대략
+
+$$
+W + K_{\mathrm{reserve}} + M_{\mathrm{runtime}}
+\le
+M
+$$
+
+텐서병렬 차수 $t_p$로 가중치를 나누면
+
+$$
+W_{\mathrm{perGPU}}
+\approx
+\frac{W}{t_p}
+$$
+
+대신 통신 $t_{\mathrm{comm}}$이 늘어난다.
+
+### 네트워크·스토리지 체크
+
+```text
+1) 노드 내 NVLink/NVSwitch 경로
+2) 노드 간 RoCE/IB 대역·지연
+3) 체크포인트 로딩 대역（콜드스타트 TTFT에 영향）
+4) 시각·NTP·컨테이너 런타임 일치
+```
+
+동시성 $C$에서 KV:
+
+$$
+K(C)
+\approx
+c\cdot \bar{T}_{\mathrm{in+out}}\cdot C
+$$
+
+$K(C)+W>M$이면 OOM 또는 preempt 폭증이 난다. 제116강 서빙 프로젝트의 용량 계획과 맞춘다.
+
+### 스모크 테스트 최소셋
+
+1. 단노드 1요청 TTFT/TPOT
+2. 단노드 동시성 스위프
+3. 2노드 TP 스모크（동일 프롬프트）
+4. NCCL 대역 마이크로벤치 기록
+
+통과 전에 “클러스터 준비 완료”라고 쓰지 않는다.
 
 <!-- LECTURE_NAV -->
 

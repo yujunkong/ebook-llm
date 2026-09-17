@@ -275,6 +275,224 @@ if __name__ == "__main__":
 
 이 책은 특정 공개 데이터셋의 “점수”를 주장하지 않는다. **자기 미니 JSONL을 깨끗하게 만드는 습관**이 목표다.
 
+## 수식 보강 — Instruction 샘플
+
+하나의 샘플을 $(c,y)$로 두면 SFT 손실은 응답 토큰만:
+
+$$
+L=-\sum_{t\in y}\log p_\theta(y_t\mid c,y_{<t})
+$$
+
+
+## 수학적으로 이해하기 — 스키마에서 마스크까지
+
+샘플 $(c,y)$를 토큰열 $x_{1:T}$로 렌더링할 때, 응답 구간 지시함수 $m_t$가 필요합니다.
+
+$$
+
+L = -\sum_{t=1}^{T} m_t \log p_\theta(x_t\mid x_{<t}),
+\qquad
+m_t=\begin{cases}
+1 & t\in\mathcal{R}\\
+0 & t\notin\mathcal{R}
+\end{cases}
+
+$$
+
+Alpaca 템플릿이면 $\mathcal{R}$은 `### Response:` 이후（보통 EOS 포함 여부는 규약）입니다.  
+Messages면 $\mathcal{R}=\bigcup\{\text{assistant spans}\}$입니다.
+
+### 필드 길이 스케치
+
+미니 JSONL $N$개에 대해 평균 토큰 길이를 $\bar T_{\mathrm{prompt}},\bar T_{\mathrm{resp}}$라 하면
+
+$$
+
+\rho=\frac{\bar T_{\mathrm{resp}}}{\bar T_{\mathrm{prompt}}+\bar T_{\mathrm{resp}}}
+$$
+
+가 응답 비율입니다. $\rho$가 너무 작으면 학습 신호가 희박하고, 너무 크면（프롬프트가 극단적으로 짧으면）조건 다양성이 부족할 수 있습니다. **정답 비율은 없으며**, 로깅 대상입니다.
+
+## 작은 숫자 예 — 한 샘플 토큰 경계
+
+렌더 결과（특수 토큰을 한 글자로 대체한 설명용）:
+
+```text
+chars:  <u> 2 + 2 ? <a> 4 <e>
+index:   0  1 2 3 4  5  6  7
+mask m:  0  0 0 0 0  0  1  1
+```
+
+`4`와 `<e>`만 타깃이라고 합시다. 손실에 기여하는 위치 수는 $2$입니다.  
+실전에서는 서브워드 때문에 `Response:` 구분자가 여러 토큰일 수 있으므로, **문자열 경계 → 토큰 경계 매핑 테스트**가 필요합니다（제71~72강）.
+
+## 직관적으로 이해하기 — 계약서 세 장
+
+```text
+1) JSON 스키마 계약: 필드가 있는가
+2) 템플릿 계약: 문자열로 어떻게 붙이는가
+3) 마스크 계약: 어디에 loss를 주는가
+```
+
+한 장이라도 어긋나면 “모델이 지시를 못한다”로 오진하기 쉽습니다.
+
+## 품질 수식 없이 하는 중복 검사
+
+정규화 문자열 $u(x)$의 해시 집합 크기
+
+$$
+
+\frac{|\{h(u(x)):x\in\mathcal{D}\}|}{|\mathcal{D}|}
+$$
+
+가 1에서 멀수록 중복이 많습니다. 임계값을 업계 표준처럼 단정하지 말고, 미니셋에서 **중복 비율을 보고** 정제하세요.
+
+## 부록 A. Alpaca↔Messages 왕복 시 깨지는 지점
+
+1. Input 절 생략 규약이 왕복 중 바뀜
+2. system 메시지를 Alpaca에 넣을 곳이 없음 → 소실
+3. 멀티턴 messages를 단일 instruction으로 무리하게 평탄화
+
+멀티턴이 필요하면 **messages를 원본**으로 두는 편이 안전합니다.
+
+## 부록 B. JSONL 로더 실패 체크
+
+| 증상 | 원인 후보 |
+|---|---|
+| `JSONDecodeError` | 배열을 JSONL로 착각, 트레일링 콤마 |
+| `missing output` | 필드명 `response`로 표기 |
+| 빈 학습 | assistant 없음 / mask 전부 0 |
+| 길이 폭주 | system에 장문 정책 반복 |
+
+## 부록 C. 실습 확장 — $\rho$ 로깅
+
+```python
+def response_ratio(mask):
+    m = mask.float()
+    return (m.sum() / m.numel()).item()
+```
+
+배치 평균 $\rho$를 학습 로그에 남겨 제71강과 연결하세요.
+
+
+<!-- enrich-batch2-70 -->
+## Instruction 포맷
+
+샘플 $(q,a)$:
+
+$$
+x=\mathrm{tmpl}(q)\,+\,a
+$$
+
+손실은 $a$ 구간에만.
+
+$$
+L=-\sum_{t\in a}\log p(x_t\mid x_{<t})
+$$
+
+```python
+def render(q, a):
+    # 단순 템플릿
+    return f"### Q:\n{q}\n### A:\n{a}"
+print(render("1+1?", "2"))
+```
+
+
+<!-- enrich-pass-1f64 -->
+## 수식 전개 — Instruction 샘플의 토큰화
+
+샘플 $(c, r)$（context/prompt, response）를 이어 붙인 시퀀스 $x=\mathrm{cat}(c,r)$에 대해 SFT는 보통
+
+$$
+L
+=
+-\sum_{t\in\mathcal{R}}\log p_\theta(x_t\mid x_{<t})
+$$
+
+만 최소화합니다. $\mathcal{R}$은 응답 토큰 위치 집합입니다.
+
+마스크로 쓰면
+
+$$
+m_t
+=
+\begin{cases}
+1 & t\in\mathcal{R}\\
+0 & \text{otherwise}
+\end{cases}
+$$
+
+$$
+L
+=
+\frac{\sum_t m_t(-\log p_t)}{\sum_t m_t}
+$$
+
+## Shape 표 — Instruction JSON → 텐서
+
+| 필드 | 예 | 결과 |
+|---|---|---|
+| `instruction` | 문자열 | 프롬프트 일부 |
+| `input` | 선택 문자열 | 프롬프트 일부 |
+| `output` | 문자열 | 응답 |
+| `input_ids` | — | `(T,)` / `(B,T)` |
+| `labels` | — | 프롬프트는 `-100` |
+
+## 구현 스케치 — 스키마 정규화
+
+```python
+def normalize_row(row):
+    if "messages" in row:
+        return {"messages": row["messages"]}
+    instr = row.get("instruction", "")
+    inp = row.get("input", "")
+    out = row.get("output") or row.get("response", "")
+    user = instr if not inp else f"{instr}\n{inp}"
+    return {
+        "messages": [
+            {"role": "user", "content": user},
+            {"role": "assistant", "content": out},
+        ]
+    }
+```
+
+Alpaca형과 chat형를 **한 스키마로 수렴**시키면 제72강 템플릿이 단순해집니다.
+
+## 실패 모드 — Instruction 데이터
+
+| 실패 | 증상 | 처방 |
+|---|---|---|
+| output 빈 문자열 | 학습 신호 0 | 검증기 |
+| 시스템 프롬프트 혼재 | 스타일 붕괴 | 필드 분리 |
+| train/eval 중복 | 가짜 점수 | 해시 검사 |
+| 다국어 깨짐 | 토큰 폭주 | 인코딩 검사 |
+
+## 실습 코드 — 길이 통계
+
+```python
+def response_length_stats(rows, tok):
+    lens = []
+    for r in rows:
+        out = r.get("output") or r["messages"][-1]["content"]
+        lens.append(len(tok(out)))
+    lens.sort()
+    return {"n": len(lens), "p50": lens[len(lens)//2], "max": lens[-1]}
+```
+
+응답이 전부 한 줄이면 형식 다양성 부족을 의심합니다.
+
+## 수식 보강 — 다턴 샘플
+
+턴 $u_1,a_1,\ldots,u_k,a_k$에서 손실 구간은 보통 모든 assistant 턴입니다.
+
+$$
+\mathcal{R}
+=
+\bigcup_{j=1}^{k}\mathrm{span}(a_j)
+$$
+
+사용자 턴은 문맥으로만 남깁니다（제71~72강）.
+
 ## LLM에서는 어디에 사용될까?
 - 공개 SFT 데이터는 Alpaca-like와 ShareGPT/messages 계열이 공존한다.
 - 많은 학습 프레임워크가 messages를 받아 내부에서 chat template을 적용한다.
