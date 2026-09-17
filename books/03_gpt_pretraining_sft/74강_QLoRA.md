@@ -243,6 +243,17 @@ Optimizer가 이 4M에만 붙으면, Full FT의 Adam 상태와 자릿수가 다�
 - merge한 뒤 다시 양자화할 수도 있고, 고정도로 서빙할 수도 있다.
 - “QLoRA로 학습했으니 추론도 반드시 NF4”는 **사실이 아니다**.
 
+### 병합 후 양자화 (선택 경로)
+
+$$
+
+W_{\mathrm{merged}} = \widetilde{W}_0 + \frac{\alpha}{r}BA
+\quad\to\quad
+\mathrm{Quantize}(W_{\mathrm{merged}})
+$$
+
+학습 때 쓰던 $W_0^{(q)}$와 **동일할 필요는 없다**. 배포 엔진·품질 요구에 따라 FP16 서빙도 흔하다.
+
 ## 최소 사용 스케치（개념）
 아래는 API 암기가 아니라 **구성 요소 체크리스트**용 의사코드다.
 
@@ -282,6 +293,19 @@ model.print_trainable_parameters()
 - [ ] 베이스가 정말 양자화되어 로드되었는가
 - [ ] trainable이 LoRA（+선택 norm）뿐인가
 - [ ] chat template / loss mask가 제71~72강과 일치하는가
+
+### 체크리스트를 수식으로 연결
+
+trainable 파라미터 집합 $\Theta_{\mathrm{LoRA}}=\{A_\ell,B_\ell\}_\ell$에 대해서만
+
+$$
+
+\theta \leftarrow \theta - \eta\, \widehat{\nabla}_\theta L_{\mathrm{SFT}}
+\quad(\theta\in\Theta_{\mathrm{LoRA}})
+$$
+
+베이스 $\Theta_{\mathrm{base}}$는 $\nabla=0$.  
+`print_trainable_parameters()`가 보고하는 비율은 대략 $|\Theta_{\mathrm{LoRA}}|/(|\Theta_{\mathrm{base}}|+|\Theta_{\mathrm{LoRA}}|)$.
 
 ## 품질·안정성 트레이드오프
 | 이득 | 대가·위험 |

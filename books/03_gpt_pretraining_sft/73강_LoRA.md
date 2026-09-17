@@ -288,6 +288,41 @@ $$
 
 작은 예: $d=4,k=4,r=1$, $A=[1,0,0,0]$, $B=[0.5,0,0,0]^\top$이면 $\Delta W$의 $(0,0)$만 $0.5$입니다.
 
+### 스케일 $\alpha/r$까지
+
+$$
+
+\Delta W = \frac{\alpha}{r} BA
+$$
+
+$r$을 키울 때 $\alpha$를 고정하면 실효 스케일이 작아진다. $\alpha=r$로 두면 초기 실효 스케일을 맞추기 쉽다.
+
+### 옵티마이저 상태 비교 (설명용)
+
+파라미터 수 $P_{\mathrm{full}}=dk$, $P_{\mathrm{lora}}=r(d+k)$.  
+Adam이 파라미터당 2개 모멘트를 FP32(4바이트)로 두면:
+
+$$
+
+M_{\mathrm{opt,full}} \approx 8 P_{\mathrm{full}},\qquad
+M_{\mathrm{opt,lora}} \approx 8 P_{\mathrm{lora}}
+
+$$
+
+$d=k=4096$, $r=8$이면 $P_{\mathrm{lora}}/P_{\mathrm{full}}\approx 0.39\%$(한 층). 옵티마이저 메모리도 같은 비율로 줄어든다(그 층 기준).
+
+### 그라디언트 경로
+
+$W_0$ freeze면
+
+$$
+
+\frac{\partial L}{\partial W_0}=0,\quad
+\frac{\partial L}{\partial A},\frac{\partial L}{\partial B}\neq 0
+$$
+
+(일반적으로). 체크포인트에 저장할 것도 $A,B$(+설정)면 충분하다.
+
 ## LLM에서는 어디에 사용될까?
 
 이번 73강에서 배운 개념은 이후 Transformer · GPT · 서빙 강의에서 반복해서 등장합니다. 각 수식·코드 블록을 “실제 모델의 어느 단계인가”와 연결해 다시 읽어 보세요.
